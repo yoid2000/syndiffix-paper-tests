@@ -9,7 +9,7 @@ def makeSynFileName(baseName, cols):
     synFileName = baseName
     for col in cols:
         col = col.replace(' ','_')
-        synFileName += f".{col}"
+        synFileName += f".{col[0:16]}"
     return synFileName
 
 maxComb = 3
