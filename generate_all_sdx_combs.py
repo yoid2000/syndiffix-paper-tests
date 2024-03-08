@@ -28,7 +28,8 @@ for fileName in [fileName for fileName in os.listdir(pqDir) if fileName.endswith
             synFilePath = os.path.join(baseDir, baseName, synFileName + '.parquet')
             allCombs.append({'synDir':baseName,
                              'origFile': pqFilePath,
-                             'synPath': synFilePath})
+                             'synPath': synFilePath,
+                             'cols': cols})
 print(f"Made {len(allCombs)} combinations")
 allCombsPath = os.path.join(baseDir, 'allSynCombs.json')
 with open(allCombsPath, 'w') as f:
@@ -38,12 +39,12 @@ with open(allCombsPath, 'w') as f:
 codeDir = Path().absolute()
 sdxGenPath = os.path.join(codeDir, 'buildSdxDataset.py')
 slurmPath = os.path.join(baseDir, 'slurmGenSdx')
-slurmScript = f'''
-#!/bin/sh
+outputPath = os.path.join(baseDir, 'sdxOut')
+os.makedirs(outputPath, exist_ok=True)
+slurmScript = f'''#!/bin/sh
 #SBATCH --time=7-0
 #SBATCH--array=0-{len(allCombs)}
-#SBATCH --output=/dev/null
-#SBATCH --error=/dev/null
+#SBATCH --output=./sdxOut/out.%a.out
 arrayNum="${{SLURM_ARRAY_TASK_ID}}"
 python3 {sdxGenPath} $arrayNum
 '''
