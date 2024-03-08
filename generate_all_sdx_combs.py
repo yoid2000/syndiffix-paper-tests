@@ -30,6 +30,6 @@ for fileName in [fileName for fileName in os.listdir(pqDir) if fileName.endswith
                              'synPath': synFilePath})
 print(f"Made {len(allCombs)} combinations")
 allCombsPath = os.path.join(baseDir, 'allSynCombs.json')
-with open(allCombs, 'w') as f:
+with open(allCombsPath, 'w') as f:
     print(f"Writing combinations to {allCombsPath}")
-    json.dump(allCombsPath, f, indent=4)
+    json.dump(allCombs, f, indent=4)
