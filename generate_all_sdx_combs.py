@@ -8,6 +8,7 @@ from pathlib import Path
 def makeSynFileName(baseName, cols):
     synFileName = baseName
     for col in cols:
+        col = col.replace(' ','_')
         synFileName += f".{col}"
     return synFileName
 
