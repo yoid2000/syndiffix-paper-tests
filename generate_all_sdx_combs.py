@@ -33,3 +33,18 @@ allCombsPath = os.path.join(baseDir, 'allSynCombs.json')
 with open(allCombsPath, 'w') as f:
     print(f"Writing combinations to {allCombsPath}")
     json.dump(allCombs, f, indent=4)
+
+codeDir = os.path.realpath(__file__)
+sdxGenPath = os.path.join(codeDir, 'buildSdxDataset.py')
+slurmPath = os.path.join(baseDir, 'slurmGenSdx')
+slurmScript = f'''
+#!/bin/sh
+#SBATCH --time=7-0
+#SBATCH--array=0-{len(allCombs)}
+#SBATCH --output=/dev/null
+#SBATCH --error=/dev/null
+arrayNum="${{SLURM_ARRAY_TASK_ID}}"
+python3 {sdxGenPath} $arrayNum
+'''
+with open(slurmPath, 'w') as f:
+    f.write(slurmScript)

@@ -14,6 +14,10 @@ Run `csv_prep.py`. This creates `SDX_TEST_DIR/original_data_parquet` and populat
 
 ### SynDiffix prep
 
+Run `generate_all_sdx_combs.py`. This creates the file:
+* `SDX_TEST_DIR/allSynCombs.json`, which contains the information needed to create every synthetic dataset, and
+* `slurmGenSdx`, which is the slurm command needed to create the synthetic datasets
+
 In a slurm zzzz
 
 Run `create_syndiffix_datasets.py`.
