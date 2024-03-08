@@ -5,13 +5,6 @@ import my_utilities as mu
 import os
 from pathlib import Path
 
-def makeSynFileName(baseName, cols):
-    synFileName = baseName
-    for col in cols:
-        col = col.replace(' ','_')
-        synFileName += f".{col[0:16]}"
-    return synFileName
-
 maxComb = 3
 baseDir = os.environ['SDX_TEST_DIR']
 pqDir = os.path.join(baseDir, 'original_data_parquet')
@@ -25,7 +18,7 @@ for fileName in [fileName for fileName in os.listdir(pqDir) if fileName.endswith
     for n_dims in range(1,maxComb+1):
         for comb in itertools.combinations(columns,n_dims):
             cols = sorted(list(comb))
-            synFileName = makeSynFileName(baseName, cols)
+            synFileName = mu.makeSynFileName(baseName, cols)
             synFilePath = os.path.join(baseDir, baseName, synFileName + '.parquet')
             allCombs.append({'synDir':baseName,
                              'origFile': pqFilePath,

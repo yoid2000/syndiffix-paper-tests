@@ -9,7 +9,7 @@ jobsFile = 'allSynCombs.json'
 allCombsPath = os.path.join(baseDir, jobsFile)
 with open(allCombsPath, 'r') as f:
     allCombs = json.load(f)
-myJobNum = sys.argv[1]
+myJobNum = int(sys.argv[1])
 if myJobNum > len(allCombs)-1:
     print(f"Bad job number {myJobNum}")
     quit()

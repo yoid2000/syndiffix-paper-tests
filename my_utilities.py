@@ -25,3 +25,10 @@ def load_pq(fileName):
     # Load from Parquet file
     df = pd.read_parquet(fileName, engine='pyarrow')
     return df
+
+def makeSynFileName(baseName, cols):
+    synFileName = baseName
+    for col in cols:
+        col = col.replace(' ','_')
+        synFileName += f".{col[0:16]}"
+    return synFileName
