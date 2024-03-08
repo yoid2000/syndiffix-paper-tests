@@ -3,6 +3,7 @@ import itertools
 import json
 import my_utilities as mu
 import os
+from pathlib import Path
 
 def makeSynFileName(baseName, cols):
     synFileName = baseName
@@ -34,7 +35,7 @@ with open(allCombsPath, 'w') as f:
     print(f"Writing combinations to {allCombsPath}")
     json.dump(allCombs, f, indent=4)
 
-codeDir = os.path.realpath(__file__)
+codeDir = Path().absolute()
 sdxGenPath = os.path.join(codeDir, 'buildSdxDataset.py')
 slurmPath = os.path.join(baseDir, 'slurmGenSdx')
 slurmScript = f'''
