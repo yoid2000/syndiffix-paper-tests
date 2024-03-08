@@ -18,7 +18,7 @@ for fileName in [fileName for fileName in os.listdir(pqDir) if fileName.endswith
     baseName = fileName.replace('.parquet','')
     pqFilePath = os.path.join(pqDir, fileName)
     print(f"Read file {pqFilePath}")
-    df = mu.load_pq(fileName)
+    df = mu.load_pq(pqFilePath)
     columns = list(df.columns)
     for n_dims in range(1,maxComb+1):
         for comb in itertools.combinations(columns,n_dims):
