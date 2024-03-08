@@ -24,7 +24,7 @@ for fileName in [fileName for fileName in os.listdir(pqDir) if fileName.endswith
         for comb in itertools.combinations(columns,n_dims):
             cols = sorted(list(comb))
             synFileName = makeSynFileName(baseName, cols)
-            synFilePath = os.path.join(baseDir, baseName, synFileName)
+            synFilePath = os.path.join(baseDir, baseName, synFileName + '.parquet')
             allCombs.append({'synDir':baseName,
                              'origFile': pqFilePath,
                              'synPath': synFilePath})
