@@ -6,6 +6,8 @@ Requires python3.10 or greater.
 
 Create a directory somewhere. Establish an environment variable `SDX_TEST_DIR` which is the path to that directory.
 
+Under `SDX_TEST_DIR`, create a virtual environment called `sdx_venv`. (SLURM jobs assume this venv.)
+
 Under `SDX_TEST_DIR`, create the directory `original_data_csv`, and populate it with whatever csv files you wish to test, as zipped files. For the paper we used the files in `original_data_csv`.
 
 Copy the directory `original_data_csv` into SDX_TEST_DIR.

@@ -33,13 +33,25 @@ with open(allCombsPath, 'w') as f:
 codeDir = Path().absolute()
 sdxGenPath = os.path.join(codeDir, 'buildSdxDataset.py')
 slurmPath = os.path.join(baseDir, 'slurmGenSdx')
+testSlurmPath = os.path.join(baseDir, 'test_slurmGenSdx')
 outputPath = os.path.join(baseDir, 'sdxOut')
 os.makedirs(outputPath, exist_ok=True)
 slurmScript = f'''#!/bin/sh
 #SBATCH --time=7-0
-#SBATCH--array=0-{len(allCombs)}
+#SBATCH--array=0-10
 #SBATCH --output=./sdxOut/out.%a.out
 arrayNum="${{SLURM_ARRAY_TASK_ID}}"
+source ./sdx_venv/bin/activate
+python3 {sdxGenPath} $arrayNum
+'''
+with open(testSlurmPath, 'w') as f:
+    f.write(slurmScript)
+slurmScript = f'''#!/bin/sh
+#SBATCH --time=7-0
+#SBATCH--array=0-{len(allCombs)}
+#SBATCH --output=/dev/null
+arrayNum="${{SLURM_ARRAY_TASK_ID}}"
+source ./sdx_venv/bin/activate
 python3 {sdxGenPath} $arrayNum
 '''
 with open(slurmPath, 'w') as f:
