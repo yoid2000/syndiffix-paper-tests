@@ -17,13 +17,13 @@ def load_csv(path):
 
     return df
 
-def dump_pq(fileName, df):
+def dump_pq(filePath, df):
     # Save to Parquet file
-    df.to_parquet(fileName, engine='pyarrow')
+    df.to_parquet(filePath, engine='pyarrow')
 
-def load_pq(fileName):
+def load_pq(filePath):
     # Load from Parquet file
-    df = pd.read_parquet(fileName, engine='pyarrow')
+    df = pd.read_parquet(filePath, engine='pyarrow')
     return df
 
 def makeSynFileName(baseName, cols):
