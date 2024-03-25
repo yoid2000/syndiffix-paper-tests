@@ -18,6 +18,10 @@ if myJobNum > len(allCombs)-1:
 job = allCombs[myJobNum]
 inPath = job['origFile']
 outPath = job['synPath']
+# check if the file at outPath already exists
+if os.path.exists(outPath):
+    print(f"File {outPath} already exists. Skipping.")
+    quit()
 columns = job['cols']
 synDatasetDir = os.path.join(synDatasetsDir, job['synDir'])
 os.makedirs(synDatasetDir, exist_ok=True)
