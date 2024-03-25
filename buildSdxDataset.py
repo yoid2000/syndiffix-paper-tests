@@ -24,4 +24,9 @@ os.makedirs(synDatasetDir, exist_ok=True)
 print(job)
 df = mu.load_pq(inPath)
 df_syn = Synthesizer(df[columns]).sample()
-mu.dump_pq(outPath)
+mu.dump_pq(outPath, df_syn)
+
+df_orig = None
+
+from syndiffix.synthesizer import Synthesizer
+df_syn = Synthesizer(df_orig).sample()
