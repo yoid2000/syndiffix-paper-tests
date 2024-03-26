@@ -43,7 +43,8 @@ outputPath = os.path.join(baseDir, 'sdxOut')
 os.makedirs(outputPath, exist_ok=True)
 slurmScript = f'''#!/bin/sh
 #SBATCH --time=7-0
-#SBATCH--array=0-10
+#SBATCH --array=0-10
+#SBATCH --mem=40G
 #SBATCH --output=./sdxOut/out.%a.out
 arrayNum="${{SLURM_ARRAY_TASK_ID}}"
 source ./sdx_venv/bin/activate
@@ -53,7 +54,8 @@ with open(testSlurmPath, 'w') as f:
     f.write(slurmScript)
 slurmScript = f'''#!/bin/sh
 #SBATCH --time=7-0
-#SBATCH--array=0-{len(allCombs)}
+#SBATCH --array=0-{len(allCombs)}
+#SBATCH --mem=40G
 #SBATCH --output=/dev/null
 arrayNum="${{SLURM_ARRAY_TASK_ID}}"
 source ./sdx_venv/bin/activate
