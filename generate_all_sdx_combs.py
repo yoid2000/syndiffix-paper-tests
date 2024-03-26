@@ -20,6 +20,10 @@ for fileName in [fileName for fileName in os.listdir(pqDir) if fileName.endswith
             cols = sorted(list(comb))
             synFileName = mu.makeSynFileName(baseName, cols)
             synFilePath = os.path.join(baseDir, 'synDatasets', baseName,  synFileName + '.parquet')
+            # check if the file at outPath already exists
+            if os.path.exists(synFilePath):
+                print(f"File {synFilePath} already exists. Skipping.")
+                continue
             index = len(allCombs)
             allCombs.append({'index':index,
                              'synDir':baseName,
