@@ -39,7 +39,7 @@ for fileName in [fileName for fileName in os.listdir(pqDir) if fileName.endswith
                 updateAllCombs(synFilePath, allCombs, baseName, pqFilePath, cols)
     synFileName = baseName + '.all'
     synFilePath = os.path.join(baseDir, 'synDatasets', baseName,  synFileName + '.parquet')
-    updateAllCombs(synFilePath, allCombs, baseName, pqFilePath, cols)
+    updateAllCombs(synFilePath, allCombs, baseName, pqFilePath, columns)
 print(f"Made {len(allCombs)} combinations")
 allCombsPath = os.path.join(baseDir, 'allSynCombs.json')
 with open(allCombsPath, 'w') as f:
