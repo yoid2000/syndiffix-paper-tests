@@ -52,22 +52,26 @@ slurmPath = os.path.join(baseDir, 'slurmGenSdx')
 testSlurmPath = os.path.join(baseDir, 'test_slurmGenSdx')
 outputPath = os.path.join(baseDir, 'sdxOut')
 os.makedirs(outputPath, exist_ok=True)
+output = './sdxOut/out.%a.out'
 slurmScript = f'''#!/bin/sh
 #SBATCH --time=7-0
 #SBATCH --array=0-10
 #SBATCH --mem={slurmMem}
-#SBATCH --output=./sdxOut/out.%a.out
+#SBATCH --output={output}
 arrayNum="${{SLURM_ARRAY_TASK_ID}}"
 source ./sdx_venv/bin/activate
 python3 {sdxGenPath} $arrayNum
 '''
 with open(testSlurmPath, 'w') as f:
     f.write(slurmScript)
+
+if len(allCombs) > 200:
+    output = '/dev/null'
 slurmScript = f'''#!/bin/sh
 #SBATCH --time=7-0
 #SBATCH --array=0-{len(allCombs)}
 #SBATCH --mem={slurmMem}
-#SBATCH --output=/dev/null
+#SBATCH --output={output}
 arrayNum="${{SLURM_ARRAY_TASK_ID}}"
 source ./sdx_venv/bin/activate
 python3 {sdxGenPath} $arrayNum
