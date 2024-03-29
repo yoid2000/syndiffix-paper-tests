@@ -5,6 +5,12 @@ import my_utilities as mu
 import os
 from pathlib import Path
 
+'''
+Go through all of the original datasets and define all possible combinations of columns with maxComb or fewer columns.
+Also include datasets with all columns.
+Put the results in allSynCombs.json and create the appropriate slurm scripts.
+'''
+
 DO_LOW_COMBS = False
 
 maxComb = 3
