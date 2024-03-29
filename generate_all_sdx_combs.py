@@ -12,7 +12,7 @@ slurmMem = '320G'
 baseDir = os.environ['SDX_TEST_DIR']
 pqDir = os.path.join(baseDir, 'original_data_parquet')
 
-def updateAllCombs(synFilePath, allCombs):
+def updateAllCombs(synFilePath, allCombs, baseName, pqFilePath, cols):
     # check if the file at outPath already exists
     if os.path.exists(synFilePath):
         return
@@ -22,6 +22,7 @@ def updateAllCombs(synFilePath, allCombs):
                     'origFile': pqFilePath,
                     'synPath': synFilePath,
                     'cols': cols})
+
 allCombs = []
 for fileName in [fileName for fileName in os.listdir(pqDir) if fileName.endswith('.parquet')]:
     baseName = fileName.replace('.parquet','')
@@ -35,10 +36,10 @@ for fileName in [fileName for fileName in os.listdir(pqDir) if fileName.endswith
                 cols = sorted(list(comb))
                 synFileName = mu.makeSynFileName(baseName, cols)
                 synFilePath = os.path.join(baseDir, 'synDatasets', baseName,  synFileName + '.parquet')
-                updateAllCombs(synFilePath, allCombs)
+                updateAllCombs(synFilePath, allCombs, baseName, pqFilePath, cols)
     synFileName = baseName + '.all'
     synFilePath = os.path.join(baseDir, 'synDatasets', baseName,  synFileName + '.parquet')
-    updateAllCombs(synFilePath, allCombs)
+    updateAllCombs(synFilePath, allCombs, baseName, pqFilePath, cols)
 print(f"Made {len(allCombs)} combinations")
 allCombsPath = os.path.join(baseDir, 'allSynCombs.json')
 with open(allCombsPath, 'w') as f:
