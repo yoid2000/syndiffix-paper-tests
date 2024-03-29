@@ -8,8 +8,20 @@ from pathlib import Path
 DO_LOW_COMBS = False
 
 maxComb = 3
+slurmMem = '320G'
 baseDir = os.environ['SDX_TEST_DIR']
 pqDir = os.path.join(baseDir, 'original_data_parquet')
+
+def updateAllCombs(synFilePath, allCombs):
+    # check if the file at outPath already exists
+    if os.path.exists(synFilePath):
+        return
+    index = len(allCombs)
+    allCombs.append({'index':index,
+                    'synDir':baseName,
+                    'origFile': pqFilePath,
+                    'synPath': synFilePath,
+                    'cols': cols})
 allCombs = []
 for fileName in [fileName for fileName in os.listdir(pqDir) if fileName.endswith('.parquet')]:
     baseName = fileName.replace('.parquet','')
@@ -17,26 +29,17 @@ for fileName in [fileName for fileName in os.listdir(pqDir) if fileName.endswith
     print(f"Read file {pqFilePath}")
     df = mu.load_pq(pqFilePath)
     columns = list(df.columns)
-    synFileName = baseName + '.all'
-    synFilePath = os.path.join(baseDir, 'synDatasets', baseName,  synFileName + '.parquet')
-    print(synFilePath)
     if DO_LOW_COMBS:
         for n_dims in range(1,maxComb+1):
             for comb in itertools.combinations(columns,n_dims):
                 cols = sorted(list(comb))
                 synFileName = mu.makeSynFileName(baseName, cols)
                 synFilePath = os.path.join(baseDir, 'synDatasets', baseName,  synFileName + '.parquet')
-                # check if the file at outPath already exists
-                if os.path.exists(synFilePath):
-                    continue
-                index = len(allCombs)
-                allCombs.append({'index':index,
-                                'synDir':baseName,
-                                'origFile': pqFilePath,
-                                'synPath': synFilePath,
-                                'cols': cols})
+                updateAllCombs(synFilePath, allCombs)
+    synFileName = baseName + '.all'
+    synFilePath = os.path.join(baseDir, 'synDatasets', baseName,  synFileName + '.parquet')
+    updateAllCombs(synFilePath, allCombs)
 print(f"Made {len(allCombs)} combinations")
-quit()
 allCombsPath = os.path.join(baseDir, 'allSynCombs.json')
 with open(allCombsPath, 'w') as f:
     print(f"Writing combinations to {allCombsPath}")
@@ -51,7 +54,7 @@ os.makedirs(outputPath, exist_ok=True)
 slurmScript = f'''#!/bin/sh
 #SBATCH --time=7-0
 #SBATCH --array=0-10
-#SBATCH --mem=40G
+#SBATCH --mem={slurmMem}
 #SBATCH --output=./sdxOut/out.%a.out
 arrayNum="${{SLURM_ARRAY_TASK_ID}}"
 source ./sdx_venv/bin/activate
@@ -62,7 +65,7 @@ with open(testSlurmPath, 'w') as f:
 slurmScript = f'''#!/bin/sh
 #SBATCH --time=7-0
 #SBATCH --array=0-{len(allCombs)}
-#SBATCH --mem=40G
+#SBATCH --mem={slurmMem}
 #SBATCH --output=/dev/null
 arrayNum="${{SLURM_ARRAY_TASK_ID}}"
 source ./sdx_venv/bin/activate
