@@ -1,17 +1,15 @@
 import os
 import sys
 import json
-from pathlib import Path
 from syndiffix.synthesizer import Synthesizer
 import my_utilities as mu
 
 baseDir = os.environ['SDX_TEST_DIR']
-# make sinDatasetsDir using Path
-synDatasetsDir = Path(baseDir, 'synDatasets')
+synDatasetsDir = os.path.join(baseDir, 'synDatasets')
 os.makedirs(synDatasetsDir, exist_ok=True)
 jobsFile = 'allSynCombs.json'
-allCombsPath = Path(baseDir, jobsFile)
-with allCombsPath.open('r') as f:
+allCombsPath = os.path.join(baseDir, jobsFile)
+with open(allCombsPath, 'r') as f:
     allCombs = json.load(f)
 myJobNum = int(sys.argv[1])
 if myJobNum > len(allCombs)-1:
