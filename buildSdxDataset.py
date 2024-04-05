@@ -2,7 +2,7 @@ import os
 import sys
 import json
 from pathlib import Path
-from syndiffix.synthesizer import Synthesizer
+from syndiffix_tools.tables_manager import TablesManager
 import my_utilities as mu
 
 baseDir = os.environ['SDX_TEST_DIR']
@@ -18,16 +18,6 @@ if myJobNum > len(allCombs)-1:
     print(f"Bad job number {myJobNum}")
     quit()
 job = allCombs[myJobNum]
-inPath = job['origFile']
-outPath = job['synPath']
-# check if the file at outPath already exists
-if os.path.exists(outPath):
-    print(f"File {outPath} already exists. Skipping.")
-    quit()
-columns = job['cols']
-synDatasetDir = os.path.join(synDatasetsDir, job['synDir'])
-os.makedirs(synDatasetDir, exist_ok=True)
-print(job)
-df = mu.load_pq(inPath)
-df_syn = Synthesizer(df[columns]).sample()
-mu.dump_pq(outPath, df_syn)
+
+tm = TablesManager(dir_path=job['synDir'])
+tm.synthesize(columns=job['cols'], also_save_stats=True)
