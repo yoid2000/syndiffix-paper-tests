@@ -31,7 +31,7 @@ def updateAllCombs(allCombs, st, cols):
 allCombs = []
 for dir in os.listdir(synDataPath):
     thisDataPath = Path(synDataPath, dir)
-    st = syndiffix_tools.TablesManager(dir_path=thisDataPath)
+    st = syndiffix_tools.tables_manager.TablesManager(dir_path=thisDataPath)
     columns = list(st.df_orig.columns)
     if DO_LOW_COMBS:
         for n_dims in range(1,maxComb+1):
