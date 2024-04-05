@@ -3,6 +3,7 @@ import itertools
 import json
 import my_utilities as mu
 import os
+import sys
 from syndiffix_tools.tables_manager import TablesManager
 from pathlib import Path
 
@@ -15,9 +16,13 @@ Put the results in allSynCombs.json and create the appropriate slurm scripts.
 DO_LOW_COMBS = True
 
 maxComb = 3
-slurmMem = '320G'
 baseDir = os.environ['SDX_TEST_DIR']
 synDataPath = Path(baseDir, 'synDatasets')
+
+if len(sys.argv) > 1:
+    slurmMem = sys.argv[1]
+else:
+    slurmMem = '320G'
 
 def updateAllCombs(allCombs, tm, cols):
     # check if the file at outPath already exists
