@@ -3,7 +3,7 @@ import itertools
 import json
 import my_utilities as mu
 import os
-import syndiffix_tools
+from syndiffix_tools.tables_manager import TablesManager
 from pathlib import Path
 
 '''
@@ -19,26 +19,26 @@ slurmMem = '320G'
 baseDir = os.environ['SDX_TEST_DIR']
 synDataPath = Path(baseDir, 'synDatasets')
 
-def updateAllCombs(allCombs, st, cols):
+def updateAllCombs(allCombs, tm, cols):
     # check if the file at outPath already exists
-    if st.syn_file_exists(cols):
+    if tm.syn_file_exists(cols):
         return
     index = len(allCombs)
     allCombs.append({'index':index,
-                    'synDir':st.get_dir_path_str(),
+                    'synDir':tm.get_dir_path_str(),
                     'cols': cols})
 
 allCombs = []
 for dir in os.listdir(synDataPath):
     thisDataPath = Path(synDataPath, dir)
-    st = syndiffix_tools.tables_manager.TablesManager(dir_path=thisDataPath)
-    columns = list(st.df_orig.columns)
+    tm = TablesManager(dir_path=thisDataPath)
+    columns = list(tm.df_orig.columns)
     if DO_LOW_COMBS:
         for n_dims in range(1,maxComb+1):
             for comb in itertools.combinations(columns,n_dims):
                 cols = sorted(list(comb))
-                updateAllCombs(allCombs, st, cols)
-    updateAllCombs(allCombs, st, columns)
+                updateAllCombs(allCombs, tm, cols)
+    updateAllCombs(allCombs, tm, columns)
 print(f"Made {len(allCombs)} combinations")
 allCombsPath = os.path.join(baseDir, 'allSynCombs.json')
 with open(allCombsPath, 'w') as f:
