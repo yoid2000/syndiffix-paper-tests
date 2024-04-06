@@ -36,6 +36,7 @@ def updateAllCombs(allCombs, tm, cols):
 allCombs = []
 for dir in os.listdir(synDataPath):
     thisDataPath = Path(synDataPath, dir)
+    print(f"Read file {thisDataPath}")
     tm = TablesManager(dir_path=thisDataPath)
     columns = list(tm.df_orig.columns)
     if DO_LOW_COMBS:
