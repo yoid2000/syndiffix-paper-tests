@@ -27,11 +27,12 @@ else:
 def updateAllCombs(allCombs, tm, cols):
     # check if the file at outPath already exists
     if tm.syn_file_exists(cols):
-        return
+        return 0
     index = len(allCombs)
     allCombs.append({'index':index,
                     'synDir':tm.get_dir_path_str(),
                     'cols': cols})
+    return 1
 
 allCombs = []
 for dir in os.listdir(synDataPath):
@@ -46,9 +47,8 @@ for dir in os.listdir(synDataPath):
         for n_dims in range(1,maxComb+1):
             for comb in itertools.combinations(columns,n_dims):
                 cols = sorted(list(comb))
-                i += 1
-                updateAllCombs(allCombs, tm, cols)
-    updateAllCombs(allCombs, tm, columns)
+                i += updateAllCombs(allCombs, tm, cols)
+    i += updateAllCombs(allCombs, tm, columns)
     print(f"Created {i+1} combinations for {thisDataPath}")
 print(f"Made {len(allCombs)} combinations")
 allCombsPath = os.path.join(baseDir, 'allSynCombs.json')
