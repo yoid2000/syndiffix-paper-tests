@@ -22,7 +22,7 @@ synDataPath = Path(baseDir, 'synDatasets')
 if len(sys.argv) > 1:
     slurmMem = sys.argv[1]
 else:
-    slurmMem = '320G'
+    slurmMem = '10G'
 
 def updateAllCombs(allCombs, tm, cols):
     # check if the file at outPath already exists
@@ -36,15 +36,20 @@ def updateAllCombs(allCombs, tm, cols):
 allCombs = []
 for dir in os.listdir(synDataPath):
     thisDataPath = Path(synDataPath, dir)
-    print(f"Read file {thisDataPath}")
     tm = TablesManager(dir_path=thisDataPath)
     columns = list(tm.df_orig.columns)
+    pid_cols = tm.get_pid_cols()
+    # remove pid_cols from columns
+    columns = [col for col in columns if col not in pid_cols]
+    i = 0
     if DO_LOW_COMBS:
         for n_dims in range(1,maxComb+1):
             for comb in itertools.combinations(columns,n_dims):
                 cols = sorted(list(comb))
+                i += 1
                 updateAllCombs(allCombs, tm, cols)
     updateAllCombs(allCombs, tm, columns)
+    print(f"Created {i+1} combinations for {thisDataPath}")
 print(f"Made {len(allCombs)} combinations")
 allCombsPath = os.path.join(baseDir, 'allSynCombs.json')
 with open(allCombsPath, 'w') as f:
