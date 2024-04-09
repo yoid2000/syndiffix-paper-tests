@@ -76,6 +76,7 @@ if DO_FOUR_COMBS:
         random.seed(1)
         # sample here to avoid checking too many files
         combs = random.sample(combs, min(initialCount, len(combs)))
+        print(f"checking {len(combs)} 4-col tables for {dir}")
         for comb in combs:
             cols = sorted(list(comb))
             i += updateAllCombs(allCombs, tm, cols)
