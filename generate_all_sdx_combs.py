@@ -14,7 +14,7 @@ Also include synthetic dataset with all columns.
 Put the results in allSynCombs.json and create the appropriate slurm scripts.
 '''
 
-DO_LOW_COMBS = True
+DO_LOW_COMBS = False
 DO_FOUR_COMBS = True
 
 maxComb = 3
@@ -68,7 +68,7 @@ if DO_FOUR_COMBS:
         if len(pid_cols) > 0:
             continue
         numFourCombDatasets += 1
-        for comb in itertools.combinations(columns,n_dims):
+        for comb in itertools.combinations(columns,4):
             cols = sorted(list(comb))
             if tm.syn_file_exists(cols):
                 alreadyHave += 1
