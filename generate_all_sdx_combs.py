@@ -63,7 +63,7 @@ if DO_FOUR_COMBS:
         fourCombs[dir] = []
         thisDataPath = Path(synDataPath, dir)
         tm = TablesManager(dir_path=thisDataPath)
-        if len(tm.get_pid_cols) > 0:
+        if len(tm.get_pid_cols()) > 0:
             continue
         numFourCombDatasets += 1
     initialCount = int(numFourCombs / numFourCombDatasets)
