@@ -80,7 +80,7 @@ if DO_FOUR_COMBS:
     for dir in fourCombs.keys():
         thisDataPath = Path(synDataPath, dir)
         tm = TablesManager(dir_path=thisDataPath)
-        colsList = random.sample(fourCombs[dir], needPerDataset)
+        colsList = random.sample(fourCombs[dir], min(needPerDataset, len(fourCombs[dir])))
         for cols in colsList:
             i += updateAllCombs(allCombs, tm, cols)
 print(f"Made {len(allCombs)} combinations")
