@@ -20,4 +20,5 @@ if myJobNum > len(allCombs)-1:
 job = allCombs[myJobNum]
 
 tm = TablesManager(dir_path=job['synDir'])
+print(f"Synthesize {job}")
 tm.synthesize(columns=job['cols'], also_save_stats=True)
