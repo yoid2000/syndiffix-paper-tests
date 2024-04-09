@@ -4,6 +4,7 @@ import json
 import my_utilities as mu
 import os
 import sys
+import random
 from syndiffix_tools.tables_manager import TablesManager
 from pathlib import Path
 
@@ -14,8 +15,10 @@ Put the results in allSynCombs.json and create the appropriate slurm scripts.
 '''
 
 DO_LOW_COMBS = True
+DO_FOUR_COMBS = True
 
 maxComb = 3
+numFourCombs = 30000
 baseDir = os.environ['SDX_TEST_DIR']
 synDataPath = Path(baseDir, 'synDatasets')
 
@@ -49,7 +52,37 @@ for dir in os.listdir(synDataPath):
                 cols = sorted(list(comb))
                 i += updateAllCombs(allCombs, tm, cols)
     i += updateAllCombs(allCombs, tm, columns)
-    print(f"Created {i+1} combinations for {thisDataPath}")
+    print(f"Created {i} combinations for {thisDataPath}")
+if DO_FOUR_COMBS:
+    j = 0
+    alreadyHave = 0
+    newCount = 0
+    fourCombs = {}
+    numFourCombDatasets = 0
+    for dir in os.listdir(synDataPath):
+        fourCombs[dir] = []
+        thisDataPath = Path(synDataPath, dir)
+        tm = TablesManager(dir_path=thisDataPath)
+        columns = list(tm.df_orig.columns)
+        pid_cols = tm.get_pid_cols()
+        if len(pid_cols) > 0:
+            continue
+        numFourCombDatasets += 1
+        for comb in itertools.combinations(columns,n_dims):
+            cols = sorted(list(comb))
+            if tm.syn_file_exists(cols):
+                alreadyHave += 1
+                continue
+            newCount += 1
+            fourCombs[dir].append([cols])
+    print(f"Collected {newCount} fourCombs, {alreadyHave} already exist")
+    needPerDataset = int((numFourCombs - newCount) / numFourCombDatasets)
+    for dir in fourCombs.keys():
+        thisDataPath = Path(synDataPath, dir)
+        tm = TablesManager(dir_path=thisDataPath)
+        colsList = random.sample(fourCombs[dir], needPerDataset)
+        for cols in colsList:
+            i += updateAllCombs(allCombs, tm, cols)
 print(f"Made {len(allCombs)} combinations")
 allCombsPath = os.path.join(baseDir, 'allSynCombs.json')
 with open(allCombsPath, 'w') as f:
