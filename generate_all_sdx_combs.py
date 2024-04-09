@@ -54,7 +54,7 @@ for dir in os.listdir(synDataPath):
     i += updateAllCombs(allCombs, tm, columns)
     print(f"Created {i} combinations for {thisDataPath}")
 if DO_FOUR_COMBS:
-    j = 0
+    i = 0
     alreadyHave = 0
     newCount = 0
     fourCombs = {}
@@ -63,27 +63,23 @@ if DO_FOUR_COMBS:
         fourCombs[dir] = []
         thisDataPath = Path(synDataPath, dir)
         tm = TablesManager(dir_path=thisDataPath)
-        columns = list(tm.df_orig.columns)
-        pid_cols = tm.get_pid_cols()
-        if len(pid_cols) > 0:
+        if len(tm.get_pid_cols) > 0:
             continue
         numFourCombDatasets += 1
-        for comb in itertools.combinations(columns,4):
-            cols = sorted(list(comb))
-            if tm.syn_file_exists(cols):
-                alreadyHave += 1
-                continue
-            newCount += 1
-            fourCombs[dir].append([cols])
-    print(f"Collected {newCount} fourCombs, {alreadyHave} already exist")
-    needPerDataset = int((numFourCombs - newCount) / numFourCombDatasets)
+    initialCount = int(numFourCombs / numFourCombDatasets)
     for dir in fourCombs.keys():
         thisDataPath = Path(synDataPath, dir)
         tm = TablesManager(dir_path=thisDataPath)
-        colsList = random.sample(fourCombs[dir], min(needPerDataset, len(fourCombs[dir])))
-        for cols in colsList:
+        columns = list(tm.df_orig.columns)
+        combs = list(itertools.combinations(columns,4))
+        # seed the random number generator with the dir name    
+        random.seed(1)
+        # sample here to avoid checking too many files
+        combs = random.sample(combs, min(initialCount, len(combs)))
+        for comb in combs:
+            cols = sorted(list(comb))
             i += updateAllCombs(allCombs, tm, cols)
-print(f"Made {len(allCombs)} combinations")
+    print(f"Made {i} 4-col tables")
 allCombsPath = os.path.join(baseDir, 'allSynCombs.json')
 with open(allCombsPath, 'w') as f:
     print(f"Writing combinations to {allCombsPath}")
