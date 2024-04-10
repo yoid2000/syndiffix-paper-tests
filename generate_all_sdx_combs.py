@@ -86,9 +86,9 @@ if DO_RANDOM_FOUR_COMBS:
 if DO_TARGETED_FOUR_COMBS:
     i = 0
     for dir in os.listdir(synDataPath):
-        if dir not in targets:
+        if dir not in targets.targets:
             continue
-        targetCol = targets[dir]
+        targetCol = targets.targets[dir]
         thisDataPath = Path(synDataPath, dir)
         tm = TablesManager(dir_path=thisDataPath)
         if len(tm.get_pid_cols()) > 0:
