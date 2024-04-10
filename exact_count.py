@@ -24,7 +24,6 @@ num_tries = 200
 num_cols = [20, 40, 80]
 
 def get_precision(noisy_counts, exact_counts):
-    print(".", end='', flush=True)
     num_correct = 0
     for i in [0,1]:
         guess = round(sum(noisy_counts[i])/len(noisy_counts[i]))
@@ -37,7 +36,7 @@ for c in num_cols:
     ckey = f"{c} cols"
     precision[ckey] = {'1dim': [], '2dim': [], '3dim': []}
     num_correct = [0,0]
-    for i in range(num_tries):
+    for this_try in range(num_tries):
         df = pd.DataFrame(np.random.randint(0, 2, size=(200, c)), 
                           columns=[f'col{i}' for i in range(c)])
         cols_without_col1 = [col for col in df.columns if col != 'col1']
@@ -48,22 +47,24 @@ for c in num_cols:
         for i in [0,1]:
             noisy_counts[i].append(df_syn[df_syn['col1'] == i].shape[0])
         precision[ckey]['1dim'].append(get_precision(noisy_counts, exact_counts))
-        print(f"{i}.1-", end='', flush=True)
+        print(f"{this_try}.1-", end='', flush=True)
         noisy_counts = [[],[]]
         for col in cols_without_col1:
             df_syn = Synthesizer(df[['col1',col]]).sample()
+            print(".", end='', flush=True)
             for i in [0,1]:
                 noisy_counts[i].append(df_syn[df_syn['col1'] == i].shape[0])
         precision[ckey]['2dim'].append(get_precision(noisy_counts, exact_counts))
-        print(f"{i}.2-", end='', flush=True)
+        print(f"{this_try}.2-", end='', flush=True)
         noisy_counts = [[],[]]
         for comb in itertools.combinations(cols_without_col1, 2):
             cols = ['col1'] + list(comb)
             df_syn = Synthesizer(df[cols]).sample()
+            print(".", end='', flush=True)
             for i in [0,1]:
                 noisy_counts[i].append(df_syn[df_syn['col1'] == i].shape[0])
         precision[ckey]['3dim'].append(get_precision(noisy_counts, exact_counts))
-        print(f"{i}.3-", end='', flush=True)
+        print(f"{this_try}.3-", end='', flush=True)
     precision[ckey]['1dim'] = statistics.mean(precision[ckey]['1dim'])
     precision[ckey]['2dim'] = statistics.mean(precision[ckey]['2dim'])
     precision[ckey]['3dim'] = statistics.mean(precision[ckey]['3dim'])
