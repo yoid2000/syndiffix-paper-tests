@@ -99,7 +99,7 @@ if DO_TARGETED_FOUR_COMBS:
         columns = [col for col in columns if col != targetCol]
         print(f"checking targeted 4-col tables for {dir}")
         for comb in itertools.combinations(columns,3):
-            comb += [targetCol]
+            comb = list(comb) + [targetCol]
             cols = sorted(list(comb))
             i += updateAllCombs(allCombs, tm, cols)
     print(f"Made {i} targeted 4-col tables")
