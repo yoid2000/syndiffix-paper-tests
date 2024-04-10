@@ -26,7 +26,7 @@ num_rows = 300
 num_cols = [20, 40, 80]
 
 def print_progress_wheel(wheel):
-    print('\b' + next(wheel), end='', flush=True)
+    print(next(wheel) + '\b', end='', flush=True)
 
 def progress_wheel():
     wheel = itertools.cycle(['-', '/', '|', '\\'])
@@ -59,7 +59,7 @@ for c in num_cols:
         for i in [0,1]:
             noisy_counts[i].append(df_syn[df_syn[col0] == i].shape[0])
         precision[ckey]['1dim'].append(get_precision(noisy_counts, exact_counts))
-        print(f"{this_try}.1", flush=True)
+        print(f"{c}-{this_try}.1", flush=True)
         noisy_counts = [[],[]]
         for col in cols_without_col0:
             df_syn = Synthesizer(df[[col0,col]]).sample()
@@ -67,7 +67,7 @@ for c in num_cols:
             for i in [0,1]:
                 noisy_counts[i].append(df_syn[df_syn[col0] == i].shape[0])
         precision[ckey]['2dim'].append(get_precision(noisy_counts, exact_counts))
-        print(f"{this_try}.2", flush=True)
+        print(f"{c}-{this_try}.2", flush=True)
         noisy_counts = [[],[]]
         for comb in itertools.combinations(cols_without_col0, 2):
             cols = [col0] + list(comb)
@@ -76,7 +76,7 @@ for c in num_cols:
             for i in [0,1]:
                 noisy_counts[i].append(df_syn[df_syn[col0] == i].shape[0])
         precision[ckey]['3dim'].append(get_precision(noisy_counts, exact_counts))
-        print(f"{this_try}.3", flush=True)
+        print(f"{c}-{this_try}.3", flush=True)
     precision[ckey]['1dim'] = statistics.mean(precision[ckey]['1dim'])
     precision[ckey]['2dim'] = statistics.mean(precision[ckey]['2dim'])
     precision[ckey]['3dim'] = statistics.mean(precision[ckey]['3dim'])
