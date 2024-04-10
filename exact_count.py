@@ -20,8 +20,18 @@ have only two values per column, and 200 rows. This ensures that, for 3dim synth
 datasets, we have 200/8=25 expected rows per combination, which is well above the
 suppression limit
 '''
+
 num_tries = 200
+num_rows = 300
 num_cols = [20, 40, 80]
+
+def print_progress_wheel(wheel):
+    print('\b' + next(wheel), end='', flush=True)
+
+def progress_wheel():
+    wheel = itertools.cycle(['-', '/', '|', '\\'])
+    while True:
+        yield next(wheel)
 
 def get_precision(noisy_counts, exact_counts):
     num_correct = 0
@@ -31,40 +41,42 @@ def get_precision(noisy_counts, exact_counts):
             num_correct += 1
     return round((num_correct/2)*100)
 
+wheel = progress_wheel()
 precision = {}
 for c in num_cols:
     ckey = f"{c} cols"
     precision[ckey] = {'1dim': [], '2dim': [], '3dim': []}
     num_correct = [0,0]
     for this_try in range(num_tries):
-        df = pd.DataFrame(np.random.randint(0, 2, size=(200, c)), 
-                          columns=[f'col{i}' for i in range(c)])
-        cols_without_col1 = [col for col in df.columns if col != 'col1']
-        # get the count of each value for col1 in df
-        exact_counts = df['col1'].value_counts().tolist()
+        df = pd.DataFrame(np.random.randint(0, 2, size=(num_rows, c)), 
+                          columns=[f'col{this_try}_{i}' for i in range(c)])
+        col0 = f'col{this_try}_0'
+        cols_without_col0 = [col for col in df.columns if col != col0]
+        # get the count of each value for col0 in df
+        exact_counts = df[col0].value_counts().tolist()
         noisy_counts = [[],[]]
-        df_syn = Synthesizer(df[['col1']]).sample()
+        df_syn = Synthesizer(df[[col0]]).sample()
         for i in [0,1]:
-            noisy_counts[i].append(df_syn[df_syn['col1'] == i].shape[0])
+            noisy_counts[i].append(df_syn[df_syn[col0] == i].shape[0])
         precision[ckey]['1dim'].append(get_precision(noisy_counts, exact_counts))
-        print(f"{this_try}.1-", end='', flush=True)
+        print(f"\b{this_try}.1", flush=True)
         noisy_counts = [[],[]]
-        for col in cols_without_col1:
-            df_syn = Synthesizer(df[['col1',col]]).sample()
-            print(".", end='', flush=True)
+        for col in cols_without_col0:
+            df_syn = Synthesizer(df[[col0,col]]).sample()
+            print_progress_wheel(wheel)
             for i in [0,1]:
-                noisy_counts[i].append(df_syn[df_syn['col1'] == i].shape[0])
+                noisy_counts[i].append(df_syn[df_syn[col0] == i].shape[0])
         precision[ckey]['2dim'].append(get_precision(noisy_counts, exact_counts))
-        print(f"{this_try}.2-", end='', flush=True)
+        print(f"\b{this_try}.2", flush=True)
         noisy_counts = [[],[]]
-        for comb in itertools.combinations(cols_without_col1, 2):
-            cols = ['col1'] + list(comb)
+        for comb in itertools.combinations(cols_without_col0, 2):
+            cols = [col0] + list(comb)
             df_syn = Synthesizer(df[cols]).sample()
-            print(".", end='', flush=True)
+            print_progress_wheel(wheel)
             for i in [0,1]:
-                noisy_counts[i].append(df_syn[df_syn['col1'] == i].shape[0])
+                noisy_counts[i].append(df_syn[df_syn[col0] == i].shape[0])
         precision[ckey]['3dim'].append(get_precision(noisy_counts, exact_counts))
-        print(f"{this_try}.3-", end='', flush=True)
+        print(f"\b{this_try}.3", flush=True)
     precision[ckey]['1dim'] = statistics.mean(precision[ckey]['1dim'])
     precision[ckey]['2dim'] = statistics.mean(precision[ckey]['2dim'])
     precision[ckey]['3dim'] = statistics.mean(precision[ckey]['3dim'])
