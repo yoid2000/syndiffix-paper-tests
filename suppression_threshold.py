@@ -39,7 +39,7 @@ syn_data = Synthesizer(raw_data, anonymization_params=NOISELESS_PARAMS).sample()
 low_mean_gaps = [2.0, 3.0, 4.0]
 num_target_vals = [2, 5, 10]
 rows_multiplier = [5, 10, 100]
-num_tries = 1000
+num_tries_by_lmg = [1000, 5000, 10000]
 
 results = {}
 for rows_mult in rows_multiplier:
@@ -48,9 +48,11 @@ for rows_mult in rows_multiplier:
     for num_target_val in num_target_vals:
         ntv_key = f'{num_target_val} target_vals'
         results[rm_key][ntv_key] = {}
-        for low_mean_gap in low_mean_gaps:
+        for i in range(len(low_mean_gaps)):
+            low_mean_gap = low_mean_gaps[i]
             lmg_key = f'{low_mean_gap} low_mean_gap'
-            results[rm_key][ntv_key][lmg_key] = {'tp':0, 'fp':0, 'tn':0, 'fn':0}
+            num_tries = num_tries_by_lmg[i]
+            results[rm_key][ntv_key][lmg_key] = {'tp':0, 'fp':0, 'tn':0, 'fn':0, 'samples': num_tries}
             col1_vals = ['a', 'b', 'c']
             # Compute num_rows such that there are not many suppressed combinations
             num_rows = len(col1_vals) * num_target_val * 10
