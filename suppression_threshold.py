@@ -52,10 +52,10 @@ for rows_mult in rows_multiplier:
             low_mean_gap = low_mean_gaps[i]
             lmg_key = f'{low_mean_gap} low_mean_gap'
             num_tries = num_tries_by_lmg[i]
-            results[rm_key][ntv_key][lmg_key] = {'tp':0, 'fp':0, 'tn':0, 'fn':0, 'samples': num_tries}
-            col1_vals = ['a', 'b', 'c']
             # Compute num_rows such that there are not many suppressed combinations
-            num_rows = len(col1_vals) * num_target_val * 10
+            num_rows = len(col1_vals) * num_target_val * rows_mult
+            results[rm_key][ntv_key][lmg_key] = {'tp':0, 'fp':0, 'tn':0, 'fn':0, 'samples': num_tries, 'num_rows': num_rows}
+            col1_vals = ['a', 'b', 'c']
             for this_try in range(num_tries):
                 # Use different column names with each run so as to get different noise
                 c1 = f"c1_{this_try}"
