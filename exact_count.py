@@ -24,6 +24,9 @@ suppression limit
 num_tries = 1000
 num_rows = 300
 num_cols = [20, 40, 80]
+# We want more runs for lower dimension data because each run has fewer samples
+# We need more runs to get significant results (3-column measures take a long time
+# to run)
 runs_per_num_col = [10000, 1000, 100]
 TWO_COLS = True
 THREE_COLS = True

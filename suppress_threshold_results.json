@@ -1,0 +1,98 @@
+{
+    "2 target_vals": {
+        "0.0 low_mean_gap": {
+            "tp": 244,
+            "fp": 3,
+            "tn": 507,
+            "fn": 246
+        },
+        "1.0 low_mean_gap": {
+            "tp": 71,
+            "fp": 6,
+            "tn": 510,
+            "fn": 413
+        },
+        "2.0 low_mean_gap": {
+            "tp": 8,
+            "fp": 1,
+            "tn": 525,
+            "fn": 466
+        },
+        "3.0 low_mean_gap": {
+            "tp": 1,
+            "fp": 1,
+            "tn": 523,
+            "fn": 475
+        },
+        "4.0 low_mean_gap": {
+            "tp": 0,
+            "fp": 0,
+            "tn": 488,
+            "fn": 512
+        }
+    },
+    "5 target_vals": {
+        "0.0 low_mean_gap": {
+            "tp": 106,
+            "fp": 85,
+            "tn": 722,
+            "fn": 87
+        },
+        "1.0 low_mean_gap": {
+            "tp": 30,
+            "fp": 30,
+            "tn": 769,
+            "fn": 171
+        },
+        "2.0 low_mean_gap": {
+            "tp": 4,
+            "fp": 4,
+            "tn": 815,
+            "fn": 177
+        },
+        "3.0 low_mean_gap": {
+            "tp": 0,
+            "fp": 0,
+            "tn": 796,
+            "fn": 204
+        },
+        "4.0 low_mean_gap": {
+            "tp": 0,
+            "fp": 0,
+            "tn": 794,
+            "fn": 206
+        }
+    },
+    "10 target_vals": {
+        "0.0 low_mean_gap": {
+            "tp": 47,
+            "fp": 132,
+            "tn": 780,
+            "fn": 41
+        },
+        "1.0 low_mean_gap": {
+            "tp": 12,
+            "fp": 43,
+            "tn": 865,
+            "fn": 80
+        },
+        "2.0 low_mean_gap": {
+            "tp": 1,
+            "fp": 4,
+            "tn": 900,
+            "fn": 95
+        },
+        "3.0 low_mean_gap": {
+            "tp": 0,
+            "fp": 1,
+            "tn": 886,
+            "fn": 113
+        },
+        "4.0 low_mean_gap": {
+            "tp": 0,
+            "fp": 0,
+            "tn": 906,
+            "fn": 94
+        }
+    }
+}
