@@ -73,7 +73,6 @@ for rows_mult in rows_multiplier:
                 # Need to shuffle the dataframes otherwise we'll get the same
                 # noise due to the same indices assigned by syndiffix
                 df = df.sample(frac=1).reset_index(drop=True)
-                print(df.to_string())
 
                 df_syn = Synthesizer(df,
                     anonymization_params=AnonymizationParams(low_count_params=SuppressionParams(low_mean_gap=low_mean_gap))).sample()
