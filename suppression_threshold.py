@@ -27,21 +27,14 @@ class SuppressionParams:
     layer_sd: float = 1.0
     low_mean_gap: float = 2.0
 
-NOISELESS_SUPPRESSION = SuppressionParams(layer_sd=0.0)
-
-NOISELESS_PARAMS = AnonymizationParams(
-    low_count_params=NOISELESS_SUPPRESSION,
-    layer_noise_sd=0.0,
-    outlier_count=FlatteningInterval(upper=FlatteningInterval().lower),
-    top_count=FlatteningInterval(upper=FlatteningInterval().lower),
-)
-syn_data = Synthesizer(raw_data, anonymization_params=NOISELESS_PARAMS).sample()
+The 1dim node with count 3 containing the victim can certainly be non-suppressed.
 '''
 pp = pprint.PrettyPrinter(indent=4)
 low_mean_gaps = [2.0, 3.0, 4.0]
 num_target_vals = [2, 5, 10]
 rows_multiplier = [5, 10, 100]
-num_tries_by_lmg = [1000, 5000, 10000]
+num_tries_by_lmg = [2000, 10000, 20000]
+DO_WALK = False
 
 results = {}
 for rows_mult in rows_multiplier:
@@ -88,9 +81,10 @@ for rows_mult in rows_multiplier:
                     else:
                         # wrong
                         results[rm_key][ntv_key][lmg_key]['fp'] += 1
-                        print(f"Found a false positive for {rm_key}, {ntv_key}, {lmg_key} on try {this_try}")
-                        tw = TreeWalker(syn)
-                        pp.pprint(tw.get_forest_nodes())
+                        if DO_WALK:
+                            print(f"Found a false positive for {rm_key}, {ntv_key}, {lmg_key} on try {this_try}")
+                            tw = TreeWalker(syn)
+                            pp.pprint(tw.get_forest_nodes())
                 else:
                     # negative guess
                     if target_val == 0:
