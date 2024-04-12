@@ -1,8 +1,10 @@
 import pandas as pd
 import numpy as np
 import json
+import pprint
 from syndiffix import Synthesizer
 from syndiffix.common import AnonymizationParams, SuppressionParams
+from syndiffix_tools.tree_walker import *
 
 '''
 This program tests the ability of an attacker to determine if a victim has
@@ -35,7 +37,7 @@ NOISELESS_PARAMS = AnonymizationParams(
 )
 syn_data = Synthesizer(raw_data, anonymization_params=NOISELESS_PARAMS).sample()
 '''
-
+pp = pprint.PrettyPrinter(indent=4)
 low_mean_gaps = [2.0, 3.0, 4.0]
 num_target_vals = [2, 5, 10]
 rows_multiplier = [5, 10, 100]
@@ -74,8 +76,9 @@ for rows_mult in rows_multiplier:
                 # noise due to the same indices assigned by syndiffix
                 df = df.sample(frac=1).reset_index(drop=True)
 
-                df_syn = Synthesizer(df,
-                    anonymization_params=AnonymizationParams(low_count_params=SuppressionParams(low_mean_gap=low_mean_gap))).sample()
+                syn = Synthesizer(df,
+                    anonymization_params=AnonymizationParams(low_count_params=SuppressionParams(low_mean_gap=low_mean_gap)))
+                df_syn = syn.sample()
                 num_rows_with_z_and_0 = len(df_syn[(df_syn[c1] == 'z') & (df_syn[c2] == 0)])
                 if num_rows_with_z_and_0 > 0:
                     # positive guess
@@ -85,6 +88,9 @@ for rows_mult in rows_multiplier:
                     else:
                         # wrong
                         results[rm_key][ntv_key][lmg_key]['fp'] += 1
+                        print(f"Found a false positive for {rm_key}, {ntv_key}, {lmg_key} on try {this_try}")
+                        tw = TreeWalker(syn)
+                        pp.pprint(tw.get_forest_nodes())
                 else:
                     # negative guess
                     if target_val == 0:
