@@ -90,8 +90,8 @@ for cix, c in enumerate(num_cols):
     precision[ckey] = {'1dim': [], '2dim': [], '3dim': []}
     num_correct = [0,0]
     noisy_counts = [[[],[]], [[],[]], [[],[]]]
-    samples_per_2col = max(5, min_samples / (c - 1))
-    samples_per_3col = max(5, min_samples / (((c-1) * (c-2)) / 2))
+    samples_per_2col = max(20, min_samples / (c - 1))
+    samples_per_3col = max(20, min_samples / (((c-1) * (c-2)) / 2))
     for this_try in range(min_samples):
         df = pd.DataFrame(np.random.randint(0, 2, size=(num_rows, c)), 
                           columns=[f'col{this_try}_{i}' for i in range(c)])
@@ -106,7 +106,6 @@ for cix, c in enumerate(num_cols):
         for i in [0,1]:
             noisy_counts[0][i].append(df_syn[df_syn[col0] == i].shape[0])
         precision[ckey]['1dim'].append(get_precision(noisy_counts[0], exact_counts))
-        print(f"{c}-{this_try}.1", flush=True)
         if TWO_COLS and this_try <= samples_per_2col:
             for col in cols_without_col0:
                 df_syn = Synthesizer(df[[col0,col]]).sample()
@@ -125,10 +124,13 @@ for cix, c in enumerate(num_cols):
             precision[ckey]['3dim'].append(get_precision(noisy_counts[2], exact_counts))
             print(f"{c}-{this_try}.3 (of {samples_per_3col})", flush=True)
     precision[ckey]['1dim'] = statistics.mean(precision[ckey]['1dim'])
+    precision[ckey]['samples'] = min_samples
     if TWO_COLS:
         precision[ckey]['2dim'] = statistics.mean(precision[ckey]['2dim'])
+        precision[ckey]['samples'] = samples_per_2col
     if THREE_COLS:
         precision[ckey]['3dim'] = statistics.mean(precision[ckey]['3dim'])
+        precision[ckey]['samples'] = samples_per_3col
     print(precision)
     # dump precision as a json file
     with open('exact_count_precision.json', 'w') as f:
