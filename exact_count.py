@@ -26,7 +26,7 @@ num_cols = [20, 40, 80, 160]
 # We want more runs for lower dimension data because each run has fewer samples
 # We need more runs to get significant results (3-column measures take a long time
 # to run)
-runs_per_num_col = [10000, 1000, 100, 10]
+min_samples = 10000
 TWO_COLS = True
 THREE_COLS = True
 attack_keys = ['1dim', '2dim', '3dim']
@@ -90,7 +90,9 @@ for cix, c in enumerate(num_cols):
     precision[ckey] = {'1dim': [], '2dim': [], '3dim': []}
     num_correct = [0,0]
     noisy_counts = [[[],[]], [[],[]], [[],[]]]
-    for this_try in range(max(runs_per_num_col)):
+    samples_per_2col = max(5, min_samples / (c - 1))
+    samples_per_3col = max(5, min_samples / (((c-1) * (c-2)) / 2))
+    for this_try in range(min_samples):
         df = pd.DataFrame(np.random.randint(0, 2, size=(num_rows, c)), 
                           columns=[f'col{this_try}_{i}' for i in range(c)])
         true_row_count = df.shape[0]
@@ -105,7 +107,7 @@ for cix, c in enumerate(num_cols):
             noisy_counts[0][i].append(df_syn[df_syn[col0] == i].shape[0])
         precision[ckey]['1dim'].append(get_precision(noisy_counts[0], exact_counts))
         print(f"{c}-{this_try}.1", flush=True)
-        if TWO_COLS and this_try <= runs_per_num_col[cix]:
+        if TWO_COLS and this_try <= samples_per_2col:
             for col in cols_without_col0:
                 df_syn = Synthesizer(df[[col0,col]]).sample()
                 print_progress_wheel(wheel)
@@ -113,7 +115,7 @@ for cix, c in enumerate(num_cols):
                     noisy_counts[1][i].append(df_syn[df_syn[col0] == i].shape[0])
             precision[ckey]['2dim'].append(get_precision(noisy_counts[1], exact_counts))
             print(f"{c}-{this_try}.2", flush=True)
-        if THREE_COLS and this_try <= runs_per_num_col[cix]:
+        if THREE_COLS and this_try <= samples_per_3col:
             for comb in itertools.combinations(cols_without_col0, 2):
                 cols = [col0] + list(comb)
                 df_syn = Synthesizer(df[cols]).sample()
