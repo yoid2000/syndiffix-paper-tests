@@ -2,79 +2,79 @@
     "5 rows_multiplier": {
         "2 target_vals": {
             "2.0 low_mean_gap": {
-                "tp": 15,
-                "fp": 3,
-                "tn": 518,
-                "fn": 464,
-                "samples": 1000,
+                "tp": 23,
+                "fp": 7,
+                "tn": 996,
+                "fn": 974,
+                "samples": 2000,
                 "num_rows": 30
             },
             "3.0 low_mean_gap": {
-                "tp": 3,
-                "fp": 1,
-                "tn": 2487,
-                "fn": 2509,
-                "samples": 5000,
+                "tp": 7,
+                "fp": 3,
+                "tn": 4993,
+                "fn": 4997,
+                "samples": 10000,
                 "num_rows": 30
             },
             "4.0 low_mean_gap": {
                 "tp": 0,
                 "fp": 0,
-                "tn": 4991,
-                "fn": 5009,
-                "samples": 10000,
+                "tn": 9965,
+                "fn": 10035,
+                "samples": 20000,
                 "num_rows": 30
             }
         },
         "5 target_vals": {
             "2.0 low_mean_gap": {
-                "tp": 5,
-                "fp": 2,
-                "tn": 793,
-                "fn": 200,
-                "samples": 1000,
+                "tp": 6,
+                "fp": 4,
+                "tn": 1622,
+                "fn": 368,
+                "samples": 2000,
                 "num_rows": 75
             },
             "3.0 low_mean_gap": {
-                "tp": 1,
-                "fp": 1,
-                "tn": 4060,
-                "fn": 938,
-                "samples": 5000,
+                "tp": 2,
+                "fp": 3,
+                "tn": 8023,
+                "fn": 1972,
+                "samples": 10000,
                 "num_rows": 75
             },
             "4.0 low_mean_gap": {
                 "tp": 0,
-                "fp": 0,
-                "tn": 7966,
-                "fn": 2034,
-                "samples": 10000,
+                "fp": 1,
+                "tn": 15976,
+                "fn": 4023,
+                "samples": 20000,
                 "num_rows": 75
             }
         },
         "10 target_vals": {
             "2.0 low_mean_gap": {
-                "tp": 2,
-                "fp": 5,
-                "tn": 903,
-                "fn": 90,
-                "samples": 1000,
+                "tp": 4,
+                "fp": 10,
+                "tn": 1758,
+                "fn": 228,
+                "samples": 2000,
                 "num_rows": 150
             },
             "3.0 low_mean_gap": {
-                "tp": 1,
-                "fp": 1,
-                "tn": 4486,
-                "fn": 512,
-                "samples": 5000,
+                "tp": 2,
+                "fp": 2,
+                "tn": 8915,
+                "fn": 1081,
+                "samples": 10000,
                 "num_rows": 150
             },
             "4.0 low_mean_gap": {
                 "tp": 0,
                 "fp": 0,
-                "tn": 8952,
-                "fn": 1048,
-                "samples": 10000,
+                "tn": 18007,
+                "fn": 1993,
+                "samples": 20000,
                 "num_rows": 150
             }
         }
@@ -82,79 +82,79 @@
     "10 rows_multiplier": {
         "2 target_vals": {
             "2.0 low_mean_gap": {
-                "tp": 19,
+                "tp": 23,
                 "fp": 0,
-                "tn": 504,
-                "fn": 477,
-                "samples": 1000,
+                "tn": 1013,
+                "fn": 964,
+                "samples": 2000,
                 "num_rows": 60
             },
             "3.0 low_mean_gap": {
-                "tp": 2,
-                "fp": 1,
-                "tn": 2543,
-                "fn": 2454,
-                "samples": 5000,
+                "tp": 8,
+                "fp": 0,
+                "tn": 5099,
+                "fn": 4893,
+                "samples": 10000,
                 "num_rows": 60
             },
             "4.0 low_mean_gap": {
                 "tp": 1,
                 "fp": 0,
-                "tn": 5018,
-                "fn": 4981,
-                "samples": 10000,
+                "tn": 9983,
+                "fn": 10016,
+                "samples": 20000,
                 "num_rows": 60
             }
         },
         "5 target_vals": {
             "2.0 low_mean_gap": {
-                "tp": 5,
-                "fp": 5,
-                "tn": 754,
-                "fn": 236,
-                "samples": 1000,
+                "tp": 12,
+                "fp": 10,
+                "tn": 1587,
+                "fn": 391,
+                "samples": 2000,
                 "num_rows": 150
             },
             "3.0 low_mean_gap": {
-                "tp": 0,
+                "tp": 1,
                 "fp": 1,
-                "tn": 4025,
-                "fn": 974,
-                "samples": 5000,
+                "tn": 8002,
+                "fn": 1996,
+                "samples": 10000,
                 "num_rows": 150
             },
             "4.0 low_mean_gap": {
                 "tp": 0,
                 "fp": 0,
-                "tn": 8063,
-                "fn": 1937,
-                "samples": 10000,
+                "tn": 15964,
+                "fn": 4036,
+                "samples": 20000,
                 "num_rows": 150
             }
         },
         "10 target_vals": {
             "2.0 low_mean_gap": {
-                "tp": 2,
-                "fp": 5,
-                "tn": 889,
-                "fn": 104,
-                "samples": 1000,
+                "tp": 4,
+                "fp": 11,
+                "tn": 1790,
+                "fn": 195,
+                "samples": 2000,
                 "num_rows": 300
             },
             "3.0 low_mean_gap": {
-                "tp": 2,
-                "fp": 3,
-                "tn": 4457,
-                "fn": 538,
-                "samples": 5000,
+                "tp": 5,
+                "fp": 5,
+                "tn": 9037,
+                "fn": 953,
+                "samples": 10000,
                 "num_rows": 300
             },
             "4.0 low_mean_gap": {
-                "tp": 1,
+                "tp": 0,
                 "fp": 0,
-                "tn": 8981,
-                "fn": 1018,
-                "samples": 10000,
+                "tn": 18059,
+                "fn": 1941,
+                "samples": 20000,
                 "num_rows": 300
             }
         }
@@ -162,79 +162,79 @@
     "100 rows_multiplier": {
         "2 target_vals": {
             "2.0 low_mean_gap": {
-                "tp": 11,
+                "tp": 24,
                 "fp": 0,
-                "tn": 540,
-                "fn": 449,
-                "samples": 1000,
+                "tn": 1010,
+                "fn": 966,
+                "samples": 2000,
                 "num_rows": 600
             },
             "3.0 low_mean_gap": {
-                "tp": 1,
+                "tp": 3,
                 "fp": 0,
-                "tn": 2514,
-                "fn": 2485,
-                "samples": 5000,
+                "tn": 5013,
+                "fn": 4984,
+                "samples": 10000,
                 "num_rows": 600
             },
             "4.0 low_mean_gap": {
                 "tp": 0,
                 "fp": 0,
-                "tn": 4995,
-                "fn": 5005,
-                "samples": 10000,
+                "tn": 10093,
+                "fn": 9907,
+                "samples": 20000,
                 "num_rows": 600
             }
         },
         "5 target_vals": {
             "2.0 low_mean_gap": {
-                "tp": 4,
-                "fp": 5,
-                "tn": 818,
-                "fn": 173,
-                "samples": 1000,
+                "tp": 10,
+                "fp": 7,
+                "tn": 1550,
+                "fn": 433,
+                "samples": 2000,
                 "num_rows": 1500
             },
             "3.0 low_mean_gap": {
                 "tp": 1,
-                "fp": 0,
-                "tn": 4004,
-                "fn": 995,
-                "samples": 5000,
+                "fp": 3,
+                "tn": 8012,
+                "fn": 1984,
+                "samples": 10000,
                 "num_rows": 1500
             },
             "4.0 low_mean_gap": {
                 "tp": 0,
                 "fp": 0,
-                "tn": 7942,
-                "fn": 2058,
-                "samples": 10000,
+                "tn": 16048,
+                "fn": 3952,
+                "samples": 20000,
                 "num_rows": 1500
             }
         },
         "10 target_vals": {
             "2.0 low_mean_gap": {
-                "tp": 3,
-                "fp": 5,
-                "tn": 893,
-                "fn": 99,
-                "samples": 1000,
+                "tp": 4,
+                "fp": 10,
+                "tn": 1795,
+                "fn": 191,
+                "samples": 2000,
                 "num_rows": 3000
             },
             "3.0 low_mean_gap": {
-                "tp": 1,
-                "fp": 0,
-                "tn": 4503,
-                "fn": 496,
-                "samples": 5000,
+                "tp": 0,
+                "fp": 2,
+                "tn": 9002,
+                "fn": 996,
+                "samples": 10000,
                 "num_rows": 3000
             },
             "4.0 low_mean_gap": {
                 "tp": 0,
                 "fp": 0,
-                "tn": 9036,
-                "fn": 964,
-                "samples": 10000,
+                "tn": 18001,
+                "fn": 1999,
+                "samples": 20000,
                 "num_rows": 3000
             }
         }

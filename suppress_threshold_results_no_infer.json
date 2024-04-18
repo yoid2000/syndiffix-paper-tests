@@ -1,0 +1,29 @@
+{
+    "2.0 low_mean_gap": {
+        "tp": 37,
+        "fp": 0,
+        "tn": 1972,
+        "fn": 1991,
+        "samples": 4000,
+        "num_rows": 75,
+        "coverage": 0.00925
+    },
+    "3.0 low_mean_gap": {
+        "tp": 17,
+        "fp": 0,
+        "tn": 10062,
+        "fn": 9921,
+        "samples": 20000,
+        "num_rows": 75,
+        "coverage": 0.00085
+    },
+    "4.0 low_mean_gap": {
+        "tp": 0,
+        "fp": 0,
+        "tn": 20048,
+        "fn": 19952,
+        "samples": 40000,
+        "num_rows": 75,
+        "coverage": 0.0
+    }
+}

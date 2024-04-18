@@ -36,7 +36,7 @@ NOISELESS_PARAMS = AnonymizationParams(
 syn_data = Synthesizer(raw_data, anonymization_params=NOISELESS_PARAMS).sample()
 '''
 
-low_mean_gaps = [0.0, 1.0, 2.0, 3.0, 4.0]
+low_mean_gaps = [2.0, 3.0, 4.0]
 num_tries = 1000
 
 results = {}
