@@ -114,7 +114,7 @@ for cix, c in enumerate(num_cols):
                 for i in [0,1]:
                     noisy_counts[1][i].append(df_syn[df_syn[col0] == i].shape[0])
             precision[ckey]['2dim'].append(get_precision(noisy_counts[1], exact_counts))
-            print(f"{c}-{this_try}.2", flush=True)
+            print(f"{c}-{this_try}.2 (of {samples_per_2col})", flush=True)
         if THREE_COLS and this_try <= samples_per_3col:
             for comb in itertools.combinations(cols_without_col0, 2):
                 cols = [col0] + list(comb)
@@ -123,7 +123,7 @@ for cix, c in enumerate(num_cols):
                 for i in [0,1]:
                     noisy_counts[2][i].append(df_syn[df_syn[col0] == i].shape[0])
             precision[ckey]['3dim'].append(get_precision(noisy_counts[2], exact_counts))
-            print(f"{c}-{this_try}.3", flush=True)
+            print(f"{c}-{this_try}.3 (of {samples_per_3col})", flush=True)
     precision[ckey]['1dim'] = statistics.mean(precision[ckey]['1dim'])
     if TWO_COLS:
         precision[ckey]['2dim'] = statistics.mean(precision[ckey]['2dim'])
