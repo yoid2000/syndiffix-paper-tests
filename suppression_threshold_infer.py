@@ -72,8 +72,9 @@ for rows_mult in rows_multiplier:
                 syn = Synthesizer(df,
                     anonymization_params=AnonymizationParams(low_count_params=SuppressionParams(low_mean_gap=low_mean_gap)))
                 df_syn = syn.sample()
+                num_rows_with_z_and_not_0 = len(df_syn[(df_syn[c1] == 'z') & (df_syn[c2] != 0)])
                 num_rows_with_z_and_0 = len(df_syn[(df_syn[c1] == 'z') & (df_syn[c2] == 0)])
-                if num_rows_with_z_and_0 > 0:
+                if num_rows_with_z_and_not_0 == 0 and num_rows_with_z_and_0 > 0:
                     # positive guess
                     if target_val == 0:
                         # correct
