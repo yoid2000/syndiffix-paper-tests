@@ -9,15 +9,10 @@ This program tests the ability of an attacker to determine if a victim has
 a given attribute by observing whether suppression has taken place.
 
 The conditions for the attack are as follows:
-* The attacker knows that there are exactly three persons with a given attribute
-A (i.e. a column and associated value).
+* The attacker knows that there are exactly three persons with a given attribute A (i.e. a column and associated value).
 * The attacker knows that two of them definately also have attribute B.
 
-The goal is to determine whether or not the third person (the victim)
-also has attribute B.  Because SynDiffix suppresses aggregates with two users,
-but may not suppress an aggregate with three users, if a row with attributes A
-and B are in the synthetic dataset (i.e. not suppressed), then the victim must
-have attribute B.
+The goal is to determine whether or not the third person (the victim) also has attribute B.  Because SynDiffix suppresses aggregates with two users, but may not suppress an aggregate with three users, if a row with attributes A and B are in the synthetic dataset (i.e. not suppressed), then the victim must have attribute B.
 '''
 '''
 class SuppressionParams:
