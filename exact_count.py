@@ -129,7 +129,7 @@ for cix, c in enumerate(num_cols):
     precision[ckey] = {
                     'averages': {'1dim': 0, '2dim': 0, '3dim': 0},
                     'std_devs': {'1dim': 0, '2dim': 0, '3dim': 0},
-                    'samples': {'1dim': 0, '2dim': 0, '3dim': 0}
+                    'samples': {'1dim': 0, '2dim': 0, '3dim': 0},
                     'scores': {'1dim': [], '2dim': [], '3dim': []}
                     }
     num_correct = [0,0]
