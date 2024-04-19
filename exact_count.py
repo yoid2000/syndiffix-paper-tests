@@ -134,6 +134,7 @@ for cix, c in enumerate(num_cols):
                     'error_averages': {'1dim': 0, '2dim': 0, '3dim': 0},
                     'error_std_devs': {'1dim': 0, '2dim': 0, '3dim': 0},
                     'samples': {'1dim': 0, '2dim': 0, '3dim': 0},
+                    'errors': {'1dim': [], '2dim': [], '3dim': []},
                     'scores': {'1dim': [], '2dim': [], '3dim': []},
                     'results': {'1dim': [], '2dim': [], '3dim': []},
                     }
