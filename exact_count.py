@@ -59,11 +59,10 @@ def get_precision(noisy_counts, exact_counts):
     true_row_count = sum(exact_counts)
     # We know that the sum of noisy counts should be equal to the true row 
     # count, so if not we adjust to make it so
-    guessed_floats = [sum(noisy_counts[i])/len(noisy_counts[i]) for i in [0,1]]
-    guessed_rounded = [round(g) for g in guessed_floats]
+    guessed_rounded = [round(g) for g in noisy_counts]
     if attack == 'do_least_accurate':
-        # The the decimal part of the guessed_floats
-        guessed_decimals = [g - int(g) for g in guessed_floats]
+        # The the decimal part of the noisy_counts
+        guessed_decimals = [g - int(g) for g in noisy_counts]
         # These guessed_counts are floating point numbers. Although it
         # probably doesn't much matter, let's assume that if we need to 
         # adjust one count, it is best to adjust the one that is the
@@ -142,10 +141,11 @@ for cix, c in enumerate(num_cols):
                     'results': {'1dim': [], '2dim': [], '3dim': []},
                     }
     num_correct = [0,0]
-    noisy_counts = [[[],[]], [[],[]], [[],[]]]
     samples_per_2col = max(20, min_samples / (c - 1))
     samples_per_3col = max(20, min_samples / (((c-1) * (c-2)) / 2))
     for this_try in range(min_samples):
+        # set the seed for np.random
+        np.random.seed(str(this_try) + str(c))
         df = pd.DataFrame(np.random.randint(0, 2, size=(num_rows, c)), 
                           columns=[f'col{this_try}_{i}' for i in range(c)])
         true_row_count = df.shape[0]
@@ -156,31 +156,38 @@ for cix, c in enumerate(num_cols):
         for i in [0,1]:
             exact_counts[i] = df[df[col0] == i].shape[0]
         df_syn = Synthesizer(df[[col0]]).sample()
+        noisy_counts = [0,0]
         for i in [0,1]:
-            noisy_counts[0][i].append(df_syn[df_syn[col0] == i].shape[0])
-        results = get_precision(noisy_counts[0], exact_counts)
+            noisy_counts[i] = df_syn[df[col0] == i].shape[0]
+        results = get_precision(noisy_counts, exact_counts)
         precision[ckey]['results']['1dim'].append(results)
         precision[ckey]['scores']['1dim'] += results['correct']
         precision[ckey]['errors']['1dim'] += results['errors']
         if TWO_COLS and this_try <= samples_per_2col:
+            noisy_counts = [0,0]
             for col in cols_without_col0:
                 df_syn = Synthesizer(df[[col0,col]]).sample()
                 #print_progress_wheel(wheel)
                 for i in [0,1]:
-                    noisy_counts[1][i].append(df_syn[df_syn[col0] == i].shape[0])
-            results = get_precision(noisy_counts[1], exact_counts)
+                    noisy_counts[i] += df_syn[df_syn[col0] == i].shape[0]
+            for i in [0,1]:
+                noisy_counts[i] = noisy_counts[i] / len(cols_without_col0)
+            results = get_precision(noisy_counts, exact_counts)
             precision[ckey]['results']['2dim'].append(results)
             precision[ckey]['scores']['2dim'] += results['correct']
             precision[ckey]['errors']['2dim'] += results['errors']
             #print(f"{c}-{this_try}.2 (of {samples_per_2col})", flush=True)
         if THREE_COLS and this_try <= samples_per_3col:
+            noisy_counts = [0,0]
             for comb in itertools.combinations(cols_without_col0, 2):
                 cols = [col0] + list(comb)
                 df_syn = Synthesizer(df[cols]).sample()
                 #print_progress_wheel(wheel)
                 for i in [0,1]:
-                    noisy_counts[2][i].append(df_syn[df_syn[col0] == i].shape[0])
-            results = get_precision(noisy_counts[2], exact_counts)
+                    noisy_counts[i] += df_syn[df_syn[col0] == i].shape[0]
+            for i in [0,1]:
+                noisy_counts[i] = noisy_counts[i] / len(cols_without_col0)
+            results = get_precision(noisy_counts, exact_counts)
             precision[ckey]['results']['3dim'].append(results)
             precision[ckey]['scores']['3dim'] += results['correct']
             precision[ckey]['errors']['2dim'] += results['errors']
