@@ -106,17 +106,20 @@ def get_precision(noisy_counts, exact_counts):
 def summarize_and_dump(precision, ckey):
     precision[ckey]['correct_averages']['1dim'] = statistics.mean(precision[ckey]['scores']['1dim'])
     precision[ckey]['error_averages']['1dim'] = statistics.mean(precision[ckey]['errors']['1dim'])
-    precision[ckey]['error_std_devs']['1dim'] = statistics.stdev(precision[ckey]['errors']['1dim'])
+    if len(precision[ckey]['errors']['1dim']) > 1:
+        precision[ckey]['error_std_devs']['1dim'] = statistics.stdev(precision[ckey]['errors']['1dim'])
     precision[ckey]['samples']['1dim'] = len(precision[ckey]['scores']['1dim'])
     if TWO_COLS:
         precision[ckey]['correct_averages']['2dim'] = statistics.mean(precision[ckey]['scores']['2dim'])
         precision[ckey]['error_averages']['2dim'] = statistics.mean(precision[ckey]['errors']['1dim'])
-        precision[ckey]['error_std_devs']['2dim'] = statistics.stdev(precision[ckey]['errors']['2dim'])
+        if len(precision[ckey]['errors']['2dim']) > 1:
+            precision[ckey]['error_std_devs']['2dim'] = statistics.stdev(precision[ckey]['errors']['2dim'])
         precision[ckey]['samples']['2dim'] = len(precision[ckey]['scores']['2dim'])
     if THREE_COLS:
         precision[ckey]['correct_averages']['3dim'] = statistics.mean(precision[ckey]['scores']['3dim'])
         precision[ckey]['error_averages']['3dim'] = statistics.mean(precision[ckey]['errors']['1dim'])
-        precision[ckey]['error_std_devs']['3dim'] = statistics.stdev(precision[ckey]['errors']['3dim'])
+        if len(precision[ckey]['errors']['3dim']) > 1:
+            precision[ckey]['error_std_devs']['3dim'] = statistics.stdev(precision[ckey]['errors']['3dim'])
         precision[ckey]['samples']['3dim'] = len(precision[ckey]['scores']['3dim'])
     print(precision)
     # dump precision as a json file
