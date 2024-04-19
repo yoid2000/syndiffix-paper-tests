@@ -33,8 +33,7 @@ THREE_COLS = True
 attack_keys = ['1dim', '2dim', '3dim']
 
 # read command line arguments
-if len(sys.argv) == 1:
-    attack == 'do_simple'
+attack = 'do_simple'
 if len(sys.argv) > 1:
     attack = sys.argv[1]
 
