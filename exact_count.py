@@ -158,7 +158,7 @@ for cix, c in enumerate(num_cols):
         df_syn = Synthesizer(df[[col0]]).sample()
         noisy_counts = [0,0]
         for i in [0,1]:
-            noisy_counts[i] = df_syn[df[col0] == i].shape[0]
+            noisy_counts[i] = df_syn[df_syn[col0] == i].shape[0]
         results = get_precision(noisy_counts, exact_counts)
         precision[ckey]['results']['1dim'].append(results)
         precision[ckey]['scores']['1dim'] += results['correct']
