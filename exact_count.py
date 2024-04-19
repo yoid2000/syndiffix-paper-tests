@@ -100,19 +100,23 @@ def get_precision(noisy_counts, exact_counts):
             guesses_correct.append(1)
         else:
             guesses_correct.append(0)
-    return {'correct': guesses_correct, 'guessed': guessed_rounded, 'exact': exact_counts}
+    errors = [abs(guessed_rounded[i] - exact_counts[i]) for i in [0,1]]
+    return {'correct': guesses_correct, 'guessed': guessed_rounded, 'exact': exact_counts, 'errors': errors}
 
 def summarize_and_dump(precision, ckey):
-    precision[ckey]['averages']['1dim'] = statistics.mean(precision[ckey]['scores']['1dim'])
-    precision[ckey]['std_devs']['1dim'] = statistics.stdev(precision[ckey]['scores']['1dim'])
+    precision[ckey]['correct_averages']['1dim'] = statistics.mean(precision[ckey]['scores']['1dim'])
+    precision[ckey]['error_averages']['1dim'] = statistics.mean(precision[ckey]['errors']['1dim'])
+    precision[ckey]['error_std_devs']['1dim'] = statistics.stdev(precision[ckey]['errors']['1dim'])
     precision[ckey]['samples']['1dim'] = len(precision[ckey]['scores']['1dim'])
     if TWO_COLS:
-        precision[ckey]['averages']['2dim'] = statistics.mean(precision[ckey]['scores']['2dim'])
-        precision[ckey]['std_devs']['2dim'] = statistics.stdev(precision[ckey]['scores']['2dim'])
+        precision[ckey]['correct_averages']['2dim'] = statistics.mean(precision[ckey]['scores']['2dim'])
+        precision[ckey]['error_averages']['2dim'] = statistics.mean(precision[ckey]['errors']['1dim'])
+        precision[ckey]['error_std_devs']['2dim'] = statistics.stdev(precision[ckey]['errors']['2dim'])
         precision[ckey]['samples']['2dim'] = len(precision[ckey]['scores']['2dim'])
     if THREE_COLS:
-        precision[ckey]['averages']['3dim'] = statistics.mean(precision[ckey]['scores']['3dim'])
-        precision[ckey]['std_devs']['3dim'] = statistics.stdev(precision[ckey]['scores']['3dim'])
+        precision[ckey]['correct_averages']['3dim'] = statistics.mean(precision[ckey]['scores']['3dim'])
+        precision[ckey]['error_averages']['3dim'] = statistics.mean(precision[ckey]['errors']['1dim'])
+        precision[ckey]['error_std_devs']['3dim'] = statistics.stdev(precision[ckey]['errors']['3dim'])
         precision[ckey]['samples']['3dim'] = len(precision[ckey]['scores']['3dim'])
     print(precision)
     # dump precision as a json file
@@ -126,8 +130,9 @@ precision = {}
 for cix, c in enumerate(num_cols):
     ckey = f"{c} cols"
     precision[ckey] = {
-                    'averages': {'1dim': 0, '2dim': 0, '3dim': 0},
-                    'std_devs': {'1dim': 0, '2dim': 0, '3dim': 0},
+                    'correct_averages': {'1dim': 0, '2dim': 0, '3dim': 0},
+                    'error_averages': {'1dim': 0, '2dim': 0, '3dim': 0},
+                    'error_std_devs': {'1dim': 0, '2dim': 0, '3dim': 0},
                     'samples': {'1dim': 0, '2dim': 0, '3dim': 0},
                     'scores': {'1dim': [], '2dim': [], '3dim': []},
                     'results': {'1dim': [], '2dim': [], '3dim': []},
@@ -152,6 +157,7 @@ for cix, c in enumerate(num_cols):
         results = get_precision(noisy_counts[0], exact_counts)
         precision[ckey]['results']['1dim'].append(results)
         precision[ckey]['scores']['1dim'] += results['correct']
+        precision[ckey]['errors']['1dim'] += results['errors']
         if TWO_COLS and this_try <= samples_per_2col:
             for col in cols_without_col0:
                 df_syn = Synthesizer(df[[col0,col]]).sample()
@@ -161,6 +167,7 @@ for cix, c in enumerate(num_cols):
             results = get_precision(noisy_counts[1], exact_counts)
             precision[ckey]['results']['2dim'].append(results)
             precision[ckey]['scores']['2dim'] += results['correct']
+            precision[ckey]['errors']['2dim'] += results['errors']
             #print(f"{c}-{this_try}.2 (of {samples_per_2col})", flush=True)
         if THREE_COLS and this_try <= samples_per_3col:
             for comb in itertools.combinations(cols_without_col0, 2):
@@ -172,6 +179,7 @@ for cix, c in enumerate(num_cols):
             results = get_precision(noisy_counts[2], exact_counts)
             precision[ckey]['results']['3dim'].append(results)
             precision[ckey]['scores']['3dim'] += results['correct']
+            precision[ckey]['errors']['2dim'] += results['errors']
             print(f"{c}-{this_try}.3 (of {samples_per_3col})", flush=True)
             summarize_and_dump(precision, ckey)
     summarize_and_dump(precision, ckey)
