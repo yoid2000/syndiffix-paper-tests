@@ -145,7 +145,7 @@ for cix, c in enumerate(num_cols):
     samples_per_3col = max(20, min_samples / (((c-1) * (c-2)) / 2))
     for this_try in range(min_samples):
         # set the seed for np.random
-        np.random.seed(str(this_try) + str(c))
+        np.random.seed(this_try + (c * 1000000))
         df = pd.DataFrame(np.random.randint(0, 2, size=(num_rows, c)), 
                           columns=[f'col{this_try}_{i}' for i in range(c)])
         true_row_count = df.shape[0]
