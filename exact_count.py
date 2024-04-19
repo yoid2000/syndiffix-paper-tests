@@ -165,7 +165,7 @@ for cix, c in enumerate(num_cols):
                 #print_progress_wheel(wheel)
                 for i in [0,1]:
                     noisy_counts[2][i].append(df_syn[df_syn[col0] == i].shape[0])
-            precision[ckey][['scores']'3dim'].append(get_precision(noisy_counts[2], exact_counts))
+            precision[ckey]['scores']['3dim'].append(get_precision(noisy_counts[2], exact_counts))
             print(f"{c}-{this_try}.3 (of {samples_per_3col})", flush=True)
             summarize_and_dump(precision, ckey)
     summarize_and_dump(precision, ckey)
