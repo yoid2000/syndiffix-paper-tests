@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import numpy as np
 import statistics
@@ -31,6 +32,19 @@ TWO_COLS = True
 THREE_COLS = True
 attack_keys = ['1dim', '2dim', '3dim']
 
+# read command line arguments
+if len(sys.argv) == 1:
+    attack == 'do_simple'
+if len(sys.argv) > 1:
+    attack = sys.argv[1]
+
+if attack == 'do_simple':
+    outFile = 'exact_count_precision_simple.json'	
+elif attack == 'do_least_accurate':
+    outFile = 'exact_count_precision_least_accurate.json'
+elif attack == 'do_random':
+    outFile = 'exact_count_precision_random.json'
+
 def print_progress_wheel(wheel):
     print(next(wheel) + '\b', end='', flush=True)
 
@@ -47,39 +61,64 @@ def get_precision(noisy_counts, exact_counts):
     # We know that the sum of noisy counts should be equal to the true row 
     # count, so if not we adjust to make it so
     guessed_floats = [sum(noisy_counts[i])/len(noisy_counts[i]) for i in [0,1]]
-    # The the decimal part of the guessed_floats
-    guessed_decimals = [g - int(g) for g in guessed_floats]
-    # These guessed_counts are floating point numbers. Although it
-    # probably doesn't much matter, let's assume that if we need to 
-    # adjust one count, it is best to adjust the one that is the
-    # least accurate.
-    guessed_acc = [abs(0.5 - g) for g in guessed_decimals]
-    if guessed_acc[0] < guessed_acc[1]:
-        adjust_target = 0
-    else:
-        adjust_target = 1
     guessed_rounded = [round(g) for g in guessed_floats]
-    adjustment = true_row_count - sum(guessed_rounded)
-    while abs(adjustment) > 1:
-        # If we need to adjust by two, then we adjust both counts
-        if adjustment > 0:
-            for i in [0,1]:
-                guessed_rounded[i] += 1
-            adjustment -= 2
+    if attack == 'do_least_accurate':
+        # The the decimal part of the guessed_floats
+        guessed_decimals = [g - int(g) for g in guessed_floats]
+        # These guessed_counts are floating point numbers. Although it
+        # probably doesn't much matter, let's assume that if we need to 
+        # adjust one count, it is best to adjust the one that is the
+        # least accurate.
+        guessed_acc = [abs(0.5 - g) for g in guessed_decimals]
+        if guessed_acc[0] < guessed_acc[1]:
+            adjust_target = 0
         else:
-            for i in [0,1]:
-                guessed_rounded[i] -= 1
-            adjustment += 2
-    # Now we need to adjust by -1, 0, or 1
-    if adjustment == 1:
-        guessed_rounded[adjust_target] += 1
-    elif adjustment == -1:
-        guessed_rounded[adjust_target] -= 1
+            adjust_target = 1
+    elif attack == 'do_random':
+        # Randomly choose which count to adjust
+        adjust_target = np.random.randint(0,2)
+    if attack != 'do_simple':
+        adjustment = true_row_count - sum(guessed_rounded)
+        while abs(adjustment) > 1:
+            # If we need to adjust by two, then we adjust both counts
+            if adjustment > 0:
+                for i in [0,1]:
+                    guessed_rounded[i] += 1
+                adjustment -= 2
+            else:
+                for i in [0,1]:
+                    guessed_rounded[i] -= 1
+                adjustment += 2
+        # Now we need to adjust by -1, 0, or 1
+        if adjustment == 1:
+            guessed_rounded[adjust_target] += 1
+        elif adjustment == -1:
+            guessed_rounded[adjust_target] -= 1
+    guesses_correct = []
     for i in [0,1]:
         guess = guessed_rounded[i]
         if guess == exact_counts[i]:
-            num_correct += 1
-    return round((num_correct/2)*100)
+            guesses_correct.append(1)
+        else:
+            guesses_correct.append(0)
+    return {'correct': guesses_correct, 'guessed': guessed_rounded, 'exact': exact_counts}
+
+def summarize_and_dump(precision, ckey):
+    precision[ckey]['averages']['1dim'] = statistics.mean(precision[ckey]['scores']['1dim'])
+    precision[ckey]['std_devs']['1dim'] = statistics.stdev(precision[ckey]['scores']['1dim'])
+    precision[ckey]['samples']['1dim'] = len(precision[ckey]['scores']['1dim'])
+    if TWO_COLS:
+        precision[ckey]['averages']['2dim'] = statistics.mean(precision[ckey]['scores']['2dim'])
+        precision[ckey]['std_devs']['2dim'] = statistics.stdev(precision[ckey]['scores']['2dim'])
+        precision[ckey]['samples']['2dim'] = len(precision[ckey]['scores']['2dim'])
+    if THREE_COLS:
+        precision[ckey]['averages']['3dim'] = statistics.mean(precision[ckey]['scores']['3dim'])
+        precision[ckey]['std_devs']['3dim'] = statistics.stdev(precision[ckey]['scores']['3dim'])
+        precision[ckey]['samples']['3dim'] = len(precision[ckey]['scores']['3dim'])
+    print(precision)
+    # dump precision as a json file
+    with open(outFile, 'w') as f:
+        json.dump(precision, f, indent=4)
 
 wheel = progress_wheel()
 precision = {}
@@ -87,7 +126,12 @@ precision = {}
 
 for cix, c in enumerate(num_cols):
     ckey = f"{c} cols"
-    precision[ckey] = {'1dim': [], '2dim': [], '3dim': []}
+    precision[ckey] = {
+                    'averages': {'1dim': 0, '2dim': 0, '3dim': 0},
+                    'std_devs': {'1dim': 0, '2dim': 0, '3dim': 0},
+                    'samples': {'1dim': 0, '2dim': 0, '3dim': 0}
+                    'scores': {'1dim': [], '2dim': [], '3dim': []}
+                    }
     num_correct = [0,0]
     noisy_counts = [[[],[]], [[],[]], [[],[]]]
     samples_per_2col = max(20, min_samples / (c - 1))
@@ -105,33 +149,23 @@ for cix, c in enumerate(num_cols):
         df_syn = Synthesizer(df[[col0]]).sample()
         for i in [0,1]:
             noisy_counts[0][i].append(df_syn[df_syn[col0] == i].shape[0])
-        precision[ckey]['1dim'].append(get_precision(noisy_counts[0], exact_counts))
+        precision[ckey]['scores']['1dim'].append(get_precision(noisy_counts[0], exact_counts))
         if TWO_COLS and this_try <= samples_per_2col:
             for col in cols_without_col0:
                 df_syn = Synthesizer(df[[col0,col]]).sample()
-                print_progress_wheel(wheel)
+                #print_progress_wheel(wheel)
                 for i in [0,1]:
                     noisy_counts[1][i].append(df_syn[df_syn[col0] == i].shape[0])
-            precision[ckey]['2dim'].append(get_precision(noisy_counts[1], exact_counts))
-            print(f"{c}-{this_try}.2 (of {samples_per_2col})", flush=True)
+            precision[ckey]['scores']['2dim'].append(get_precision(noisy_counts[1], exact_counts))
+            #print(f"{c}-{this_try}.2 (of {samples_per_2col})", flush=True)
         if THREE_COLS and this_try <= samples_per_3col:
             for comb in itertools.combinations(cols_without_col0, 2):
                 cols = [col0] + list(comb)
                 df_syn = Synthesizer(df[cols]).sample()
-                print_progress_wheel(wheel)
+                #print_progress_wheel(wheel)
                 for i in [0,1]:
                     noisy_counts[2][i].append(df_syn[df_syn[col0] == i].shape[0])
-            precision[ckey]['3dim'].append(get_precision(noisy_counts[2], exact_counts))
+            precision[ckey][['scores']'3dim'].append(get_precision(noisy_counts[2], exact_counts))
             print(f"{c}-{this_try}.3 (of {samples_per_3col})", flush=True)
-    precision[ckey]['1dim'] = statistics.mean(precision[ckey]['1dim'])
-    precision[ckey]['samples'] = min_samples
-    if TWO_COLS:
-        precision[ckey]['2dim'] = statistics.mean(precision[ckey]['2dim'])
-        precision[ckey]['samples'] = samples_per_2col
-    if THREE_COLS:
-        precision[ckey]['3dim'] = statistics.mean(precision[ckey]['3dim'])
-        precision[ckey]['samples'] = samples_per_3col
-    print(precision)
-    # dump precision as a json file
-    with open('exact_count_precision.json', 'w') as f:
-        json.dump(precision, f, indent=4)
+            summarize_and_dump(precision, ckey)
+    summarize_and_dump(precision, ckey)
