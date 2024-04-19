@@ -129,7 +129,8 @@ for cix, c in enumerate(num_cols):
                     'averages': {'1dim': 0, '2dim': 0, '3dim': 0},
                     'std_devs': {'1dim': 0, '2dim': 0, '3dim': 0},
                     'samples': {'1dim': 0, '2dim': 0, '3dim': 0},
-                    'scores': {'1dim': [], '2dim': [], '3dim': []}
+                    'scores': {'1dim': [], '2dim': [], '3dim': []},
+                    'results': {'1dim': [], '2dim': [], '3dim': []},
                     }
     num_correct = [0,0]
     noisy_counts = [[[],[]], [[],[]], [[],[]]]
@@ -148,14 +149,18 @@ for cix, c in enumerate(num_cols):
         df_syn = Synthesizer(df[[col0]]).sample()
         for i in [0,1]:
             noisy_counts[0][i].append(df_syn[df_syn[col0] == i].shape[0])
-        precision[ckey]['scores']['1dim'].append(get_precision(noisy_counts[0], exact_counts))
+        results = get_precision(noisy_counts[0], exact_counts)
+        precision[ckey]['results']['1dim'].append(results)
+        precision[ckey]['scores']['1dim'] += results['correct']
         if TWO_COLS and this_try <= samples_per_2col:
             for col in cols_without_col0:
                 df_syn = Synthesizer(df[[col0,col]]).sample()
                 #print_progress_wheel(wheel)
                 for i in [0,1]:
                     noisy_counts[1][i].append(df_syn[df_syn[col0] == i].shape[0])
-            precision[ckey]['scores']['2dim'].append(get_precision(noisy_counts[1], exact_counts))
+            results = get_precision(noisy_counts[1], exact_counts)
+            precision[ckey]['results']['2dim'].append(results)
+            precision[ckey]['scores']['2dim'] += results['correct']
             #print(f"{c}-{this_try}.2 (of {samples_per_2col})", flush=True)
         if THREE_COLS and this_try <= samples_per_3col:
             for comb in itertools.combinations(cols_without_col0, 2):
@@ -164,7 +169,9 @@ for cix, c in enumerate(num_cols):
                 #print_progress_wheel(wheel)
                 for i in [0,1]:
                     noisy_counts[2][i].append(df_syn[df_syn[col0] == i].shape[0])
-            precision[ckey]['scores']['3dim'].append(get_precision(noisy_counts[2], exact_counts))
+            results = get_precision(noisy_counts[2], exact_counts)
+            precision[ckey]['results']['3dim'].append(results)
+            precision[ckey]['scores']['3dim'] += results['correct']
             print(f"{c}-{this_try}.3 (of {samples_per_3col})", flush=True)
             summarize_and_dump(precision, ckey)
     summarize_and_dump(precision, ckey)
