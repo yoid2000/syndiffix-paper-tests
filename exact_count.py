@@ -39,10 +39,8 @@ if len(sys.argv) > 1:
 
 if attack == 'do_simple':
     outFile = 'exact_count_precision_simple.json'	
-elif attack == 'do_least_accurate':
-    outFile = 'exact_count_precision_least_accurate.json'
-elif attack == 'do_random':
-    outFile = 'exact_count_precision_random.json'
+elif attack == 'do_adjust':
+    outFile = 'exact_count_precision_adjust.json'
 
 def print_progress_wheel(wheel):
     print(next(wheel) + '\b', end='', flush=True)
@@ -59,48 +57,35 @@ def get_precision(noisy_counts, exact_counts):
     true_row_count = sum(exact_counts)
     # We know that the sum of noisy counts should be equal to the true row 
     # count, so if not we adjust to make it so
-    guessed_rounded = [round(g) for g in noisy_counts]
-    if attack == 'do_least_accurate':
-        # The the decimal part of the noisy_counts
-        guessed_decimals = [g - int(g) for g in noisy_counts]
-        # These guessed_counts are floating point numbers. Although it
-        # probably doesn't much matter, let's assume that if we need to 
-        # adjust one count, it is best to adjust the one that is the
-        # least accurate.
-        guessed_acc = [abs(0.5 - g) for g in guessed_decimals]
-        if guessed_acc[0] < guessed_acc[1]:
-            adjust_target = 0
-        else:
-            adjust_target = 1
-    elif attack == 'do_random':
-        # Randomly choose which count to adjust
+    if attack == 'do_adjust':
         adjust_target = np.random.randint(0,2)
-    if attack != 'do_simple':
-        adjustment = true_row_count - sum(guessed_rounded)
-        while abs(adjustment) > 1:
-            # If we need to adjust by two, then we adjust both counts
-            if adjustment > 0:
-                for i in [0,1]:
-                    guessed_rounded[i] += 1
-                adjustment -= 2
-            else:
-                for i in [0,1]:
-                    guessed_rounded[i] -= 1
-                adjustment += 2
-        # Now we need to adjust by -1, 0, or 1
-        if adjustment == 1:
-            guessed_rounded[adjust_target] += 1
-        elif adjustment == -1:
-            guessed_rounded[adjust_target] -= 1
+        for s in range(len(noisy_counts[0])):
+            adjustment = true_row_count - (noisy_counts[0][s] + noisy_counts[1][s])
+            while abs(adjustment) > 1:
+                # If we need to adjust by two, then we adjust both counts
+                if adjustment > 0:
+                    for i in [0,1]:
+                        noisy_counts[i][s] += 1
+                    adjustment -= 2
+                else:
+                    for i in [0,1]:
+                        noisy_counts[i][s] -= 1
+                    adjustment += 2
+            # Now we need to adjust by -1, 0, or 1
+            if adjustment == 1:
+                noisy_counts[adjust_target][s] += 1
+            elif adjustment == -1:
+                noisy_counts[adjust_target][s] -= 1
+    guesses = [round(sum(noisy_counts[i])/len(noisy_counts[i])) for i in [0,1]]
     guesses_correct = []
     for i in [0,1]:
-        guess = guessed_rounded[i]
+        guess = guesses[i]
         if guess == exact_counts[i]:
             guesses_correct.append(1)
         else:
             guesses_correct.append(0)
-    errors = [abs(guessed_rounded[i] - exact_counts[i]) for i in [0,1]]
-    return {'correct': guesses_correct, 'guessed': guessed_rounded, 'exact': exact_counts, 'errors': errors}
+    errors = [abs(guesses[i] - exact_counts[i]) for i in [0,1]]
+    return {'correct': guesses_correct, 'guessed': guesses, 'exact': exact_counts, 'errors': errors}
 
 def summarize_and_dump(precision, ckey):
     precision[ckey]['correct_averages']['1dim'] = statistics.mean(precision[ckey]['scores']['1dim'])
@@ -156,37 +141,33 @@ for cix, c in enumerate(num_cols):
         for i in [0,1]:
             exact_counts[i] = df[df[col0] == i].shape[0]
         df_syn = Synthesizer(df[[col0]]).sample()
-        noisy_counts = [0,0]
+        noisy_counts = [[],[]]
         for i in [0,1]:
-            noisy_counts[i] = df_syn[df_syn[col0] == i].shape[0]
+            noisy_counts[i].append(df_syn[df_syn[col0] == i].shape[0])
         results = get_precision(noisy_counts, exact_counts)
         precision[ckey]['results']['1dim'].append(results)
         precision[ckey]['scores']['1dim'] += results['correct']
         precision[ckey]['errors']['1dim'] += results['errors']
         if TWO_COLS and this_try <= samples_per_2col:
-            noisy_counts = [0,0]
+            noisy_counts = [[],[]]
             for col in cols_without_col0:
                 df_syn = Synthesizer(df[[col0,col]]).sample()
                 #print_progress_wheel(wheel)
                 for i in [0,1]:
-                    noisy_counts[i] += df_syn[df_syn[col0] == i].shape[0]
-            for i in [0,1]:
-                noisy_counts[i] = noisy_counts[i] / len(cols_without_col0)
+                    noisy_counts[i].append(df_syn[df_syn[col0] == i].shape[0])
             results = get_precision(noisy_counts, exact_counts)
             precision[ckey]['results']['2dim'].append(results)
             precision[ckey]['scores']['2dim'] += results['correct']
             precision[ckey]['errors']['2dim'] += results['errors']
             #print(f"{c}-{this_try}.2 (of {samples_per_2col})", flush=True)
         if THREE_COLS and this_try <= samples_per_3col:
-            noisy_counts = [0,0]
+            noisy_counts = [[],[]]
             for comb in itertools.combinations(cols_without_col0, 2):
                 cols = [col0] + list(comb)
                 df_syn = Synthesizer(df[cols]).sample()
                 #print_progress_wheel(wheel)
                 for i in [0,1]:
-                    noisy_counts[i] += df_syn[df_syn[col0] == i].shape[0]
-            for i in [0,1]:
-                noisy_counts[i] = noisy_counts[i] / len(cols_without_col0)
+                    noisy_counts[i].append(df_syn[df_syn[col0] == i].shape[0])
             results = get_precision(noisy_counts, exact_counts)
             precision[ckey]['results']['3dim'].append(results)
             precision[ckey]['scores']['3dim'] += results['correct']
