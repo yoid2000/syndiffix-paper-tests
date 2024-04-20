@@ -104,6 +104,10 @@ def do_attack(num_val, num_col, dim, num_row):
     dim: number of dimensions of the attack
     num_row: number of rows of the value being predicted
     '''
+    file_name = f'v{num_val}.c{num_col}.d{dim}.r{num_row}.json'
+    file_path = os.path.join('exact_count_results', file_name)
+    if os.path.exists(file_path):
+        return
     prec = {
         'num_val': num_val,
         'num_col': num_col,
@@ -149,9 +153,6 @@ def do_attack(num_val, num_col, dim, num_row):
     # make directory 'exact_count_results' if it does not exist
     if not os.path.exists('exact_count_results'):
         os.makedirs('exact_count_results')
-    file_name = f'v{num_val}.c{num_col}.d{dim}.r{num_row}.json'
-    # make a path for file_name in 'exact_count_results' directory
-    file_path = os.path.join('exact_count_results', file_name)
     with open(file_path, 'w') as f:
         json.dump(prec, f, indent=4)
 
