@@ -170,4 +170,5 @@ if make_slurm:
         f.write('#SBATCH --time=0-24:00\n')
         f.write('#SBATCH --mem=10G\n')
         f.write('#SBATCH --array=0-' + str(attack_num - 1) + '\n')
+        f.write('source ../sdx_tests/sdx_venv/bin/activate' + '\n')
         f.write('python exact_count.py $SLURM_ARRAY_TASK_ID\n')
