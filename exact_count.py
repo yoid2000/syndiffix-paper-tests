@@ -120,9 +120,9 @@ def do_attack(num_val, num_col, dim, num_row):
     if dim == 1:
         num_tries = min_samples
     elif dim == 2:
-        num_tries = max(20, min_samples / (num_col - 1))
+        num_tries = int(max(20, min_samples / (num_col - 1)))
     elif dim == 3:
-        num_tries = max(20, min_samples / (((num_col-1) * (num_col-2)) / 2))
+        num_tries = int(max(20, min_samples / (((num_col-1) * (num_col-2)) / 2)))
     for this_try in range(num_tries):
         # set the seed for np.random
         df = make_df(num_val, num_col, num_row, this_try)
@@ -169,6 +169,7 @@ if make_slurm:
         f.write('#!/bin/bash\n')
         f.write('#SBATCH --time=0-24:00\n')
         f.write('#SBATCH --mem=10G\n')
+        f.write('#SBATCH --output /dev/null\n')
         f.write('#SBATCH --array=0-' + str(attack_num - 1) + '\n')
         f.write('source ../sdx_tests/sdx_venv/bin/activate' + '\n')
         f.write('python exact_count.py $SLURM_ARRAY_TASK_ID\n')
