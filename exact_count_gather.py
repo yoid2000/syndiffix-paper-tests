@@ -17,4 +17,4 @@ for file in json_files:
 
 # Step 4: Write the list of dicts into a json file in the local directory called exact_count_data.json
 with open("exact_count_data.json", "w") as outfile:
-    json.dump(data_list, outfile)
+    json.dump(data_list, outfile, indent=4)
