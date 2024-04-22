@@ -140,12 +140,15 @@ def do_attack(num_val, num_col, dim, num_row):
         # get the count of the target value 0 for col0 in df
         noisy_counts = []
         for col_comb in col_combs:
-            df_syn = Synthesizer(df[col_comb]).sample()
-            noisy_counts.append(df_syn[df_syn[col0] == 0].shape[0])
+            syn = Synthesizer(df[col_comb])
+            df_syn = syn.sample()
+            ncount = df_syn[df_syn[col0] == 0].shape[0]
+            noisy_counts.append(ncount)
+            error = abs(ncount - exact_count)
+            if error not in prec['tree_walks']:
+                tw = TreeWalker(syn)
+                prec['tree_walks'][error] = tw.get_forest_nodes()
         result = get_precision(noisy_counts, exact_count, df.shape[0])
-        if result['error'] not in prec['tree_walks']:
-            tw = TreeWalker(syn)
-            prec['tree_walks'][result['errors']] = tw.get_forest_nodes()
         prec['results'].append(result)
         prec['scores'].append(result['correct'])
         prec['errors'].append(result['error'])
