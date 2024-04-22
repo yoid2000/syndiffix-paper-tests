@@ -5,6 +5,7 @@ import statistics
 import itertools
 import json
 from syndiffix import Synthesizer
+from syndiffix.common import AnonymizationParams
 from syndiffix_tools.tree_walker import *
 import os
 
@@ -67,8 +68,8 @@ def get_precision(noisy_counts, exact_count, true_row_count):
     error = abs(guess - exact_count)
     return {'correct': correct, 'guessed': guess, 'exact': exact_count, 'error': error}
 
-def make_df(num_val, num_col, num_row, this_try):
-    np.random.seed(this_try + (num_col * 100) + (num_val * 1000) + (num_row * 10000))
+def make_df(num_val, num_col, num_row, this_try, seed):
+    np.random.seed(seed)
     data = {}
     num_rows_base = base_rows_per_val * num_val
     num_rows_total = (base_rows_per_val * num_val) + num_row
@@ -132,7 +133,8 @@ def do_attack(num_val, num_col, dim, num_row):
         num_tries = int(max(20, min_samples / (((num_col-1) * (num_col-2)) / 2)))
     for this_try in range(num_tries):
         # set the seed for np.random
-        df = make_df(num_val, num_col, num_row, this_try)
+        seed = this_try + (num_col * 100) + (num_val * 1000) + (num_row * 10000)
+        df = make_df(num_val, num_col, num_row, this_try, seed)
         prec['total_table_rows'] = df.shape[0]
         col0 = f'col{this_try}_0'
         exact_count = df[df[col0] == 0].shape[0]
@@ -140,7 +142,9 @@ def do_attack(num_val, num_col, dim, num_row):
         # get the count of the target value 0 for col0 in df
         noisy_counts = []
         for col_comb in col_combs:
-            syn = Synthesizer(df[col_comb])
+            sdx_seed = str(seed).encode()
+            syn = Synthesizer(df[col_comb],
+                    anonymization_params=AnonymizationParams(salt=sdx_seed))
             df_syn = syn.sample()
             ncount = df_syn[df_syn[col0] == 0].shape[0]
             noisy_counts.append(ncount)
