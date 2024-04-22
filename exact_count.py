@@ -34,7 +34,8 @@ base_rows_per_val = 20
 # We want more runs for lower dimension data because each run has fewer samples
 # We need more runs to get significant results (3-column measures take a long time
 # to run)
-min_samples = 10000
+max_samples = 20000
+min_samples = 40
 TWO_COLS = True
 THREE_COLS = True
 attack_keys = ['1dim', '2dim', '3dim']
@@ -126,11 +127,11 @@ def do_attack(num_val, num_col, dim, num_row):
         'tree_walks': {}
     }
     if dim == 1:
-        num_tries = min_samples
+        num_tries = max_samples
     elif dim == 2:
-        num_tries = int(max(20, min_samples / (num_col - 1)))
+        num_tries = int(max(min_samples, max_samples / (num_col - 1)))
     elif dim == 3:
-        num_tries = int(max(20, min_samples / (((num_col-1) * (num_col-2)) / 2)))
+        num_tries = int(max(min_samples, max_samples / (((num_col-1) * (num_col-2)) / 2)))
     for this_try in range(num_tries):
         # set the seed for np.random
         seed = this_try + (num_col * 100) + (num_val * 1000) + (num_row * 10000)
@@ -142,6 +143,7 @@ def do_attack(num_val, num_col, dim, num_row):
         # get the count of the target value 0 for col0 in df
         noisy_counts = []
         for col_comb in col_combs:
+            # Set the SynDiffix salt to avoid the same noise across different experimantal settings
             sdx_seed = str(seed).encode()
             syn = Synthesizer(df[col_comb],
                     anonymization_params=AnonymizationParams(salt=sdx_seed))
