@@ -5,6 +5,7 @@ import statistics
 import itertools
 import json
 from syndiffix import Synthesizer
+from syndiffix_tools.tree_walker import *
 import os
 
 '''
@@ -117,9 +118,11 @@ def do_attack(num_val, num_col, dim, num_row):
         'error_averages': 0,
         'error_std_devs': 0,
         'samples': 0,
+        'total_table_rows': 0,
         'errors': [],
         'scores': [],
         'results': [],
+        'tree_walks': {}
     }
     if dim == 1:
         num_tries = min_samples
@@ -130,6 +133,7 @@ def do_attack(num_val, num_col, dim, num_row):
     for this_try in range(num_tries):
         # set the seed for np.random
         df = make_df(num_val, num_col, num_row, this_try)
+        prec['total_table_rows'] = df.shape[0]
         col0 = f'col{this_try}_0'
         exact_count = df[df[col0] == 0].shape[0]
         col_combs = get_col_combs(df, col0, dim)
@@ -139,6 +143,9 @@ def do_attack(num_val, num_col, dim, num_row):
             df_syn = Synthesizer(df[col_comb]).sample()
             noisy_counts.append(df_syn[df_syn[col0] == 0].shape[0])
         result = get_precision(noisy_counts, exact_count, df.shape[0])
+        if result['errors'] not in prec['tree_walks']:
+            tw = TreeWalker(syn)
+            prec['tree_walks'][result['errors']] = tw.get_forest_nodes()
         prec['results'].append(result)
         prec['scores'].append(result['correct'])
         prec['errors'].append(result['error'])

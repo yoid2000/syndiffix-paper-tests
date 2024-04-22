@@ -21,3 +21,9 @@ Run `generate_all_sdx_combs.py`. This creates the file:
 * `slurmGenSdx`, which is the slurm shell script needed to create the synthetic datasets
 
 Run `sbatch slurmGenSdx`. This creates all of the SynDiffix synthetic datasets needed for our tests. This will consist of all 1dim, 2dim, and 3dim combinations of all of the test datasets.
+
+# Attacks
+
+### Exact Count
+
+This attack tries to determine the exact count of some aggregate (i.e. the number of columns with value V in column C). This is not an attack in and of itself, because an aggregate zzzz
