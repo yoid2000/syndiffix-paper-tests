@@ -143,7 +143,7 @@ def do_attack(num_val, num_col, dim, num_row):
             df_syn = Synthesizer(df[col_comb]).sample()
             noisy_counts.append(df_syn[df_syn[col0] == 0].shape[0])
         result = get_precision(noisy_counts, exact_count, df.shape[0])
-        if result['errors'] not in prec['tree_walks']:
+        if result['error'] not in prec['tree_walks']:
             tw = TreeWalker(syn)
             prec['tree_walks'][result['errors']] = tw.get_forest_nodes()
         prec['results'].append(result)

@@ -161,3 +161,4 @@ cython_debug/
 
 exact_count_results/
 exact_count_slurm.sh
+out.txt
