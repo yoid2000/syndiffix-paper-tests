@@ -11,7 +11,7 @@ with open('./results/exact_count_data.json', 'r') as f:
 # Convert the list of dicts to a DataFrame
 df = pd.DataFrame(data)
 df = df[['num_row', 'num_val', 'dim', 'num_col', 'correct_averages']]
-print(df.to_string())
+#print(df.to_string())
 
 # Create a new column labeled "num_row_num_val"
 df['num_row_num_val'] = df['num_row'].astype(str) + ':' + df['num_val'].astype(str)
