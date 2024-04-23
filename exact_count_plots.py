@@ -51,9 +51,17 @@ for thing in zip(df[['color', 'marker', 'size']].drop_duplicates().values):
 plt.xlabel('Aggregate True Count : Number of Other Column Values', fontsize=12)
 plt.ylabel('Precision', fontsize=12)
 
+# Set the range of the y-axis
+plt.ylim([-0.05, 1.05])  # Replace with your desired range
+
+# Add horizontal grid lines
+plt.grid(axis='y')
+
 # Create legend
 legend_elements = [mlines.Line2D([0], [0], color=dim_styles[dim][0], marker=dim_styles[dim][1], linestyle='None', markersize=5, label=f"Attack dims {dim}") for dim in dim_styles]
-plt.legend(handles=legend_elements)
+legend1 = plt.legend(handles=legend_elements, fontsize='small')
+plt.legend([mlines.Line2D([0], [0], color='black', marker='o', markersize=size/10, linestyle='None') for num_col, size in size_map.items()], ['Columns: {}'.format(num_col) for num_col in size_map.keys()], title='', loc='lower left', bbox_to_anchor=(0, 0.5), fontsize='small')
+plt.gca().add_artist(legend1)
 
 # Save the plot
 plt.savefig('./results/exact_count_prec_agg.png', bbox_inches='tight', dpi=300)	

@@ -112,7 +112,7 @@ plt.ylabel('Precision Improvement', fontsize=13, labelpad=10)
 # Create legends
 legend1 = plt.legend([mlines.Line2D([0], [0], color='black', marker=marker, linestyle='None') for sd_gap, marker in marker_map.items()], ['sd_gap: {}'.format(sd_gap) for sd_gap in marker_map.keys()], title='', loc='lower left', bbox_to_anchor=(0.3, 0), fontsize='small')
 legend2 = plt.legend([mlines.Line2D([0], [0], color=color, marker='o', linestyle='None') for rows_ratio, color in color_map.items()], ['rows_ratio: {}'.format(rows_ratio) for rows_ratio in color_map.keys()], title='', loc='lower left', bbox_to_anchor=(0.5, 0), fontsize='small')
-legend3 = plt.legend([mlines.Line2D([0], [0], color='black', marker='o', markersize=size/10, linestyle='None') for num_targets, size in size_map.items()], ['num_targets: {}'.format(num_targets) for num_targets in size_map.keys()], title='', loc='lower left', bbox_to_anchor=(0.75, 0), fontsize='small')
+plt.legend([mlines.Line2D([0], [0], color='black', marker='o', markersize=size/10, linestyle='None') for num_targets, size in size_map.items()], ['num_targets: {}'.format(num_targets) for num_targets in size_map.keys()], title='', loc='lower left', bbox_to_anchor=(0.75, 0), fontsize='small')
 
 plt.gca().add_artist(legend1)
 plt.gca().add_artist(legend2)
@@ -124,12 +124,6 @@ plt.xticks(ticks, labels)
 
 # Set x-axis range to min and max 'coverage' values
 plt.xlim(1/(30000 + 5000), 0.02)
-
-# Adjust the layout
-plt.subplots_adjust(right=0.85)  # Adjust this value as needed
-plt.tight_layout()
-
-plt.show()
 
 # Create the path to suppress.png
 path_to_suppress_png = os.path.join('results', 'suppress.png')

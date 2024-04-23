@@ -6,7 +6,6 @@ import itertools
 import json
 from syndiffix import Synthesizer
 from syndiffix.common import AnonymizationParams
-from syndiffix_tools.tree_walker import *
 import os
 
 '''
@@ -25,6 +24,9 @@ datasets, we have 200/8=25 expected rows per combination, which is well above th
 suppression limit
 '''
 
+TEST = False
+if TEST is False:
+    from syndiffix_tools.tree_walker import *
 num_other_rows = 50
 num_cols = [20, 40, 80, 160]
 num_vals = [2, 4, 8]
@@ -85,7 +87,9 @@ def make_df(num_val, num_col, num_row, this_try, seed):
             # The remaining columns each have num_val distinct values, uniformly randomly assigned
             values = np.random.choice(range(num_val), num_rows_total)
             data[f'col{this_try}_{i}'] = values
-    return pd.DataFrame(data)
+    df = pd.DataFrame(data)
+    df = df.sample(frac=1).reset_index(drop=True)
+    return df
 
 def get_col_combs(df, col0, dim):
     cols_without_col0 = [col for col in df.columns if col != col0]
@@ -108,8 +112,9 @@ def do_attack(num_val, num_col, dim, num_row):
     num_row: number of rows of the value being predicted
     '''
     file_name = f'v{num_val}.c{num_col}.d{dim}.r{num_row}.json'
+    if TEST: print(file_name)
     file_path = os.path.join('exact_count_results', file_name)
-    if os.path.exists(file_path):
+    if TEST is False and os.path.exists(file_path):
         return
     prec = {
         'num_val': num_val,
@@ -135,12 +140,15 @@ def do_attack(num_val, num_col, dim, num_row):
     for this_try in range(num_tries):
         # set the seed for np.random
         seed = this_try + (num_col * 100) + (num_val * 1000) + (num_row * 10000)
+        if TEST: print(seed)
+        if TEST: continue
         df = make_df(num_val, num_col, num_row, this_try, seed)
         prec['total_table_rows'] = df.shape[0]
         col0 = f'col{this_try}_0'
         exact_count = df[df[col0] == 0].shape[0]
         col_combs = get_col_combs(df, col0, dim)
         # get the count of the target value 0 for col0 in df
+        if TEST: print(col_combs)
         noisy_counts = []
         for col_comb in col_combs:
             # Set the SynDiffix salt to avoid the same noise across different experimantal settings
@@ -151,13 +159,14 @@ def do_attack(num_val, num_col, dim, num_row):
             ncount = df_syn[df_syn[col0] == 0].shape[0]
             noisy_counts.append(ncount)
             error = abs(ncount - exact_count)
-            if error not in prec['tree_walks']:
+            if TEST is False and error not in prec['tree_walks']:
                 tw = TreeWalker(syn)
                 prec['tree_walks'][error] = tw.get_forest_nodes()
         result = get_precision(noisy_counts, exact_count, df.shape[0])
         prec['results'].append(result)
         prec['scores'].append(result['correct'])
         prec['errors'].append(result['error'])
+    if TEST: return
     prec['correct_averages'] = statistics.mean(prec['scores'])
     prec['error_averages'] = statistics.mean(prec['errors'])
     if len(prec['errors']) > 1:
