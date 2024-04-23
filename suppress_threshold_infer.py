@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import numpy as np
 import json
@@ -28,6 +29,8 @@ is the number of distinct target attribute (i.e. B) values that exist. This
 parameter effects the baseline statistical prediction that an attacker can make.
 For instance, if there are 5 target values, then a prediction that the victim
 has the target value has a precision of 20%.
+
+The second table parameter is rows_multiplier. 
 '''
 '''
 class SuppressionParams:
@@ -41,7 +44,7 @@ pp = pprint.PrettyPrinter(indent=4)
 low_mean_gaps = [2.0, 3.0, 4.0]
 num_target_vals = [2, 5, 10]
 rows_multiplier = [5, 10, 100]
-num_tries_by_lmg = [2000, 10000, 20000]
+num_tries_by_lmg = [10000, 20000, 30000]
 DO_WALK = False
 
 results = {}
@@ -104,6 +107,10 @@ for rows_mult in rows_multiplier:
                         results[rm_key][ntv_key][lmg_key]['tn'] += 1
 
         print(results)
+# make a path to suppress_threshold_results.json in directory results
+if not os.path.exists('results'):
+    os.makedirs('results')
+json_path = os.path.join('results', 'suppress_threshold_results.json')
 # Dump results as a json file
-with open('suppress_threshold_results.json', 'w') as f:
+with open(json_path, 'w') as f:
     json.dump(results, f, indent=4)
