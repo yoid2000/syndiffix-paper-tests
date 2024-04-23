@@ -20,6 +20,14 @@ also has attribute B.  Because SynDiffix suppresses aggregates with two users,
 but may not suppress an aggregate with three users, if a row with attributes A
 and B are in the synthetic dataset (i.e. not suppressed), then the victim must
 have attribute B.
+
+We test several different values of the low_mean_gap.
+
+We test two different table parameters. One parameter is num_target_vals. This
+is the number of distinct target attribute (i.e. B) values that exist. This
+parameter effects the baseline statistical prediction that an attacker can make.
+For instance, if there are 5 target values, then a prediction that the victim
+has the target value has a precision of 20%.
 '''
 '''
 class SuppressionParams:

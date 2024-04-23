@@ -2,8 +2,11 @@ import json
 import pprint
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
 import seaborn as sns
 import numpy as np
+import os
+
 
 
 pp = pprint.PrettyPrinter(indent=4)
@@ -33,7 +36,8 @@ for multk, multv in results.items():
             gap = gaps[gapk]
             # This is the ratio of the number of rows with a given c1
             # to the number of rows with the victim's c1 value.
-            rows_ratio = (gapv['num_rows'] / tar) * 3
+            # 3 is the number of other c1 vals
+            rows_ratio = (gapv['num_rows'] / tar) / 3
             # This would be the TP rate if we made a statistical guess
             mean = 3 + gap
             stat_guess = 1 / tar
@@ -51,14 +55,14 @@ for multk, multv in results.items():
             # A value of 0 would screw up the log scale
             coverage = max(1/30000, coverage)
             data.append({
-                'gap': gap,
-                'mult': mult,
-                'tar': tar,
+                'sd_gap': int(gap),
+                'mult': int(mult),
+                'num_targets': int(tar),
                 'mean': mean,
                 'precision': precision,
                 'precision_improvement': precision_improvement,
                 'coverage': coverage,
-                'rows_ratio': rows_ratio,
+                'rows_ratio': int(rows_ratio),
                 'stat_guess': stat_guess,
                 'tp_rate': tp_rate,
                 'fp_rate': fp_rate,
@@ -73,30 +77,45 @@ for multk, multv in results.items():
             })
 
 df = pd.DataFrame(data)
+print(df[['sd_gap','sd_gap','num_targets','rows_ratio']].to_string())
 
-# Create a color map for the 'rows_ratio' column
-rows_ratio_colors = {rows_ratio_value: color for rows_ratio_value, color in zip(df['rows_ratio'].unique(), ['orange', 'red', 'blue'])}
-df['color'] = df['rows_ratio'].map(rows_ratio_colors)
+# Define the marker styles for sd_gap
+marker_map = {2: 'o', 3: '^', 4: 'v'}
 
-# Create a marker map for the 'mean' column
-mean_markers = {mean_value: marker for mean_value, marker in zip(df['mean'].unique(), ['o', 's', '^'])}
-df['marker'] = df['mean'].map(mean_markers)
+# Define the color map for rows_ratio
+colors = sns.color_palette()[:3]
+color_map = {5: colors[0], 10: colors[1], 100: colors[2]}
+
+# Define the size map for num_targets
+size_map = {2: 50, 5: 100, 10: 150}
 
 # Create the scatter plot
-plt.figure(figsize=(9, 4.5))
-for marker, mean in zip(df['marker'].unique(), df['mean'].unique()):
-    df_marker = df[df['marker'] == marker]
-    for color, rows_ratio in zip(df_marker['color'].unique(), df_marker['rows_ratio'].unique()):
-        df_marker_color = df_marker[df_marker['color'] == color]
-        plt.scatter(df_marker_color['coverage'], df_marker_color['precision_improvement'], c=df_marker_color['color'], marker=marker, label=f'rows_ratio={rows_ratio}, mean={mean}')
+plt.figure(figsize=(8, 4))
 
+for (sd_gap, marker) in marker_map.items():
+    for (rows_ratio, color) in color_map.items():
+        for (num_targets, size) in size_map.items():
+            df_filtered = df[(df['sd_gap'] == sd_gap) & (df['rows_ratio'] == rows_ratio) & (df['num_targets'] == num_targets)]
+            print(sd_gap, rows_ratio, num_targets)
+            print(df_filtered.to_string())
+            plt.scatter(df_filtered['coverage'], df_filtered['precision_improvement'], color=color, marker=marker, s=size, alpha=0.8)
+
+# Add horizontal lines
+plt.axhline(0, color='black', linestyle='--')
+plt.axhline(0.5, color='black', linestyle='--')
+
+# Set axis labels
 plt.xscale('log')
 plt.xlabel('Coverage (log scale)', fontsize=13, labelpad=10)
 plt.ylabel('Precision Improvement', fontsize=13, labelpad=10)
 
-# Add horizontal lines
-plt.axhline(0.0, color='black', linestyle='--')
-plt.axhline(0.5, color='black', linestyle='--')
+# Create legends
+legend1 = plt.legend([mlines.Line2D([0], [0], color='black', marker=marker, linestyle='None') for sd_gap, marker in marker_map.items()], ['sd_gap: {}'.format(sd_gap) for sd_gap in marker_map.keys()], title='', loc='lower left', bbox_to_anchor=(0.3, 0), fontsize='small')
+legend2 = plt.legend([mlines.Line2D([0], [0], color=color, marker='o', linestyle='None') for rows_ratio, color in color_map.items()], ['rows_ratio: {}'.format(rows_ratio) for rows_ratio in color_map.keys()], title='', loc='lower left', bbox_to_anchor=(0.5, 0), fontsize='small')
+legend3 = plt.legend([mlines.Line2D([0], [0], color='black', marker='o', markersize=size/10, linestyle='None') for num_targets, size in size_map.items()], ['num_targets: {}'.format(num_targets) for num_targets in size_map.keys()], title='', loc='lower left', bbox_to_anchor=(0.75, 0), fontsize='small')
+
+plt.gca().add_artist(legend1)
+plt.gca().add_artist(legend2)
 
 # Modify x-axis ticks and labels
 ticks = list(plt.xticks()[0]) + [1/30000]
@@ -106,9 +125,16 @@ plt.xticks(ticks, labels)
 # Set x-axis range to min and max 'coverage' values
 plt.xlim(1/(30000 + 5000), 0.02)
 
-plt.legend(ncol=2)
+# Adjust the layout
+plt.subplots_adjust(right=0.85)  # Adjust this value as needed
+plt.tight_layout()
+
+plt.show()
+
+# Create the path to suppress.png
+path_to_suppress_png = os.path.join('results', 'suppress.png')
 
 # Save the plot as a PNG file
-plt.savefig('suppress.png', dpi=300, bbox_inches='tight')
+plt.savefig(path_to_suppress_png, dpi=300, bbox_inches='tight')
 
 plt.close()
