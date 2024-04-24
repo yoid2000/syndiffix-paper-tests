@@ -25,6 +25,7 @@ def get_forest_stats(forest):
         comb = str(tuple(node['columns']))
         if comb not in stats['per_tree']:
             stats['per_tree'][comb] = {
+                'num_cols': len(node['columns']),
                 'num_nodes': 0,
                 'num_leaf': 0,
                 'num_branch': 0,
@@ -35,6 +36,7 @@ def get_forest_stats(forest):
             }
         tree = stats['per_tree'][comb]
         overall['num_nodes'] += 1
+        tree['num_nodes'] += 1
         if node['node_type'] == 'leaf':
             overall['num_leaf'] += 1
             tree['num_leaf'] += 1
