@@ -59,7 +59,7 @@ plt.grid(axis='y')
 
 # Create legend
 legend_elements = [mlines.Line2D([0], [0], color=dim_styles[dim][0], marker=dim_styles[dim][1], linestyle='None', markersize=5, label=f"Attack dims {dim}") for dim in dim_styles]
-legend1 = plt.legend(handles=legend_elements, fontsize='small')
+legend1 = plt.legend(handles=legend_elements, fontsize='small', loc='lower left', bbox_to_anchor=(0, 0.75))
 plt.legend([mlines.Line2D([0], [0], color='black', marker='o', markersize=size/10, linestyle='None') for num_col, size in size_map.items()], ['Columns: {}'.format(num_col) for num_col in size_map.keys()], title='', loc='lower left', bbox_to_anchor=(0, 0.5), fontsize='small')
 plt.gca().add_artist(legend1)
 
