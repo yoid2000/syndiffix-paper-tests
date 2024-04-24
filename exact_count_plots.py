@@ -27,7 +27,7 @@ df['size'] = df['num_col'].map(size_map)
 #print(df[['color', 'marker', 'size','dim']].to_string())
 
 # Specify the order of x-axis values
-order = ['10:8', '10:4', '10:2', '20:8', '20:4', '20:2', '40:8', '40:4', '40:2']
+order = ['10:8', '10:4', '10:2', '20:8', '20:4', '20:2', '40:8', '40:4', '40:2', '80:8', '80:4', '80:2']
 df['num_row_num_val'] = pd.Categorical(df['num_row_num_val'], categories=order, ordered=True)
 
 # Sort the DataFrame by 'num_row_num_val'

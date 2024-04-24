@@ -57,6 +57,26 @@ def get_forest_stats(forest):
                 tree['branch_over_threshold'] += 1
     return stats
 
+def get_dim_stats(forest_stats, dim):
+    num_leaf_avg = 0
+    leaf_over_frac_avg = 0
+    branch_over_frac_avg = 0
+    total = 0
+    for stats in forest_stats.values():
+        for tree in stats['per_tree'].values():
+            if tree['num_cols'] == dim:
+                total += 1
+                num_leaf_avg += tree['num_leaf']
+                leaf_over_frac_avg += tree['leaf_over_threshold'] / tree['num_leaf']
+                if tree['num_branch'] == 0:
+                    branch_over_frac_avg -= 100
+                else:
+                    branch_over_frac_avg += tree['branch_over_threshold'] / tree['num_branch']
+    num_leaf_avg /= total
+    leaf_over_frac_avg /= total
+    branch_over_frac_avg /= total
+    return num_leaf_avg, leaf_over_frac_avg, branch_over_frac_avg
+
 json_files = [pos_json for pos_json in os.listdir("./exact_count_results") if pos_json.endswith('.json')]
 
 data_list = []
@@ -68,6 +88,11 @@ for file in json_files:
         data_dict['forest_stats'] = {}
         for key in data['tree_walks']:
             data_dict['forest_stats'][key] = get_forest_stats(data['tree_walks'][key])
+        # Now I have the stats, let's dig out the one pertaining to the dim
+        num_leaf_avg, leaf_over_frac_avg, branch_over_frac_avg = get_dim_stats(data_dict['forest_stats'])
+        data_dict['num_leaf_avg'] = num_leaf_avg
+        data_dict['leaf_over_frac_avg'] = leaf_over_frac_avg
+        data_dict['branch_over_frac_avg'] = branch_over_frac_avg
         data_list.append(data_dict)
 # create directory 'results' if it doesn't exist
 if not os.path.exists("results"):
