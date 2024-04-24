@@ -5,7 +5,7 @@ import matplotlib.lines as mlines
 import seaborn as sns
 import json
 
-def make_plot(df, xlabel, xcolumn, file_name):
+def make_plot(df, xlabel, xcolumn, file_name, ylim=None):
     # Create a new column labeled "num_row_num_val"
     df['num_row_num_val'] = df['num_row'].astype(str) + ':' + df['num_val'].astype(str)
 
@@ -20,7 +20,7 @@ def make_plot(df, xlabel, xcolumn, file_name):
     #print(df[['color', 'marker', 'size','dim']].to_string())
 
     # Specify the order of x-axis values
-    order = ['10:8', '10:4', '10:2', '20:8', '20:4', '20:2', '40:8', '40:4', '40:2', '80:8', '80:4', '80:2']
+    order = ['10:8', '10:4', '10:2', '20:8', '20:4', '20:2', '40:8', '40:4', '40:2', '80:8', '80:4', '80:2', '160:8', '160:4', '160:2']
     df['num_row_num_val'] = pd.Categorical(df['num_row_num_val'], categories=order, ordered=True)
 
     # Sort the DataFrame by 'num_row_num_val'
@@ -45,7 +45,8 @@ def make_plot(df, xlabel, xcolumn, file_name):
     plt.ylabel(xlabel, fontsize=12)
 
     # Set the range of the y-axis
-    plt.ylim([-0.05, 1.05])  # Replace with your desired range
+    if ylim is not None:
+        plt.ylim(ylim)  # Replace with your desired range
 
     # Add horizontal grid lines
     plt.grid(axis='y')
@@ -73,6 +74,7 @@ with open('./results/exact_count_data.json', 'r') as f:
 df = pd.DataFrame(data)
 #df = df[['num_row', 'num_val', 'dim', 'num_col', 'correct_averages', 'leaf_over_frac_avg']]
 #print(df.to_string())
-make_plot(df, 'Precision', 'correct_averages', 'exact_count_prec_agg.png')
-make_plot(df, 'Fraction Non-suppressed Leafs', 'leaf_over_frac_avg', 'exact_count_leaf_agg.png')
-make_plot(df, 'Fraction Non-suppressed Branch', 'branch_over_frac_avg', 'exact_count_branch_agg.png')
+make_plot(df, 'Precision', 'correct_averages', 'exact_count_prec_agg.png', ylim=[-0.05, 1.05])
+make_plot(df, 'Fraction Non-suppressed Leafs', 'leaf_over_frac_avg', 'exact_count_leaf_agg.png', ylim=[-0.05, 1.05])
+make_plot(df, 'Fraction Non-suppressed Branch', 'branch_over_frac_avg', 'exact_count_branch_agg.png', ylim=[-0.05, 1.05])
+make_plot(df, 'Avg Num Leaf', 'num_leaf_avg', 'exact_count_num_leaf_agg.png')

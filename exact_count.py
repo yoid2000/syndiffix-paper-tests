@@ -29,7 +29,7 @@ if TEST is False:
     from syndiffix_tools.tree_walker import *
 num_other_rows = 50
 num_cols = [20, 40, 80, 160]
-num_vals = [2, 4, 8]
+num_vals = [2, 4, 5, 8, 10]
 dims = [1,2,3]
 num_rows = [10, 20, 40, 80, 160]
 # We need to allow the base_rows_per_val to randomly vary in order to avoid
