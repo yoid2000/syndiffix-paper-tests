@@ -34,8 +34,8 @@ dims = [1,2,3]
 num_rows = [10, 20, 40]
 # We need to allow the base_rows_per_val to randomly vary in order to avoid
 # bias due to rounding effects when adjusting counts
-base_rows_per_val_min = 25
-base_rows_per_val_max = 35
+base_rows_per_val_min = 17
+base_rows_per_val_max = 23
 # We want more runs for lower dimension data because each run has fewer samples
 # We need more runs to get significant results (3-column measures take a long time
 # to run)
