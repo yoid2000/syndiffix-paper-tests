@@ -1,6 +1,10 @@
 import json
 import pprint
 
+'''
+This is a one-off script to try to debug some unexpected results.
+'''
+
 pp = pprint.PrettyPrinter(indent=4)
 
 # read in the json file at results/exact_count_data.json

@@ -34,8 +34,8 @@ dims = [1,2,3]
 num_rows = [10, 20, 40]
 # We need to allow the base_rows_per_val to randomly vary in order to avoid
 # bias due to rounding effects when adjusting counts
-base_rows_per_val_min = 20
-base_rows_per_val_max = 30
+base_rows_per_val_min = 25
+base_rows_per_val_max = 35
 # We want more runs for lower dimension data because each run has fewer samples
 # We need more runs to get significant results (3-column measures take a long time
 # to run)
@@ -80,6 +80,11 @@ def make_df(num_val, num_col, num_row, this_try, seed):
     base_rows_per_val = np.random.randint(base_rows_per_val_min, base_rows_per_val_max)
     num_rows_base = base_rows_per_val * num_val
     num_rows_total = num_rows_base + num_row
+
+    # Create a custom probability distribution
+    prob_dist = np.linspace(1, 1.3, num_val)
+    prob_dist /= prob_dist.sum()
+
     for i in range(num_col):
         if i == 0:
             # The 0th column has the value 1
@@ -88,8 +93,8 @@ def make_df(num_val, num_col, num_row, this_try, seed):
             for j in range(num_row):
                 data[f'col{this_try}_{i}'].append(0)
         else:
-            # The remaining columns each have num_val distinct values, uniformly randomly assigned
-            values = np.random.choice(range(num_val), num_rows_total)
+            # The remaining columns each have num_val distinct values, assigned according to the custom probability distribution
+            values = np.random.choice(range(num_val), num_rows_total, p=prob_dist)
             data[f'col{this_try}_{i}'] = values
     df = pd.DataFrame(data)
     df = df.sample(frac=1).reset_index(drop=True)
@@ -116,7 +121,7 @@ def do_attack(num_val, num_col, dim, num_row):
     num_row: number of rows of the value being predicted
     '''
     file_name = f'v{num_val}.c{num_col}.d{dim}.r{num_row}.json'
-    if TEST: print(file_name)
+    if TEST is True: print(file_name)
     file_path = os.path.join('exact_count_results', file_name)
     if TEST is False and os.path.exists(file_path):
         return
@@ -141,12 +146,18 @@ def do_attack(num_val, num_col, dim, num_row):
         num_tries = int(max(min_samples, max_samples / (num_col - 1)))
     elif dim == 3:
         num_tries = int(max(min_samples, max_samples / (((num_col-1) * (num_col-2)) / 2)))
+    if TEST is True:
+        num_tries = 2
     for this_try in range(num_tries):
         # set the seed for np.random
         seed = this_try + (num_col * 100) + (num_val * 1000) + (num_row * 10000)
-        if TEST: print(seed)
-        if TEST: continue
+        if TEST is True: 
+            print(seed)
         df = make_df(num_val, num_col, num_row, this_try, seed)
+        if TEST is True:
+            for tcol in df.columns:
+                print('---', df[tcol].value_counts())
+            continue
         prec['total_table_rows'] = df.shape[0]
         col0 = f'col{this_try}_0'
         exact_count = df[df[col0] == 0].shape[0]
