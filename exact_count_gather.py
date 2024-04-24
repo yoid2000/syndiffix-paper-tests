@@ -22,7 +22,7 @@ def get_forest_stats(forest):
     }
     overall = stats['overall']
     for node in forest.values():
-        comb = tuple(node['columns'])
+        comb = str(tuple(node['columns']))
         if comb not in stats['per_tree']:
             stats['per_tree'][comb] = {
                 'num_nodes': 0,
