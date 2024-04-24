@@ -32,7 +32,8 @@ num_cols = [20, 40, 80, 160]
 num_vals = [2, 4, 8]
 dims = [1,2,3]
 num_rows = [10, 20, 40]
-base_rows_per_val = 20
+base_rows_per_val_min = 20
+base_rows_per_val_max = 25
 # We want more runs for lower dimension data because each run has fewer samples
 # We need more runs to get significant results (3-column measures take a long time
 # to run)
@@ -74,8 +75,9 @@ def get_precision(noisy_counts, exact_count, true_row_count):
 def make_df(num_val, num_col, num_row, this_try, seed):
     np.random.seed(seed)
     data = {}
+    base_rows_per_val = np.random.randint(base_rows_per_val_min, base_rows_per_val_max)
     num_rows_base = base_rows_per_val * num_val
-    num_rows_total = (base_rows_per_val * num_val) + num_row
+    num_rows_total = num_rows_base + num_row
     for i in range(num_col):
         if i == 0:
             # The 0th column has the value 1
