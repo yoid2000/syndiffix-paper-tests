@@ -30,7 +30,7 @@ for res in data:
     num_leaf_avg /= total
     leaf_over_frac_avg /= total
     branch_over_frac_avg /= total
-    results.append(f"d{res['dim']}.v{res['num_val']}.r{res['num_row']}.c{res['num_col']}, prec {round(res['correct_averages'],2)}, err {round(res['error_averages'],2)}, errsd {round(res['error_std_devs'],2)}, num_leaf {round(num_leaf_avg)}, leaf_over {round(leaf_over_frac_avg,1)}, branch_over {round(branch_over_frac_avg,2)}  ")
+    results.append(f"d{res['dim']}.v{res['num_val']}.r{res['num_row']}.c{res['num_col']}, prec {round(res['correct_averages'],2)}, err {round(res['error_averages'],2)}, errsd {round(res['error_std_devs'],2)}, num_leaf {round(num_leaf_avg)}, leaf_over {round(leaf_over_frac_avg,2)}, branch_over {round(branch_over_frac_avg,2)}  ")
 # sort results alphabetically
 results.sort()
 for thing in results:

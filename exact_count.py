@@ -31,7 +31,7 @@ num_other_rows = 50
 num_cols = [20, 40, 80, 160]
 num_vals = [2, 4, 8]
 dims = [1,2,3]
-num_rows = [10, 20, 40]
+num_rows = [10, 20, 40, 80]
 # We need to allow the base_rows_per_val to randomly vary in order to avoid
 # bias due to rounding effects when adjusting counts
 base_rows_per_val_min = 17
@@ -39,11 +39,8 @@ base_rows_per_val_max = 23
 # We want more runs for lower dimension data because each run has fewer samples
 # We need more runs to get significant results (3-column measures take a long time
 # to run)
-max_samples = 20000
-min_samples = 40
-TWO_COLS = True
-THREE_COLS = True
-attack_keys = ['1dim', '2dim', '3dim']
+max_samples = 10000
+min_samples = 20
 
 # read command line arguments
 do_attack_num = None
