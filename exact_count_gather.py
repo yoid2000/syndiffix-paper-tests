@@ -89,7 +89,7 @@ for file in json_files:
         for key in data['tree_walks']:
             data_dict['forest_stats'][key] = get_forest_stats(data['tree_walks'][key])
         # Now I have the stats, let's dig out the one pertaining to the dim
-        num_leaf_avg, leaf_over_frac_avg, branch_over_frac_avg = get_dim_stats(data_dict['forest_stats'])
+        num_leaf_avg, leaf_over_frac_avg, branch_over_frac_avg = get_dim_stats(data_dict['forest_stats'], data_dict['dim'])
         data_dict['num_leaf_avg'] = num_leaf_avg
         data_dict['leaf_over_frac_avg'] = leaf_over_frac_avg
         data_dict['branch_over_frac_avg'] = branch_over_frac_avg
