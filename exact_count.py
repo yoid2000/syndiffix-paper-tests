@@ -112,17 +112,16 @@ def get_dim_stats(forest_stats, dim):
     leaf_over_frac_avg = 0
     branch_over_frac_avg = 0
     total = 0
-    pp.pprint(forest_stats)
-    for stats in forest_stats.values():
-        for tree in stats['per_tree'].values():
-            if tree['num_cols'] == dim:
-                total += 1
-                num_leaf_avg += tree['num_leaf']
-                leaf_over_frac_avg += tree['leaf_over_threshold'] / tree['num_leaf']
-                if tree['num_branch'] == 0:
-                    branch_over_frac_avg -= 100
-                else:
-                    branch_over_frac_avg += tree['branch_over_threshold'] / tree['num_branch']
+    #pp.pprint(forest_stats)
+    for tree in forest_stats['per_tree'].values():
+        if tree['num_cols'] == dim:
+            total += 1
+            num_leaf_avg += tree['num_leaf']
+            leaf_over_frac_avg += tree['leaf_over_threshold'] / tree['num_leaf']
+            if tree['num_branch'] == 0:
+                branch_over_frac_avg -= 100
+            else:
+                branch_over_frac_avg += tree['branch_over_threshold'] / tree['num_branch']
     num_leaf_avg /= total
     leaf_over_frac_avg /= total
     branch_over_frac_avg /= total
