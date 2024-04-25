@@ -222,9 +222,7 @@ def do_attack(num_val, num_col, dim, agg_size):
     # select a random seed for the synthesizer
     seed = np.random.randint(0, 1000000)
     sdx_seed = str(seed).encode()
-    num_measures = 0
     for col_comb in col_combs:
-        num_measures += 1
         syn = Synthesizer(df[col_comb],
                 anonymization_params=AnonymizationParams(salt=sdx_seed))
         df_syn = syn.sample()
@@ -239,6 +237,8 @@ def do_attack(num_val, num_col, dim, agg_size):
             num_leaf, frac_leaf_over, _ = get_dim_stats(stats, dim)
             num_leafs.append(num_leaf)
             frac_leaf_overs.append(frac_leaf_over)
+    result['num_leaf'] = statistics.mean(num_leafs)
+    result['frac_leaf_over'] = statistics.mean(frac_leaf_overs)
     prec = get_precision(noisy_counts, exact_count)
     result['correct'] = prec['correct']
     result['error'] = prec['error']
