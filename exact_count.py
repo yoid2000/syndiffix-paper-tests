@@ -24,32 +24,105 @@ datasets, we have 200/8=25 expected rows per combination, which is well above th
 suppression limit
 '''
 
+save_tree_walk = False
 TEST = False
 if TEST is False:
     from syndiffix_tools.tree_walker import *
 num_other_rows = 50
-num_cols = [20, 40, 80, 160]
-num_vals = [2, 4, 5, 8, 10]
-dims = [1,2,3]
-num_rows = [10, 20, 40, 80, 160]
+num_cols = [5, 200]
+dims = [1,3]
+num_vals = [2, 20]
+agg_sizes = [5, 200]
+
 # We need to allow the base_rows_per_val to randomly vary in order to avoid
 # bias due to rounding effects when adjusting counts
 base_rows_per_val_min = 17
 base_rows_per_val_max = 23
-# We want more runs for lower dimension data because each run has fewer samples
-# We need more runs to get significant results (3-column measures take a long time
-# to run)
-max_samples = 10000
-min_samples = 20
 
 # read command line arguments
-do_attack_num = None
 make_slurm = False
+slurm_num = 50
+do_attack_num = slurm_num + 1
 if len(sys.argv) > 1:
     if sys.argv[1] == 'slurm':
         make_slurm = True
     else:
         do_attack_num = int(sys.argv[1])
+
+def get_forest_stats(forest):
+    '''
+    `forest` is the output of `TreeWalker.get_forest_nodes()`
+    '''
+    stats = {
+        'overall': {
+            'num_trees': 0,
+            'num_nodes': 0,
+            'num_leaf': 0,
+            'num_branch': 0,
+            'leaf_singularity': 0,
+            'branch_singularity': 0,
+            'leaf_over_threshold': 0,
+            'branch_over_threshold': 0,
+        },
+        'per_tree': {
+        },
+    }
+    overall = stats['overall']
+    for node in forest.values():
+        comb = str(tuple(node['columns']))
+        if comb not in stats['per_tree']:
+            stats['per_tree'][comb] = {
+                'num_cols': len(node['columns']),
+                'num_nodes': 0,
+                'num_leaf': 0,
+                'num_branch': 0,
+                'leaf_singularity': 0,
+                'branch_singularity': 0,
+                'leaf_over_threshold': 0,
+                'branch_over_threshold': 0,
+            }
+        tree = stats['per_tree'][comb]
+        overall['num_nodes'] += 1
+        tree['num_nodes'] += 1
+        if node['node_type'] == 'leaf':
+            overall['num_leaf'] += 1
+            tree['num_leaf'] += 1
+            if node['singularity']:
+                overall['leaf_singularity'] += 1
+                tree['leaf_singularity'] += 1
+            if node['over_threshold']:
+                overall['leaf_over_threshold'] += 1
+                tree['leaf_over_threshold'] += 1
+        elif node['node_type'] == 'branch':
+            overall['num_branch'] += 1
+            tree['num_branch'] += 1
+            if node['singularity']:
+                overall['branch_singularity'] += 1
+                tree['branch_singularity'] += 1
+            if node['over_threshold']:
+                overall['branch_over_threshold'] += 1
+                tree['branch_over_threshold'] += 1
+    return stats
+
+def get_dim_stats(forest_stats, dim):
+    num_leaf_avg = 0
+    leaf_over_frac_avg = 0
+    branch_over_frac_avg = 0
+    total = 0
+    for stats in forest_stats.values():
+        for tree in stats['per_tree'].values():
+            if tree['num_cols'] == dim:
+                total += 1
+                num_leaf_avg += tree['num_leaf']
+                leaf_over_frac_avg += tree['leaf_over_threshold'] / tree['num_leaf']
+                if tree['num_branch'] == 0:
+                    branch_over_frac_avg -= 100
+                else:
+                    branch_over_frac_avg += tree['branch_over_threshold'] / tree['num_branch']
+    num_leaf_avg /= total
+    leaf_over_frac_avg /= total
+    branch_over_frac_avg /= total
+    return num_leaf_avg, leaf_over_frac_avg, branch_over_frac_avg
 
 def print_progress_wheel(wheel):
     print(next(wheel) + '\b', end='', flush=True)
@@ -59,7 +132,7 @@ def progress_wheel():
     while True:
         yield next(wheel)
 
-def get_precision(noisy_counts, exact_count, true_row_count):
+def get_precision(noisy_counts, exact_count):
     num_correct = 0
     # true_row_count assumes that we can determine the exact number of
     # rows by taking average from all tables
@@ -71,28 +144,28 @@ def get_precision(noisy_counts, exact_count, true_row_count):
     error = abs(guess - exact_count)
     return {'correct': correct, 'guessed': guess, 'exact': exact_count, 'error': error}
 
-def make_df(num_val, num_col, num_row, this_try, seed):
-    np.random.seed(seed)
+def make_df(num_val, num_col, agg_size):
     data = {}
     base_rows_per_val = np.random.randint(base_rows_per_val_min, base_rows_per_val_max)
-    num_rows_base = base_rows_per_val * num_val
-    num_rows_total = num_rows_base + num_row
+    agg_sizes_base = base_rows_per_val * num_val
+    agg_sizes_total = agg_sizes_base + agg_size
 
     # Create a custom probability distribution
     prob_dist = np.linspace(1, 1.3, num_val)
     prob_dist /= prob_dist.sum()
 
+    ran_col_num = np.random.randint(0, 1000000)
     for i in range(num_col):
         if i == 0:
             # The 0th column has the value 1
-            data[f'col{this_try}_{i}'] = [1] * num_rows_base
+            data[f'col{ran_col_num}_{i}'] = [1] * agg_sizes_base
             # Now add the target rows, with value 0
-            for j in range(num_row):
-                data[f'col{this_try}_{i}'].append(0)
+            for j in range(agg_size):
+                data[f'col{ran_col_num}_{i}'].append(0)
         else:
             # The remaining columns each have num_val distinct values, assigned according to the custom probability distribution
-            values = np.random.choice(range(num_val), num_rows_total, p=prob_dist)
-            data[f'col{this_try}_{i}'] = values
+            values = np.random.choice(range(num_val), agg_sizes_total, p=prob_dist)
+            data[f'col{ran_col_num}_{i}'] = values
     df = pd.DataFrame(data)
     df = df.sample(frac=1).reset_index(drop=True)
     return df
@@ -110,104 +183,97 @@ def get_col_combs(df, col0, dim):
             col_combs.append([col0] + list(comb))
     return col_combs
 
-def do_attack(num_val, num_col, dim, num_row):
+def do_attack(num_val, num_col, dim, agg_size):
     '''
     num_val: number of distinct values in each other column
     num_col: number of columns
     dim: number of dimensions of the attack
-    num_row: number of rows of the value being predicted
+    agg_size: number of rows of the value being predicted
     '''
-    file_name = f'v{num_val}.c{num_col}.d{dim}.r{num_row}.json'
-    if TEST is True: print(file_name)
-    file_path = os.path.join('exact_count_results', file_name)
-    if TEST is False and os.path.exists(file_path):
-        return
-    prec = {
+    result = {
         'num_val': num_val,
         'num_col': num_col,
         'dim': dim,
-        'num_row': num_row,
-        'correct_averages': 0,
-        'error_averages': 0,
-        'error_std_devs': 0,
-        'samples': 0,
-        'total_table_rows': 0,
-        'errors': [],
-        'scores': [],
-        'results': [],
-        'tree_walks': {}
+        'agg_size': agg_size,
+        'exact_count': None,
+        'guessed_count': None,
+        'error': None,
+        'correct': None,
+        'num_leaf': None,
+        'frac_leaf_over': None,
+        'total_table_rows': None,
+        'tree_walk': None,
     }
-    if dim == 1:
-        num_tries = max_samples
-    elif dim == 2:
-        num_tries = int(max(min_samples, max_samples / (num_col - 1)))
-    elif dim == 3:
-        num_tries = int(max(min_samples, max_samples / (((num_col-1) * (num_col-2)) / 2)))
-    if TEST is True:
-        num_tries = 2
-    for this_try in range(num_tries):
-        # set the seed for np.random
-        seed = this_try + (num_col * 100) + (num_val * 1000) + (num_row * 10000)
-        if TEST is True: 
-            print(seed)
-        df = make_df(num_val, num_col, num_row, this_try, seed)
-        if TEST is True:
-            for tcol in df.columns:
-                print('---', df[tcol].value_counts())
-            continue
-        prec['total_table_rows'] = df.shape[0]
-        col0 = f'col{this_try}_0'
-        exact_count = df[df[col0] == 0].shape[0]
-        col_combs = get_col_combs(df, col0, dim)
-        # get the count of the target value 0 for col0 in df
-        if TEST: print(col_combs)
-        noisy_counts = []
-        for col_comb in col_combs:
-            # Set the SynDiffix salt to avoid the same noise across different experimantal settings
-            sdx_seed = str(seed).encode()
-            syn = Synthesizer(df[col_comb],
-                    anonymization_params=AnonymizationParams(salt=sdx_seed))
-            df_syn = syn.sample()
-            ncount = df_syn[df_syn[col0] == 0].shape[0]
-            noisy_counts.append(ncount)
-            error = abs(ncount - exact_count)
-            if TEST is False and error not in prec['tree_walks']:
-                tw = TreeWalker(syn)
-                prec['tree_walks'][error] = tw.get_forest_nodes()
-        result = get_precision(noisy_counts, exact_count, df.shape[0])
-        prec['results'].append(result)
-        prec['scores'].append(result['correct'])
-        prec['errors'].append(result['error'])
-    if TEST: return
-    prec['correct_averages'] = statistics.mean(prec['scores'])
-    prec['error_averages'] = statistics.mean(prec['errors'])
-    if len(prec['errors']) > 1:
-        prec['error_std_devs'] = statistics.stdev(prec['errors'])
-    else:
-        prec['error_std_devs'] = 0
-    prec['samples'] = len(prec['scores'])
-    # dump precision as a json file
-    # make directory 'exact_count_results' if it does not exist
-    if not os.path.exists('exact_count_results'):
-        os.makedirs('exact_count_results')
-    with open(file_path, 'w') as f:
-        json.dump(prec, f, indent=4)
+    df = make_df(num_val, num_col, agg_size)
+    result['total_table_rows'] = df.shape[0]
+    # get the name of the first column
+    col0 = df.columns[0]
+    exact_count = df[df[col0] == 0].shape[0]
+    result['exact_count'] = exact_count
+    col_combs = get_col_combs(df, col0, dim)
+    # get the count of the target value 0 for col0 in df
+    if TEST: print(col_combs)
+    noisy_counts = []
+    num_leafs = []
+    frac_leaf_overs = []
+    # select a random seed for the synthesizer
+    seed = np.random.randint(0, 1000000)
+    sdx_seed = str(seed).encode()
+    num_measures = 0
+    for col_comb in col_combs:
+        num_measures += 1
+        syn = Synthesizer(df[col_comb],
+                anonymization_params=AnonymizationParams(salt=sdx_seed))
+        df_syn = syn.sample()
+        ncount = df_syn[df_syn[col0] == 0].shape[0]
+        noisy_counts.append(ncount)
+        if TEST is False:
+            tw = TreeWalker(syn)
+            forest = tw.get_forest_nodes()
+            if save_tree_walk:
+                result['tree_walk'] = forest
+            stats = get_forest_stats(forest)
+            num_leaf, frac_leaf_over, _ = get_dim_stats(stats, dim)
+            num_leafs.append(num_leaf)
+            frac_leaf_overs.append(frac_leaf_over)
+    prec = get_precision(noisy_counts, exact_count)
+    result['correct'] = prec['correct']
+    result['error'] = prec['error']
+    result['guessed_count'] = prec['guessed']
+    return result
 
-wheel = progress_wheel()
-attack_num = 0
-for num_val in num_vals:
-    for num_col in num_cols:
-        for dim in dims:
-            for num_row in num_rows:
-                if make_slurm is False and (do_attack_num is None or attack_num == do_attack_num):
-                    do_attack(num_val, num_col, dim, num_row)
-                attack_num += 1
 if make_slurm:
     with open('exact_count_slurm.sh', 'w') as f:
         f.write('#!/bin/bash\n')
-        f.write('#SBATCH --time=0-24:00\n')
+        f.write('#SBATCH --time=0-4:00\n')
         f.write('#SBATCH --mem=10G\n')
         f.write('#SBATCH --output /dev/null\n')
-        f.write('#SBATCH --array=0-' + str(attack_num - 1) + '\n')
+        f.write('#SBATCH --array=0-' + str(slurm_num - 1) + '\n')
         f.write('source ../sdx_tests/sdx_venv/bin/activate' + '\n')
         f.write('python exact_count.py $SLURM_ARRAY_TASK_ID\n')
+    quit()
+
+wheel = progress_wheel()
+file_name = f'results.{do_attack_num}.json'
+file_path = os.path.join('exact_count_results', file_name)
+# Let the seed be random
+# np.random.seed(do_attack_num)
+if not os.path.exists('exact_count_results'):
+    os.makedirs('exact_count_results')
+for _ in range(10000):
+    # Just make attack after attack. Can use scancel to end (or timeout
+    # of slurm job)
+    num_col = np.random.randint(num_cols[0], num_cols[1]+1)
+    dim = np.random.randint(dims[0], dims[1]+1)
+    num_val = np.random.randint(num_vals[0], num_vals[1]+1)
+    agg_size = np.random.randint(agg_sizes[0], agg_sizes[1]+1)
+    # read in the json file at file_path if it exists
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as f:
+            data = json.load(f)
+    else:
+        data = []
+    result = do_attack(num_val, num_col, dim, agg_size)
+    data.append(result)
+    with open(file_path, 'w') as f:
+        json.dump(data, f, indent=4)
