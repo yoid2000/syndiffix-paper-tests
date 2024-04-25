@@ -6,7 +6,10 @@ import itertools
 import json
 from syndiffix import Synthesizer
 from syndiffix.common import AnonymizationParams
+import pprint
 import os
+
+pp = pprint.PrettyPrinter(indent=4)
 
 '''
 This program tests the ability for an attacker to determine the exact count of
@@ -109,6 +112,7 @@ def get_dim_stats(forest_stats, dim):
     leaf_over_frac_avg = 0
     branch_over_frac_avg = 0
     total = 0
+    pp.pprint(forest_stats)
     for stats in forest_stats.values():
         for tree in stats['per_tree'].values():
             if tree['num_cols'] == dim:
