@@ -21,6 +21,7 @@ def make_plot(df, xlabel, xcolumn, file_name, ylim=None):
 
     # Specify the order of x-axis values
     order = ['10:8', '10:4', '10:2', '20:8', '20:4', '20:2', '40:8', '40:4', '40:2', '80:8', '80:4', '80:2', '160:8', '160:4', '160:2']
+    order = ['10:10', '10:5', '10:2', '20:10', '20:5', '20:2', '40:10', '40:5', '40:2', '80:10', '80:5', '80:2', '160:10', '160:5', '160:2']
     df['num_row_num_val'] = pd.Categorical(df['num_row_num_val'], categories=order, ordered=True)
 
     # Sort the DataFrame by 'num_row_num_val'
@@ -38,7 +39,9 @@ def make_plot(df, xlabel, xcolumn, file_name, ylim=None):
         #print(color, marker, size)
         #df_dim = df[df['dim'] == dim]
         df_dim = df[(df['color'] == color) & (df['marker'] == marker) & (df['size'] == size)]
-        #print(df_dim.to_string())
+        # Remove all rows from df_dim where any column has a NaN value
+        df_dim = df_dim.dropna()
+        print(df_dim[['num_row_num_val',xcolumn]].to_string())
         plt.scatter(df_dim['num_row_num_val'], df_dim[xcolumn], color=color, marker=marker, alpha=0.8, s=size)
 
     plt.xlabel('Aggregate True Count : Number of Other Column Values', fontsize=12)
