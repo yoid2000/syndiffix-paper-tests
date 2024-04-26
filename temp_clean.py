@@ -1,10 +1,5 @@
 import json
 import os
-import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.lines as mlines
-import numpy as np
-import seaborn as sns
 
 json_files = [pos_json for pos_json in os.listdir("./exact_count_results") if pos_json.endswith('.json')]
 
