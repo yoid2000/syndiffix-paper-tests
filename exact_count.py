@@ -248,7 +248,8 @@ def do_attack(num_val, num_col, dim, agg_size):
 if make_slurm:
     with open('exact_count_slurm.sh', 'w') as f:
         f.write('#!/bin/bash\n')
-        f.write('#SBATCH --time=0-4:00\n')
+        # set the time limit for 48 hours
+        f.write('#SBATCH --time=0-48:00\n')
         f.write('#SBATCH --mem=10G\n')
         f.write('#SBATCH --output /dev/null\n')
         f.write('#SBATCH --array=0-' + str(slurm_num - 1) + '\n')
