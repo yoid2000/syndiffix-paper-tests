@@ -284,7 +284,7 @@ for _ in range(10000):
             data = json.load(f)
     else:
         data = []
-    result = do_attack(num_val, num_col, dim, agg_size)
+    result = do_attack(num_val, num_col, dim, agg_size, base_rows_per_val)
     data.append(result)
     with open(file_path, 'w') as f:
         json.dump(data, f, indent=4)
