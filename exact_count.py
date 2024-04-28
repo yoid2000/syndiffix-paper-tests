@@ -35,21 +35,19 @@ if GET_LOW_PARAMS is True:
     dims = [1,3]
     num_vals = [2, 3]
     agg_sizes = [5, 200]
+    rows_per_val = [24, 200]
 elif GET_GOOD_PARAMS is True:
     num_cols = [5, 200]
     dims = [1,3]
     num_vals = [2, 10]
     agg_sizes = [100, 200]
+    rows_per_val = [24, 200]
 else:
     num_cols = [5, 200]
     dims = [1,3]
     num_vals = [2, 20]
     agg_sizes = [5, 200]
-
-# We need to allow the base_rows_per_val to randomly vary in order to avoid
-# bias due to rounding effects when adjusting counts
-base_rows_per_val_min = 17
-base_rows_per_val_max = 23
+    rows_per_val = [24, 200]
 
 # read command line arguments
 make_slurm = False
@@ -156,9 +154,8 @@ def get_precision(noisy_counts, exact_count):
     error = abs(guess - exact_count)
     return {'correct': correct, 'guessed': guess, 'exact': exact_count, 'error': error}
 
-def make_df(num_val, num_col, agg_size):
+def make_df(num_val, num_col, agg_size, base_rows_per_val):
     data = {}
-    base_rows_per_val = np.random.randint(base_rows_per_val_min, base_rows_per_val_max)
     agg_sizes_base = base_rows_per_val * num_val
     agg_sizes_total = agg_sizes_base + agg_size
 
@@ -195,7 +192,7 @@ def get_col_combs(df, col0, dim):
             col_combs.append([col0] + list(comb))
     return col_combs
 
-def do_attack(num_val, num_col, dim, agg_size):
+def do_attack(num_val, num_col, dim, agg_size, base_rows_per_val):
     '''
     num_val: number of distinct values in each other column
     num_col: number of columns
@@ -216,7 +213,7 @@ def do_attack(num_val, num_col, dim, agg_size):
         'total_table_rows': None,
         'tree_walk': None,
     }
-    df = make_df(num_val, num_col, agg_size)
+    df = make_df(num_val, num_col, agg_size, base_rows_per_val)
     result['total_table_rows'] = df.shape[0]
     # get the name of the first column
     col0 = df.columns[0]
@@ -280,6 +277,7 @@ for _ in range(10000):
     dim = np.random.randint(dims[0], dims[1]+1)
     num_val = np.random.randint(num_vals[0], num_vals[1]+1)
     agg_size = np.random.randint(agg_sizes[0], agg_sizes[1]+1)
+    base_rows_per_val = np.random.randint(rows_per_val[0], rows_per_val[1])
     # read in the json file at file_path if it exists
     if os.path.exists(file_path):
         with open(file_path, 'r') as f:
