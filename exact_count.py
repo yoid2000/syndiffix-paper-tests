@@ -20,11 +20,7 @@ different synthetic datasets, the attacker can average out the noise.
 
 In this test, we test averaging multiple 2dim and 3dim synthetic datasets.
 
-This test assumes the best case for the attacker, which is that no combinations
-of the target column value with other column values are suppressed. To do this, we
-have only two values per column, and 200 rows. This ensures that, for 3dim synthetic
-datasets, we have 200/8=25 expected rows per combination, which is well above the
-suppression limit
+This test sets three parameters, num_col the number of columns in the dataset, num_val the number of distinct values in each column other than that of the targeted column, and agg_size the number of rows of the target value in the target column being predicted. We vary these parameters to see how they affect the attacker's ability to determine the exact count of the target value.
 '''
 
 save_tree_walk = False
@@ -32,10 +28,23 @@ TEST = False
 if TEST is False:
     from syndiffix_tools.tree_walker import *
 num_other_rows = 50
-num_cols = [5, 200]
-dims = [1,3]
-num_vals = [2, 20]
-agg_sizes = [5, 200]
+GET_GOOD_PARAMS = True
+GET_LOW_PARAMS = False
+if GET_LOW_PARAMS is True:
+    num_cols = [5, 6]
+    dims = [1,3]
+    num_vals = [2, 3]
+    agg_sizes = [5, 200]
+elif GET_GOOD_PARAMS is True:
+    num_cols = [5, 200]
+    dims = [1,3]
+    num_vals = [2, 10]
+    agg_sizes = [100, 200]
+else:
+    num_cols = [5, 200]
+    dims = [1,3]
+    num_vals = [2, 20]
+    agg_sizes = [5, 200]
 
 # We need to allow the base_rows_per_val to randomly vary in order to avoid
 # bias due to rounding effects when adjusting counts
