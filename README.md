@@ -26,4 +26,14 @@ Run `sbatch slurmGenSdx`. This creates all of the SynDiffix synthetic datasets n
 
 ### Exact Count
 
-This attack tries to determine the exact count of some aggregate (i.e. the number of columns with value V in column C). This is not an attack in and of itself, because an aggregate zzzz
+This attack tries to determine the exact count of some aggregate (i.e. the number of columns with value V in column C). This is not an attack in and of itself, because an aggregate does not isolate a person per se. However, if it worked well, it could be a stepping stone to other attacks.
+
+`exact_count.py` runs the exact_count measures. If run as `exact_count.py slurm`, it creates the file `exact_count_slurm.sh`. When `sbatch exact_count_slurm.sh` is run, 50 slurm jobs are started, each running `exact_count.py <slurm_job>`. This runs in a continuous loop, generating exact count attacks with randomly selected parameters, and adding the attack result to a file named `exact_count_results/results.XX.json`, where `XX` is the `<slurm_job>` number.
+
+`exact_count_plot.py` reads in the `results.XX.json` files and generates a number of visual plots to help understand the results. These are placed in `results/exact_count/...`.
+
+Besides the above, `exact_count_gather.py` and `exact_count_analyze.py` were used in the interim to help debug and understand the results.
+
+### Suppress Threshold
+
+This attack exploits the suppression mechanism of SynDiffix to try to determine if a given user has a certain value in some column. Under the conditions when the attacker knows that there are exactly three persons with a given value in column A, and knows that two of them have a certain other value in column B, the presence or absence of the column A value in the output allows the attacker, in certain situations, to determine whether the third person has the column B value.

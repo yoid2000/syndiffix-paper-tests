@@ -44,7 +44,7 @@ pp = pprint.PrettyPrinter(indent=4)
 low_mean_gaps = [2.0, 3.0, 4.0]
 num_target_vals = [2, 5, 10]
 rows_multiplier = [5, 10, 100]
-num_tries_by_lmg = [10000, 20000, 30000]
+num_tries_by_lmg = [30000, 30000, 30000]
 DO_WALK = False
 
 results = {}
