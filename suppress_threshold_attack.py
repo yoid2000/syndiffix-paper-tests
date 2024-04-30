@@ -91,7 +91,7 @@ def make_attack_setup(tm, file_path, job):
                 continue
             if known_rows[col].nunique() <= 2:
                 target_col = col
-                target_val = known_rows[target_col].mode()[0] if known_rows[target_col].nunique() == 1 else known_rows[target_col].value_counts().index[1]
+                target_val = known_rows[target_col].mode()[0] if known_rows[target_col].nunique() == 1 else known_rows[target_col].value_counts()[known_rows[target_col].value_counts() == 1].index[0]
                 if known_rows[col].nunique() == 1:
                     correct_pred = 'positive'
                 else:
