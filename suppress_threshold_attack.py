@@ -95,14 +95,14 @@ def make_attack_setup(tm, file_path, job):
                     'target_val': target_val,
                     'file_path': file_path,
                     'known_col': known_column,
-                    'knwon_rows': known_rows.to_dict(orient='records'),
+                    'known_rows': known_rows.to_dict(orient='records'),
                     'num_target_vals': tm.df_orig[target_col].nunique()
                 }
                 attack_setup['attack_instances'].append(attack_instance)
 
     # Write attack_setup to file_path
     with open(file_path, 'w') as f:
-        json.dump(attack_setup, f)
+        json.dump(attack_setup, f, indent=4)
 
     return attack_setup
 
