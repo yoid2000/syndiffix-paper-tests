@@ -2,7 +2,6 @@ import argparse
 import os
 import pandas as pd
 import json
-import glob
 from syndiffix_tools.tables_manager import TablesManager
 
 
@@ -11,7 +10,7 @@ def make_config():
     base_path = os.getenv('SDX_TEST_DIR')
     code_path = os.getenv('SDX_TEST_CODE')
 
-    # Create pq_path and attack_path
+    # Create syn_path and attack_path
     syn_path = os.path.join(base_path, 'synDatasets')
     attack_path = os.path.join(base_path, 'suppress_attacks')
 
@@ -72,9 +71,79 @@ def make_config():
     with open(os.path.join(attack_path, 'suppress_threshold_attack.slurm'), 'w') as f:
         f.write(slurm_template)
 
+def make_attack_setup(tm, file_path, known_column):
+    attack_setup = {'setup': {}, 'attack_instances': []}
+
+    # Find all values that appear exactly 3 times in tm.df_orig
+    value_counts = tm.df_orig[known_column].value_counts()
+    known_vals = value_counts[value_counts == 3].index.tolist()
+
+    # Set setup values
+    attack_setup['setup']['num_rows'] = len(tm.df_orig)
+    attack_setup['setup']['job'] = tm.job
+
+    for known_val in known_vals:
+        # Find all columns where at least two of the 3 rows have the same value
+        known_rows = tm.df_orig[tm.df_orig[known_column] == known_val]
+        for col in known_rows.columns:
+            if known_rows[col].nunique() <= 2:
+                target_col = col
+                target_val = known_rows[target_col].mode()[0] if known_rows[target_col].nunique() == 1 else known_rows[target_col].value_counts().index[1]
+                attack_instance = {
+                    'target_col': target_col,
+                    'target_val': target_val,
+                    'file_path': file_path,
+                    'known_col': known_column,
+                    'knwon_rows': known_rows.to_dict(orient='records'),
+                    'num_target_vals': tm.df_orig[target_col].nunique()
+                }
+                attack_setup['attack_instances'].append(attack_instance)
+
+    # Write attack_setup to file_path
+    with open(file_path, 'w') as f:
+        json.dump(attack_setup, f)
+
+    return attack_setup
+
 def run_attack(job_num):
     # Your code here
     base_path = os.getenv('SDX_TEST_DIR')
+    code_path = os.getenv('SDX_TEST_CODE')
+
+    # Create syn_path and attack_path
+    syn_path = os.path.join(base_path, 'synDatasets')
+    attack_path = os.path.join(base_path, 'suppress_attacks')
+
+    with open(os.path.join(base_path, 'attack_jobs.json'), 'r') as f:
+        jobs = json.load(f)
+
+
+    # Make sure job_num is within the range of jobs, and if not, print an error message and exit
+    if job_num < 0 or job_num >= len(jobs):
+        print(f"Invalid job number: {job_num}")
+        return
+
+    # Get the job
+    job = jobs[job_num]
+
+    # Create 'instances' directory in attack_path if it isn't already there
+    instances_path = os.path.join(attack_path, 'instances')
+    os.makedirs(instances_path, exist_ok=True)
+
+    # Make a file_name and file_path
+    file_name = f"{job['column']}_{job['dir_name']}.json"
+    file_path = os.path.join(instances_path, file_name)
+
+    # Make a TablesManager object
+    tm = TablesManager(dir_path=os.path.join(syn_path, job['dir_name']))
+
+    # If file_path exists, read it into attack_setup. Otherwise, call make_attack_setup()
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as f:
+            attack_setup = json.load(f)
+    else:
+        attack_setup = make_attack_setup(tm, file_path, job['column'])
+
     pass
 
 def main():
