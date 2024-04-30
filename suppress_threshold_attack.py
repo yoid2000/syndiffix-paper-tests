@@ -71,16 +71,17 @@ python {exe_path} $array
     with open(os.path.join(attack_path, 'attack.slurm'), 'w') as f:
         f.write(slurm_template)
 
-def make_attack_setup(tm, file_path, known_column):
+def make_attack_setup(tm, file_path, job):
     attack_setup = {'setup': {}, 'attack_instances': []}
 
     # Find all values that appear exactly 3 times in tm.df_orig
+    known_column = job['column']
     value_counts = tm.df_orig[known_column].value_counts()
     known_vals = value_counts[value_counts == 3].index.tolist()
 
     # Set setup values
     attack_setup['setup']['num_rows'] = len(tm.df_orig)
-    attack_setup['setup']['job'] = tm.job
+    attack_setup['setup']['job'] = job
 
     for known_val in known_vals:
         # Find all columns where at least two of the 3 rows have the same value
@@ -141,7 +142,7 @@ def run_attack(job_num):
         with open(file_path, 'r') as f:
             attack_setup = json.load(f)
     else:
-        attack_setup = make_attack_setup(tm, file_path, job['column'])
+        attack_setup = make_attack_setup(tm, file_path, job)
 
     pass
 
