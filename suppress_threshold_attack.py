@@ -100,7 +100,7 @@ def make_attack_setup(tm, file_path, job):
                 # set target_val to the mode value of known_rows[col]
                 target_val = known_rows[col].mode()[0]
                 # set victim_val to the other value
-                victim_val = known_rows[col].mode()[1]
+                victim_val = known_rows[col][known_rows[col] != target_val].values[0]
                 correct_pred = 'negative'
             if target_val is not None:
                 attack_instance = {
