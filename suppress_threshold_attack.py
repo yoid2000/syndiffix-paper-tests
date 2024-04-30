@@ -168,6 +168,8 @@ def main():
     parser.add_argument("command", help="'config' to run make_config(), or an integer to run run_attack()")
     args = parser.parse_args()
 
+    print(args)
+
     if args.command == 'config':
         make_config()
     else:
