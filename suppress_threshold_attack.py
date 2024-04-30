@@ -9,6 +9,7 @@ from pathlib import Path
 def make_config():
     # Read the environment variable SDX_TEST_DIR and assign it to base_path
     base_path = os.getenv('SDX_TEST_DIR')
+    code_path = os.getenv('SDX_TEST_CODE')
 
     # Create pq_path and attack_path
     pq_path = os.path.join(base_path, 'original_data_parquet')
@@ -41,8 +42,7 @@ def make_config():
     with open(os.path.join(attack_path, 'attack_jobs.json'), 'w') as f:
         json.dump(attack_jobs, f, indent=4)
 
-    code_dir = Path().absolute()
-    exe_path = os.path.join(code_dir, 'suppress_threshold_attack.py')
+    exe_path = os.path.join(code_path, 'suppress_threshold_attack.py')
     slurm_out = os.path.join(attack_path, 'slurm_out')
     os.makedirs(slurm_out, exist_ok=True)
     num_jobs = len(attack_jobs) - 1
@@ -56,7 +56,7 @@ def make_config():
     #SBATCH --cpus-per-task=1
     #SBATCH --array=0-{num_jobs}
     source ./sdx_venv/bin/activate
-    python3 {exe_path} $array
+    python {exe_path} $array
     '''
     # write the slurm template to a file suppress_threshold_attack.slurm
     with open(os.path.join(attack_path, 'suppress_threshold_attack.slurm'), 'w') as f:
