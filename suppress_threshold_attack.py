@@ -57,15 +57,15 @@ def make_config():
     num_jobs = len(attack_jobs) - 1
     # Define the slurm template
     slurm_template = f'''#!/bin/bash
-    #SBATCH --job-name=suppress_attack
-    #SBATCH --output={slurm_out}
-    #SBATCH --error={slurm_out}
-    #SBATCH --time=7-0
-    #SBATCH --mem=16G
-    #SBATCH --cpus-per-task=1
-    #SBATCH --array=0-{num_jobs}
-    source {venv_path}
-    python {exe_path} $array
+#SBATCH --job-name=suppress_attack
+#SBATCH --output={slurm_out}
+#SBATCH --error={slurm_out}
+#SBATCH --time=7-0
+#SBATCH --mem=16G
+#SBATCH --cpus-per-task=1
+#SBATCH --array=0-{num_jobs}
+source {venv_path}
+python {exe_path} $array
     '''
     # write the slurm template to a file suppress_threshold_attack.slurm
     with open(os.path.join(attack_path, 'suppress_threshold_attack.slurm'), 'w') as f:
