@@ -32,8 +32,16 @@ This attack tries to determine the exact count of some aggregate (i.e. the numbe
 
 `exact_count_plot.py` reads in the `results.XX.json` files and generates a number of visual plots to help understand the results. These are placed in `results/exact_count/...`.
 
-Besides the above, `exact_count_gather.py` and `exact_count_analyze.py` were used in the interim to help debug and understand the results.
+Besides the above, `exact_count_gather.py` and `exact_count_analyze.py` were used in the interim to help debug and understand the results. 
 
-### Suppress Threshold
+### Suppress Threshold Attack
 
 This attack exploits the suppression mechanism of SynDiffix to try to determine if a given user has a certain value in some column. Under the conditions when the attacker knows that there are exactly three persons with a given value in column A, and knows that two of them have a certain other value in column B, the presence or absence of the column A value in the output allows the attacker, in certain situations, to determine whether the third person has the column B value.
+
+`suppress_threhold_infer.py` measures the effectiveness of the attack under controlled conditions. It varies several configuration parameters and runs the attack many times to capture rare events. It places the result in `results/suppression_threshold_results.json`.
+
+`suppress_threshold_plot.py` reads in `results/suppression_threshold_results.json` and displays the result in `suppress.png`. 
+
+The above is for the variant of the suppress threshold attack that tries to infer the value of a second column. There is also a membership variant, where the attack already knows that there are either two or three persons in the dataset with a given column value, and knows that if there is a third person in the dataset then they must also have the column values, and wants to determine if the third person is indeed in the dataset.
+
+This membership variant is run with `suppress_threshold.py`, and produces the output `suppress_threshold_results_no_inder.json`.
