@@ -47,7 +47,7 @@ def make_config():
     os.makedirs(slurm_out, exist_ok=True)
     num_jobs = len(attack_jobs) - 1
     # Define the slurm template
-    slurm_template = '''#!/bin/bash
+    slurm_template = f'''#!/bin/bash
     #SBATCH --job-name=suppress_attack
     #SBATCH --output={slurm_out}
     #SBATCH --error={slurm_out}
