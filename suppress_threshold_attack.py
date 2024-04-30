@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import json
 import glob
-from pathlib import Path
+from syndiffix_tools.tables_manager import TablesManager
 
 
 def make_config():
@@ -12,7 +12,7 @@ def make_config():
     code_path = os.getenv('SDX_TEST_CODE')
 
     # Create pq_path and attack_path
-    pq_path = os.path.join(base_path, 'original_data_parquet')
+    syn_path = os.path.join(base_path, 'synDatasets')
     attack_path = os.path.join(base_path, 'suppress_attacks')
 
     # Create directory at attack_path if it doesn't exist
@@ -21,20 +21,29 @@ def make_config():
     # Initialize attack_jobs
     attack_jobs = []
 
-    # Loop over each .parquet file in pq_path
-    for file_path in glob.glob(os.path.join(pq_path, '*.parquet')):
-        # Read the file into a DataFrame
-        df = pd.read_parquet(file_path)
+    # Loop over each directory name in syn_path
+    for dir_name in os.listdir(syn_path):
+        # Create a TablesManager object with the directory path
+        tm = TablesManager(dir_path=os.path.join(syn_path, dir_name))
 
-        # Get the file base name without the .parquet suffix
-        file_base = os.path.basename(file_path)[:-len('.parquet')]
+        # Get the original DataFrame columns
+        columns = list(tm.df_orig.columns)
 
-        # Loop over each column in df
-        for column in df.columns:
+        # Get the protected ID columns
+        pid_cols = tm.get_pid_cols()
+        if len(pid_cols) > 0:
+            # We can't really run the attack on time-series data
+            continue
+
+        # Remove the protected ID columns from columns
+        columns = [col for col in columns if col not in pid_cols]
+
+        # Loop over each column in columns
+        for column in columns:
             # Create a dict and append it to attack_jobs
             attack_jobs.append({
                 'index': len(attack_jobs),
-                'file_base': file_base,
+                'dir_name': dir_name,
                 'column': column
             })
 
@@ -63,8 +72,9 @@ def make_config():
     with open(os.path.join(attack_path, 'suppress_threshold_attack.slurm'), 'w') as f:
         f.write(slurm_template)
 
-def run_attack(integer):
+def run_attack(job_num):
     # Your code here
+    base_path = os.getenv('SDX_TEST_DIR')
     pass
 
 def main():
@@ -76,8 +86,8 @@ def main():
         make_config()
     else:
         try:
-            integer = int(args.command)
-            run_attack(integer)
+            job_num = int(args.command)
+            run_attack(job_num)
         except ValueError:
             print(f"Unknown command: {args.command}")
 
