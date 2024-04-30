@@ -67,8 +67,8 @@ def make_config():
 source {venv_path}
 python {exe_path} $array
     '''
-    # write the slurm template to a file suppress_threshold_attack.slurm
-    with open(os.path.join(attack_path, 'suppress_threshold_attack.slurm'), 'w') as f:
+    # write the slurm template to a file attack.slurm
+    with open(os.path.join(attack_path, 'attack.slurm'), 'w') as f:
         f.write(slurm_template)
 
 def make_attack_setup(tm, file_path, known_column):
