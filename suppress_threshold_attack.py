@@ -65,7 +65,8 @@ def make_config():
 #SBATCH --cpus-per-task=1
 #SBATCH --array=0-{num_jobs}
 source {venv_path}
-python {exe_path} $array'''
+python {exe_path} $array
+'''
     # write the slurm template to a file attack.slurm
     with open(os.path.join(attack_path, 'attack.slurm'), 'w') as f:
         f.write(slurm_template)
@@ -107,11 +108,10 @@ def make_attack_setup(tm, file_path, known_column):
 def run_attack(job_num):
     # Your code here
     base_path = os.getenv('SDX_TEST_DIR')
-    code_path = os.getenv('SDX_TEST_CODE')
 
     # Create syn_path and attack_path
     syn_path = os.path.join(base_path, 'synDatasets')
-    attack_path = os.path.join(base_path, 'suppress_attacks')
+    attack_path = os.path.join(base_path, 'sdx_tests', 'suppress_attacks')
 
     with open(os.path.join(base_path, 'attack_jobs.json'), 'r') as f:
         jobs = json.load(f)
