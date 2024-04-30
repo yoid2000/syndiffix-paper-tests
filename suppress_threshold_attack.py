@@ -65,8 +65,7 @@ def make_config():
 #SBATCH --cpus-per-task=1
 #SBATCH --array=0-{num_jobs}
 source {venv_path}
-python {exe_path} $array
-    '''
+python {exe_path} $array'''
     # write the slurm template to a file attack.slurm
     with open(os.path.join(attack_path, 'attack.slurm'), 'w') as f:
         f.write(slurm_template)
