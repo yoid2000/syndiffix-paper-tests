@@ -87,6 +87,8 @@ def make_attack_setup(tm, file_path, job):
         # Find all columns where at least two of the 3 rows have the same value
         known_rows = tm.df_orig[tm.df_orig[known_column] == known_val]
         for col in known_rows.columns:
+            if col == known_column:
+                continue
             if known_rows[col].nunique() <= 2:
                 target_col = col
                 target_val = known_rows[target_col].mode()[0] if known_rows[target_col].nunique() == 1 else known_rows[target_col].value_counts().index[1]
@@ -99,6 +101,7 @@ def make_attack_setup(tm, file_path, job):
                     'num_target_vals': tm.df_orig[target_col].nunique()
                 }
                 attack_setup['attack_instances'].append(attack_instance)
+    attack_setup['setup']['num_instances'] = len(attack_setup['attack_instances'])
 
     # Write attack_setup to file_path
     with open(file_path, 'w') as f:
