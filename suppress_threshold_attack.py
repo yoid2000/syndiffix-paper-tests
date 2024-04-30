@@ -92,11 +92,17 @@ def make_attack_setup(tm, file_path, job):
             if known_rows[col].nunique() <= 2:
                 target_col = col
                 target_val = known_rows[target_col].mode()[0] if known_rows[target_col].nunique() == 1 else known_rows[target_col].value_counts().index[1]
+                if known_rows[col].nunique() == 1:
+                    correct_pred = 'positive'
+                else:
+                    correct_pred = 'negative'
                 attack_instance = {
                     'target_col': target_col,
                     'target_val': target_val,
-                    'file_path': file_path,
                     'known_col': known_column,
+                    'kwown_val': known_val,
+                    'correct_pred': correct_pred,
+                    'file_path': file_path,
                     'known_rows': known_rows.to_dict(orient='records'),
                     'num_target_vals': tm.df_orig[target_col].nunique()
                 }
