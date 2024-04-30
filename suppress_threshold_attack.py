@@ -54,7 +54,7 @@ def make_config():
     venv_path = os.path.join(base_path, 'sdx_venv', 'bin', 'activate')
     slurm_dir = os.path.join(attack_path, 'slurm_out')
     os.makedirs(slurm_dir, exist_ok=True)
-    slurm_out = os.path.join(slurm_dir, 'slurm_out/out.%a.out')
+    slurm_out = os.path.join(slurm_dir, 'out.%a.out')
     num_jobs = len(attack_jobs) - 1
     # Define the slurm template
     slurm_template = f'''#!/bin/bash
