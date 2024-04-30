@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import json
 import glob
-import Path
+from pathlib import Path
 
 
 def make_config():
