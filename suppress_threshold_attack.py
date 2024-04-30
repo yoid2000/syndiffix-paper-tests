@@ -52,9 +52,10 @@ def make_config():
 
     exe_path = os.path.join(code_path, 'suppress_threshold_attack.py')
     venv_path = os.path.join(base_path, 'sdx_venv', 'bin', 'activate')
-    os.makedirs(slurm_out, exist_ok=True)
+    slurm_dir = os.path.join(base_path, 'slurm_out')
+    os.makedirs(slurm_dir, exist_ok=True)
+    slurm_out = os.path.join(slurm_dir, './slurm_out/out.%a.out')
     num_jobs = len(attack_jobs) - 1
-    slurm_out = './slurm_out/out.%a.out'
     # Define the slurm template
     slurm_template = f'''#!/bin/bash
 #SBATCH --job-name=suppress_attack
