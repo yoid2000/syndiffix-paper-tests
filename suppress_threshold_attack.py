@@ -89,16 +89,24 @@ def make_attack_setup(tm, file_path, job):
         for col in known_rows.columns:
             if col == known_column:
                 continue
-            if known_rows[col].nunique() <= 2:
-                target_col = col
-                target_val = known_rows[target_col].mode()[0] if known_rows[target_col].nunique() == 1 else known_rows[target_col].value_counts()[known_rows[target_col].value_counts() == 1].index[0]
-                if known_rows[col].nunique() == 1:
-                    correct_pred = 'positive'
-                else:
-                    correct_pred = 'negative'
+            target_col = col
+            target_val = None
+            if known_rows[col].nunique() == 1:
+                # set target_val to the mode of known_rows[col]
+                target_val = known_rows[col].mode()[0]
+                victim_val = target_val
+                correct_pred = 'positive'
+            elif known_rows[col].nunique() == 2:
+                # set target_val to the mode value of known_rows[col]
+                target_val = known_rows[col].mode()[0]
+                # set victim_val to the other value
+                victim_val = known_rows[col].mode()[1]
+                correct_pred = 'negative'
+            if target_val is not None:
                 attack_instance = {
                     'target_col': target_col,
                     'target_val': target_val,
+                    'victim_val': victim_val,
                     'known_col': known_column,
                     'kwown_val': known_val,
                     'correct_pred': correct_pred,
