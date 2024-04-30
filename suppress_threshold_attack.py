@@ -2,6 +2,7 @@ import argparse
 import os
 import pandas as pd
 import json
+import sys
 from syndiffix_tools.tables_manager import TablesManager
 
 
@@ -181,4 +182,5 @@ def main():
 
 if __name__ == "__main__":
     print("got main")
+    print(sys.argv)
     main()
