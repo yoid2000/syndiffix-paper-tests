@@ -113,7 +113,7 @@ def run_attack(job_num):
     syn_path = os.path.join(base_path, 'synDatasets')
     attack_path = os.path.join(base_path, 'sdx_tests', 'suppress_attacks')
 
-    with open(os.path.join(base_path, 'attack_jobs.json'), 'r') as f:
+    with open(os.path.join(attack_path, 'attack_jobs.json'), 'r') as f:
         jobs = json.load(f)
 
 
