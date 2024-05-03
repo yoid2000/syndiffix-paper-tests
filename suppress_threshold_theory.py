@@ -177,7 +177,7 @@ python {exe_path} $arrayNum
 import pandas as pd
 import numpy as np
 
-def make_df(num_rows, num_target_val, dim):
+def make_df(col1_vals, num_rows, num_target_val, dim):
     num_rows += 3   # for the attack conditions
     num_cols = dim + 2     # the additional attack columns plus the attack conditions
     # Initialize the data dictionary
@@ -185,7 +185,7 @@ def make_df(num_rows, num_target_val, dim):
     data = {}
 
     # Create col_0 with 'a', 'b', 'c' distributed uniformly randomly
-    data[f'col{x}_0'] = np.random.choice(['a', 'b', 'c'], num_rows)
+    data[f'col{x}_0'] = np.random.choice(col1_vals, num_rows)
 
     # Create col_1 with num_target_val distinct integer values from 0 to num_target_val-1, distributed uniformly randomly
     data[f'col{x}_1'] = np.random.randint(0, num_target_val, num_rows)
@@ -220,7 +220,9 @@ def _run_attack(x, file_name):
             with open(file_path, 'w') as f:
                 json.dump(x, f, indent=4)
         # Use different column names with each run so as to get different noise
-        df, target_val = make_df(x['num_rows'], x['num_target_val'], x['dim'])
+        col1_vals = ['a', 'b', 'c']
+        x['num_rows'] = len(col1_vals) * x['num_target_val'] * x['rows_mult']
+        df, target_val = make_df(col1_vals, x['num_rows'], x['num_target_val'], x['dim'])
         c0 = df.columns[0]
         c1 = df.columns[1]
 
