@@ -313,26 +313,22 @@ def run_attack(job_num=None, count_jobs=False):
 
     results = {}
     results = {'tp':0 , 'fp':0, 'tn':0, 'fn':0}
-    file_name = 'res'
     for rows_mult in rows_multiplier:
         results['rows_mult'] = rows_mult
-        file_name += f'.rm{rows_mult}'
         for num_target_val in num_target_vals:
             results['num_target_val'] = num_target_val
-            file_name += f'.tv{num_target_val}'
             for i in range(len(low_mean_gaps)):
                 low_mean_gap = low_mean_gaps[i]
                 results['low_mean_gap'] = low_mean_gap
-                file_name += f'.lmg{low_mean_gap}'
                 results['samples'] = num_tries_by_lmg[i]
                 for dim in dims:
                     if dim == 2 and low_mean_gap != 2.0:
                         continue
                     results['dim'] = dim
-                    file_name += f'.dim{dim}.json'
-                    print(f"Running attack with rows_mult={rows_mult}, num_target_val={num_target_val}, low_mean_gap={low_mean_gap}, dim={dim}")
-                    print(f"Results will be saved to {file_name}")
                     if count_jobs is False and (job_num is None or num_jobs == job_num):
+                        file_name = f"res.rm{rows_mult}.tv{num_target_val}.lmg{low_mean_gap}.dim{dim}.json"
+                        print(f"Running attack with rows_mult={rows_mult}, num_target_val={num_target_val}, low_mean_gap={low_mean_gap}, dim={dim}")
+                        print(f"Results will be saved to {file_name}")
                         _run_attack(results, file_name)
                     num_jobs += 1
     if count_jobs is True:
