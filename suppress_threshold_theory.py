@@ -328,7 +328,7 @@ def run_attack(job_num=None, count_jobs=False):
                 for dim in dims:
                     if dim == 2 and low_mean_gap != 2.0:
                         continue
-                    results[dim] = dim
+                    results['dim'] = dim
                     file_name += f'.dim{dim}.json'
                     print(f"Running attack with rows_mult={rows_mult}, num_target_val={num_target_val}, low_mean_gap={low_mean_gap}, dim={dim}")
                     print(f"Results will be saved to {file_name}")
