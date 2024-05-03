@@ -170,8 +170,6 @@ def main():
     parser.add_argument("command", help="'config' to run make_config(), or an integer to run run_attack()")
     args = parser.parse_args()
 
-    print(args)
-
     if args.command == 'config':
         make_config()
     else:
@@ -182,6 +180,4 @@ def main():
             print(f"Unknown command: {args.command}")
 
 if __name__ == "__main__":
-    print("got main")
-    print(sys.argv)
     main()
