@@ -21,7 +21,62 @@ os.makedirs(runs_path, exist_ok=True)
 tests_path = os.path.join(runs_path, 'tests')
 os.makedirs(tests_path, exist_ok=True)
 results_path = os.path.join(base_path, 'results')
+os.makedirs(results_path, exist_ok=True)
 pp = pprint.PrettyPrinter(indent=4)
+
+def summarize_stats(stats):
+    summary = {
+        'neg_pos_1_neg_1': 0,
+        'neg_pos_1_neg_0': 0,
+        'neg_pos_0_neg_1': 0,
+        'neg_pos_0_neg_0': 0,
+        'pos_pos_1_neg_1': 0,
+        'pos_pos_1_neg_0': 0,
+        'pos_pos_0_neg_1': 0,
+        'pos_pos_0_neg_0': 0,
+    }
+    for thing in stats:
+        if thing['case'] == 'positive':
+            if thing['pos_signal'] > 0:
+                if thing['neg_signal'] > 0:
+                    summary['pos_pos_1_neg_1'] += 1
+                else:
+                    summary['pos_pos_1_neg_0'] += 1
+            else:
+                if thing['neg_signal'] > 0:
+                    summary['pos_pos_0_neg_1'] += 1
+                else:
+                    summary['pos_pos_0_neg_0'] += 1
+        else:
+            if thing['pos_signal'] > 0:
+                if thing['neg_signal'] > 0:
+                    summary['neg_pos_1_neg_1'] += 1
+                else:
+                    summary['neg_pos_1_neg_0'] += 1
+            else:
+                if thing['neg_signal'] > 0:
+                    summary['neg_pos_0_neg_1'] += 1
+                else:
+                    summary['neg_pos_0_neg_0'] += 1
+    return summary
+
+def gather_results():
+    json_files = [pos_json for pos_json in os.listdir(tests_path) if pos_json.endswith('.json')]
+
+    data_list = []
+
+    for file in json_files:
+        file_path = os.path.join(tests_path, file)
+        with open(file_path, "r") as json_file:
+            data = json.load(json_file)
+            data_dict = {key: data[key] for key in ("tp", "fp", "tn", "fn", "rows_mult", "num_target_val", "low_mean_gap", "samples", "dim")}
+            data_dict['summary'] = summarize_stats(data['stats'])
+            data_list.append(data_dict)
+    # make a path to suppress_threshold_results.json in directory results
+    json_path = os.path.join(results_path, 'suppress_threshold_results.json')
+    # Dump results as a json file
+    with open(json_path, 'w') as f:
+        json.dump(data_list, f, indent=4)
 
 def make_plot():
     import matplotlib.pyplot as plt
@@ -145,7 +200,7 @@ def make_plot():
     plt.xlim(1/(30000 + 5000), 0.02)
 
     # Create the path to suppress.png
-    path_to_suppress_png = os.path.join('results', 'suppress.png')
+    path_to_suppress_png = os.path.join(results_path, 'suppress.png')
 
     # Save the plot as a PNG file
     plt.savefig(path_to_suppress_png, dpi=300, bbox_inches='tight')
@@ -326,20 +381,16 @@ def run_attack(job_num=None, count_jobs=False):
                         continue
                     results['dim'] = dim
                     if count_jobs is False and (job_num is None or num_jobs == job_num):
+                        results['job_num'] = num_jobs
                         file_name = f"res.rm{rows_mult}.tv{num_target_val}.lmg{low_mean_gap}.dim{dim}.json"
                         print(f"Running attack with rows_mult={rows_mult}, num_target_val={num_target_val}, low_mean_gap={low_mean_gap}, dim={dim}")
                         print(f"Results will be saved to {file_name}")
                         _run_attack(results, file_name)
+                    if count_jobs is True:
+                        print(f"Job {num_jobs} will run attack with rows_mult={rows_mult}, num_target_val={num_target_val}, low_mean_gap={low_mean_gap}, dim={dim}")
                     num_jobs += 1
     if count_jobs is True:
         return num_jobs
-    # make a path to suppress_threshold_results.json in directory results
-    if not os.path.exists('results'):
-        os.makedirs('results')
-    json_path = os.path.join('results', 'suppress_threshold_results.json')
-    # Dump results as a json file
-    with open(json_path, 'w') as f:
-        json.dump(results, f, indent=4)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -352,6 +403,8 @@ def main():
         make_plot()
     elif args.command == 'attacks':
         run_attack()
+    elif args.command == 'gather':
+        gather_results()
     else:
         try:
             job_num = int(args.command)
