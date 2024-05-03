@@ -64,7 +64,16 @@ def summarize_stats(stats):
 def gather_results():
     json_files = [pos_json for pos_json in os.listdir(tests_path) if pos_json.endswith('.json')]
 
-    data_list = []
+    output = {'tests': [], 'summary': {
+        'neg_pos_1_neg_1': 0,
+        'neg_pos_1_neg_0': 0,
+        'neg_pos_0_neg_1': 0,
+        'neg_pos_0_neg_0': 0,
+        'pos_pos_1_neg_1': 0,
+        'pos_pos_1_neg_0': 0,
+        'pos_pos_0_neg_1': 0,
+        'pos_pos_0_neg_0': 0,
+    }}
 
     for file in json_files:
         file_path = os.path.join(tests_path, file)
@@ -73,13 +82,15 @@ def gather_results():
             data = json.load(json_file)
             data_dict = {key: data[key] for key in ("tp", "fp", "tn", "fn", "rows_mult", "num_target_val", "low_mean_gap", "samples", "dim")}
             data_dict['summary'] = summarize_stats(data['stats'])
-            data_list.append(data_dict)
+            for key, val in data_dict['summary'].items():
+                output['summary'][key] += 1
+            output['tests'].append(data_dict)
     # make a path to suppress_threshold_results.json in directory results
     json_path = os.path.join(results_path, 'suppress_threshold_results.json')
     # Dump results as a json file
     print(f"Writing results to {json_path}")
     with open(json_path, 'w') as f:
-        json.dump(data_list, f, indent=4)
+        json.dump(output, f, indent=4)
 
 def make_plot():
     import matplotlib.pyplot as plt
