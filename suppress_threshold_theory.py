@@ -3,9 +3,6 @@ import os
 import pandas as pd
 import numpy as np
 import json
-import matplotlib.pyplot as plt
-import matplotlib.lines as mlines
-import seaborn as sns
 from syndiffix import Synthesizer
 from syndiffix.common import AnonymizationParams, SuppressionParams
 import pprint
@@ -20,11 +17,14 @@ if 'SDX_TEST_CODE' in os.environ:
 else:
     code_path = None
 runs_path = os.path.join(base_path, 'suppress_theory')
-tests_path = os.path.join(base_path, 'tests')
+os.makedirs(runs_path, exist_ok=True)
 results_path = os.path.join(base_path, 'results')
 pp = pprint.PrettyPrinter(indent=4)
 
 def make_plot():
+    import matplotlib.pyplot as plt
+    import matplotlib.lines as mlines
+    import seaborn as sns
     # read file suppress_threshold_results.json
     supp_res_path = os.path.join(results_path, 'suppress_threshold_results.json')
     with open(supp_res_path, 'r') as f:
@@ -208,7 +208,7 @@ def make_df(num_rows, num_target_val, dim):
     return df, target_val
 
 def _run_attack(x, file_name):
-    file_path = os.path.join(results_path, file_name)
+    file_path = os.path.join(runs_path, file_name)
     # use this to record results of positive and negative cases
     x['stats'] = []
     # Compute num_rows such that there are not many suppressed combinations
