@@ -18,6 +18,8 @@ else:
     code_path = None
 runs_path = os.path.join(base_path, 'suppress_theory')
 os.makedirs(runs_path, exist_ok=True)
+tests_path = os.path.join(runs_path, 'tests')
+os.makedirs(tests_path, exist_ok=True)
 results_path = os.path.join(base_path, 'results')
 pp = pprint.PrettyPrinter(indent=4)
 
@@ -159,7 +161,7 @@ def make_slurm():
     num_jobs = run_attack(count_jobs=True)
     # Define the slurm template
     slurm_template = f'''#!/bin/bash
-#SBATCH --job-name=suppress_attack
+#SBATCH --job-name=suppress_theory
 #SBATCH --output={slurm_out}
 #SBATCH --time=7-0
 #SBATCH --mem=16G
@@ -170,7 +172,7 @@ source {venv_path}
 python {exe_path} $arrayNum
 '''
     # write the slurm template to a file attack.slurm
-    with open(os.path.join(runs_path, 'attack.slurm'), 'w') as f:
+    with open(os.path.join(runs_path, 'theory.slurm'), 'w') as f:
         f.write(slurm_template)
 import pandas as pd
 import numpy as np
@@ -208,7 +210,7 @@ def make_df(num_rows, num_target_val, dim):
     return df, target_val
 
 def _run_attack(x, file_name):
-    file_path = os.path.join(runs_path, file_name)
+    file_path = os.path.join(tests_path, file_name)
     # use this to record results of positive and negative cases
     x['stats'] = []
     # Compute num_rows such that there are not many suppressed combinations
