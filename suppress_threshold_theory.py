@@ -16,11 +16,12 @@ if 'SDX_TEST_CODE' in os.environ:
     code_path = os.getenv('SDX_TEST_CODE')
 else:
     code_path = None
+os.makedirs(base_path, exist_ok=True)
 runs_path = os.path.join(base_path, 'suppress_theory')
 os.makedirs(runs_path, exist_ok=True)
 tests_path = os.path.join(runs_path, 'tests')
 os.makedirs(tests_path, exist_ok=True)
-results_path = os.path.join(base_path, 'results')
+results_path = os.path.join(tests_path, 'results')
 os.makedirs(results_path, exist_ok=True)
 pp = pprint.PrettyPrinter(indent=4)
 
