@@ -347,9 +347,9 @@ def main():
 
     if args.command == 'slurm':
         make_slurm()
-    if args.command == 'plot':
+    elif args.command == 'plot':
         make_plot()
-    if args.command == 'attacks':
+    elif args.command == 'attacks':
         run_attack()
     else:
         try:
