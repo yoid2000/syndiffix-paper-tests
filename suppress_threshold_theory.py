@@ -68,6 +68,7 @@ def gather_results():
     for file in json_files:
         file_path = os.path.join(tests_path, file)
         with open(file_path, "r") as json_file:
+            print(f"Reading {file_path}")
             data = json.load(json_file)
             data_dict = {key: data[key] for key in ("tp", "fp", "tn", "fn", "rows_mult", "num_target_val", "low_mean_gap", "samples", "dim")}
             data_dict['summary'] = summarize_stats(data['stats'])
@@ -75,6 +76,7 @@ def gather_results():
     # make a path to suppress_threshold_results.json in directory results
     json_path = os.path.join(results_path, 'suppress_threshold_results.json')
     # Dump results as a json file
+    print(f"Writing results to {json_path}")
     with open(json_path, 'w') as f:
         json.dump(data_list, f, indent=4)
 
