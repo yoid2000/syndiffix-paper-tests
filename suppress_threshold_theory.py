@@ -64,16 +64,28 @@ def summarize_stats(stats):
 def gather_results():
     json_files = [pos_json for pos_json in os.listdir(tests_path) if pos_json.endswith('.json')]
 
-    output = {'tests': [], 'summary': {
-        'neg_pos_1_neg_1': 0,
-        'neg_pos_1_neg_0': 0,
-        'neg_pos_0_neg_1': 0,
-        'neg_pos_0_neg_0': 0,
-        'pos_pos_1_neg_1': 0,
-        'pos_pos_1_neg_0': 0,
-        'pos_pos_0_neg_1': 0,
-        'pos_pos_0_neg_0': 0,
-    }}
+    output = {'tests': [],
+              'summary0': {
+                'neg_pos_1_neg_1': 0,
+                'neg_pos_1_neg_0': 0,
+                'neg_pos_0_neg_1': 0,
+                'neg_pos_0_neg_0': 0,
+                'pos_pos_1_neg_1': 0,
+                'pos_pos_1_neg_0': 0,
+                'pos_pos_0_neg_1': 0,
+                'pos_pos_0_neg_0': 0,
+               },
+              'summary20': {
+                'neg_pos_1_neg_1': 0,
+                'neg_pos_1_neg_0': 0,
+                'neg_pos_0_neg_1': 0,
+                'neg_pos_0_neg_0': 0,
+                'pos_pos_1_neg_1': 0,
+                'pos_pos_1_neg_0': 0,
+                'pos_pos_0_neg_1': 0,
+                'pos_pos_0_neg_0': 0,
+               },
+             }
 
     for file in json_files:
         file_path = os.path.join(tests_path, file)
@@ -82,8 +94,12 @@ def gather_results():
             data = json.load(json_file)
             data_dict = {key: data[key] for key in ("tp", "fp", "tn", "fn", "rows_mult", "num_target_val", "low_mean_gap", "samples", "dim")}
             data_dict['summary'] = summarize_stats(data['stats'])
-            for key, val in data_dict['summary'].items():
-                output['summary'][key] += val
+            if data_dict['dim'] == 0:
+                for key, val in data_dict['summary'].items():
+                    output['summary0'][key] += val
+            else:
+                for key, val in data_dict['summary'].items():
+                    output['summary20'][key] += val
             output['tests'].append(data_dict)
     # make a path to suppress_threshold_results.json in directory results
     json_path = os.path.join(results_path, 'suppress_threshold_results.json')
