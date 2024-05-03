@@ -83,7 +83,7 @@ def gather_results():
             data_dict = {key: data[key] for key in ("tp", "fp", "tn", "fn", "rows_mult", "num_target_val", "low_mean_gap", "samples", "dim")}
             data_dict['summary'] = summarize_stats(data['stats'])
             for key, val in data_dict['summary'].items():
-                output['summary'][key] += 1
+                output['summary'][key] += val
             output['tests'].append(data_dict)
     # make a path to suppress_threshold_results.json in directory results
     json_path = os.path.join(results_path, 'suppress_threshold_results.json')
