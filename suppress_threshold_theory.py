@@ -319,7 +319,7 @@ def _run_attack(x, file_name):
         num_combs_with_z_and_0 = 0
         num_combs_with_z_and_not_0 = 0
         for comb in combs:
-            syn = Synthesizer(df,
+            syn = Synthesizer(df[comb],
                 anonymization_params=AnonymizationParams(low_count_params=SuppressionParams(low_mean_gap=x['low_mean_gap'])))
             df_syn = syn.sample()
             num_rows_with_z_and_not_0 = len(df_syn[(df_syn[c0] == 'z') & (df_syn[c1] != 0)])
