@@ -8,6 +8,7 @@ from syndiffix.common import AnonymizationParams, SuppressionParams
 import pprint
 import sys
 
+save_results = False
 if 'SDX_TEST_DIR' in os.environ:
     base_path = os.getenv('SDX_TEST_DIR')
 else:
@@ -24,6 +25,9 @@ os.makedirs(tests_path, exist_ok=True)
 results_path = os.path.join(runs_path, 'results')
 os.makedirs(results_path, exist_ok=True)
 pp = pprint.PrettyPrinter(indent=4)
+num_tries = 30000
+no_positives = 40000
+no_positives_label = str(int(num_tries/1000)) + 'k'
 
 def summarize_stats(stats):
     summary = {
@@ -117,73 +121,85 @@ def make_plot():
     with open(supp_res_path, 'r') as f:
         results = json.load(f)
 
-    mults = {'5 rows_multiplier': 5,
-            '10 rows_multiplier': 10,
-            '100 rows_multiplier': 100}
-
-    tars = {'2 target_vals': 2,
-            '5 target_vals': 5,
-            '10 target_vals': 10}
-
-    gaps = {'2.0 low_mean_gap': 2.0,
-            '3.0 low_mean_gap': 3.0,
-            '4.0 low_mean_gap': 4.0}
-
     data = []
-    for multk, multv in results.items():
-        mult = mults[multk]
-        for tark, targ in multv.items():
-            tar = tars[tark]
-            for gapk, gapv in targ.items():
-                gap = gaps[gapk]
-                # This is the ratio of the number of rows with a given c1
-                # to the number of rows with the victim's c1 value.
-                # 3 is the number of other c1 vals
-                target_size = (gapv['num_rows'] / tar) / 3
-                # This would be the TP rate if we made a statistical guess
-                mean = 3 + gap
-                stat_guess = 1 / tar
-                tp_rate = max(1/30000, gapv['tp'] / gapv['samples'])
-                fp_rate = max(1/30000, gapv['fp'] / gapv['samples'])
-                tn_rate = max(1/30000, gapv['tn'] / gapv['samples'])
-                fn_rate = max(1/30000, gapv['fn'] / gapv['samples'])
-                all_pos = gapv['tp'] + gapv['fp']
-                if all_pos == 0.0:
-                    precision = 0
-                    precision_improvement = 0.0
-                else:
-                    precision = gapv['tp'] / all_pos
-                    precision_improvement = (precision - stat_guess) / (1.0 - stat_guess) 
-                coverage = all_pos / gapv['samples']
-                # A value of 0 would screw up the log scale
-                coverage = max(1/30000, coverage)
-                data.append({
-                    'sd_gap': int(gap),
-                    'mult': int(mult),
-                    'num_targets': int(tar),
-                    'mean': mean,
-                    'precision': precision,
-                    'precision_improvement': precision_improvement,
-                    'coverage': coverage,
-                    'target_size': int(target_size),
-                    'stat_guess': stat_guess,
-                    'tp_rate': tp_rate,
-                    'fp_rate': fp_rate,
-                    'tn_rate': tn_rate,
-                    'fn_rate': fn_rate,
-                    'samples': gapv['samples'],
-                    'num_rows': gapv['num_rows'],
-                    'tp': gapv['tp'],
-                    'fp': gapv['fp'],
-                    'tn': gapv['tn'],
-                    'fn': gapv['fn'],
-                })
+    for datum in results['tests']:
+        tar = datum['num_target_val']
+        gap = datum['low_mean_gap']
+        rows_mult = int(datum['rows_mult'])
+        if 'num_rows' in datum:
+            num_rows = datum['num_rows']
+        else:
+            # 3 is the number of other c1 vals
+            num_rows = 3 * tar * rows_mult
+        target_size = rows_mult
+        # This would be the TP rate if we made a statistical guess
+        mean = 3 + gap
+        stat_guess = 1 / tar
+        tp_rate = max(1/num_tries, datum['tp'] / datum['samples'])
+        fp_rate = max(1/num_tries, datum['fp'] / datum['samples'])
+        tn_rate = max(1/num_tries, datum['tn'] / datum['samples'])
+        fn_rate = max(1/num_tries, datum['fn'] / datum['samples'])
+        all_pos = datum['tp'] + datum['fp']
+        if all_pos == 0.0:
+            precision = 0
+            precision_improvement = 0.0
+        else:
+            precision = datum['tp'] / all_pos
+            precision_improvement = (precision - stat_guess) / (1.0 - stat_guess) 
+        coverage = all_pos / datum['samples']
+        # A value of 0 would screw up the log scale
+        coverage = max(1/no_positives, coverage)
+        data.append({
+            'dim': int(datum['dim']),
+            'sd_gap': int(gap),
+            'mult': rows_mult,
+            'num_targets': int(tar),
+            'mean': mean,
+            'precision': precision,
+            'precision_improvement': precision_improvement,
+            'coverage': coverage,
+            'target_size': int(target_size),
+            'stat_guess': stat_guess,
+            'tp_rate': tp_rate,
+            'fp_rate': fp_rate,
+            'tn_rate': tn_rate,
+            'fn_rate': fn_rate,
+            'samples': datum['samples'],
+            'num_rows': num_rows,
+            'tp': datum['tp'],
+            'fp': datum['fp'],
+            'tn': datum['tn'],
+            'fn': datum['fn'],
+        })
 
     df = pd.DataFrame(data)
+    df = df[~((df['sd_gap'] == 3) & (df['dim'] == 20))]
+    df = df[~((df['sd_gap'] == 4) & (df['dim'] == 20))]
+
     print(df[['sd_gap','sd_gap','num_targets','target_size']].to_string())
 
-    # Define the marker styles for sd_gap
-    marker_map = {2: 'o', 3: '^', 4: 'v'}
+    # Make column 'marker' in df, where the marker is deterimned by the combined values of sd_gap and dim
+    def assign_case(row):
+        if row['sd_gap'] == 2 and row['dim'] == 20:
+            return 'sd_gap 2, multi'
+        elif row['sd_gap'] == 2 and row['dim'] == 0:
+            return 'sd_gap 2, single'
+        elif row['sd_gap'] == 3 and row['dim'] == 20:
+            return 'sd_gap 3, multi'
+        elif row['sd_gap'] == 3 and row['dim'] == 0:
+            return 'sd_gap 3, single'
+        elif row['sd_gap'] == 4 and row['dim'] == 20:
+            return 'sd_gap 4, multi'
+        elif row['sd_gap'] == 4 and row['dim'] == 0:
+            return 'sd_gap 4, single'
+        else:
+            print(f"Unknown case: {row['sd_gap']}, {row['dim']}")
+            sys.exit(1)
+
+    df['case'] = df.apply(assign_case, axis=1)
+
+    # define marker map for the sd_gap, dim combinations
+    marker_map = {'sd_gap 2, single': 'v', 'sd_gap 2, multi': '+', 'sd_gap 3, single': 'o', 'sd_gap 4, single': 's'}
 
     # Define the color map for target_size
     colors = sns.color_palette()[:3]
@@ -196,17 +212,18 @@ def make_plot():
     # Create the scatter plot
     plt.figure(figsize=(7, 3.5))
 
-    for (sd_gap, marker) in marker_map.items():
+    for (case, marker) in marker_map.items():
         for (target_size, color) in color_map.items():
             for (num_targets, size) in size_map.items():
-                df_filtered = df[(df['sd_gap'] == sd_gap) & (df['target_size'] == target_size) & (df['num_targets'] == num_targets)]
-                print(sd_gap, target_size, num_targets)
+                df_filtered = df[(df['case'] == case) & (df['target_size'] == target_size) & (df['num_targets'] == num_targets)]
+                print(case, target_size, num_targets)
                 print(df_filtered.to_string())
                 plt.scatter(df_filtered['coverage'], df_filtered['precision_improvement'], color=color, marker=marker, s=size, alpha=0.6)
 
     # Add horizontal lines
-    plt.axhline(0, color='black', linestyle='--')
-    plt.axhline(0.5, color='black', linestyle='--')
+    plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--')
+    # Add a vertical line at 0.0001
+    plt.vlines(0.001, 0.5, 1.0, colors='black', linestyles='--')
 
     # Set axis labels
     plt.xscale('log')
@@ -214,20 +231,20 @@ def make_plot():
     plt.ylabel('Precision Improvement', fontsize=13, labelpad=10)
 
     # Create legends
-    legend1 = plt.legend([mlines.Line2D([0], [0], color='black', marker=marker, linestyle='None') for sd_gap, marker in marker_map.items()], ['sd_gap: {}'.format(sd_gap) for sd_gap in marker_map.keys()], title='', loc='lower left', bbox_to_anchor=(0.23, 0), fontsize='small')
+    legend1 = plt.legend([mlines.Line2D([0], [0], color='black', marker=marker, linestyle='None') for case, marker in marker_map.items()], ['case: {}'.format(case) for case in marker_map.keys()], title='', loc='lower left', bbox_to_anchor=(0.1, 0), fontsize='small')
     legend2 = plt.legend([mlines.Line2D([0], [0], color=color, marker='o', linestyle='None') for target_size, color in color_map.items()], ['target_size: {}'.format(target_size) for target_size in color_map.keys()], title='', loc='lower left', bbox_to_anchor=(0.43, 0), fontsize='small')
-    plt.legend([mlines.Line2D([0], [0], color='black', marker='o', markersize=size/10, linestyle='None') for num_targets, size in legend_size_map.items()], ['num_targets: {}'.format(num_targets) for num_targets in legend_size_map.keys()], title='', loc='lower left', bbox_to_anchor=(0.70, 0), fontsize='small')
+    plt.legend([mlines.Line2D([0], [0], color='black', marker='o', markersize=size/10, linestyle='None') for num_targets, size in legend_size_map.items()], ['num_targets: {}'.format(num_targets) for num_targets in legend_size_map.keys()], title='', loc='lower left', bbox_to_anchor=(0.0, 0.6), fontsize='small')
 
     plt.gca().add_artist(legend1)
     plt.gca().add_artist(legend2)
 
     # Modify x-axis ticks and labels
-    ticks = list(plt.xticks()[0]) + [1/30000]
-    labels = [t if t != 1/30000 else '<1/30k' for t in ticks]
+    ticks = list(plt.xticks()[0]) + [1/no_positives]
+    labels = [t if t != 1/no_positives else f'<1/{no_positives_label}' for t in ticks]
     plt.xticks(ticks, labels)
 
     # Set x-axis range to min and max 'coverage' values
-    plt.xlim(1/(30000 + 5000), 0.02)
+    plt.xlim(1/(no_positives + 5000), 0.02)
 
     # Create the path to suppress.png
     path_to_suppress_png = os.path.join(results_path, 'suppress.png')
@@ -294,13 +311,26 @@ def make_df(col1_vals, num_rows, num_target_val, dim):
     df = df.sample(frac=1).reset_index(drop=True)
     return df, target_val
 
+def check_for_target_nodes_consistency(forest, c0, c1, v0, c0_supp, c0_c1_supp):
+    '''
+    We're interested in two nodes where 'z' might show up. One is in the 1dim tree for column c0, and the other is in the 2dim tree for columns c0/c1. We want to make sure that the nodes are consistently suppressed or not suppressed.
+
+    c0 and c1 are the column names
+    v0 is the target value ('z')
+    c0_supp and c0_c1_supp are the suppression status of prior walks (or None)
+    '''
+    for node in forest.values():
+        print(node)
+        pass
+    exit(1)
+
 def _run_attack(x, file_name):
     file_path = os.path.join(tests_path, file_name)
     # use this to record results of positive and negative cases
     x['stats'] = []
     # Compute num_rows such that there are not many suppressed combinations
     for this_try in range(x['samples']):
-        if this_try % 1000 == 999:
+        if this_try % 1000 == 999 and save_results:
             # dump the results as json to file_path
             with open(file_path, 'w') as f:
                 json.dump(x, f, indent=4)
@@ -318,10 +348,17 @@ def _run_attack(x, file_name):
             combs.append([c0, c1, df.columns[i]])
         num_combs_with_z_and_0 = 0
         num_combs_with_z_and_not_0 = 0
+        c0_supp = None
+        c0_c1_supp = None
         for comb in combs:
             syn = Synthesizer(df[comb],
                 anonymization_params=AnonymizationParams(low_count_params=SuppressionParams(low_mean_gap=x['low_mean_gap'])))
             df_syn = syn.sample()
+            if len(combs) > 1:
+                from syndiffix_tools.tree_walker import *
+                tw = TreeWalker(syn)
+                forest = tw.get_forest_nodes()
+                c0_supp, c0_c1_supp = check_for_target_nodes_consistency(forest, c0, c1, 'z', c0_supp, c0_c1_supp)
             num_rows_with_z_and_not_0 = len(df_syn[(df_syn[c0] == 'z') & (df_syn[c1] != 0)])
             if num_rows_with_z_and_not_0 > 0:
                 num_combs_with_z_and_not_0 += 1
@@ -352,8 +389,9 @@ def _run_attack(x, file_name):
             else:
                 # correct
                 x['tn'] += 1
-    with open(file_path, 'w') as f:
-        json.dump(x, f, indent=4)
+    if save_results:
+        with open(file_path, 'w') as f:
+            json.dump(x, f, indent=4)
 
 def run_attack(job_num=None, count_jobs=False):
     '''
@@ -390,7 +428,6 @@ def run_attack(job_num=None, count_jobs=False):
     The 1dim node with count 3 containing the victim can certainly be non-suppressed.
     '''
     low_mean_gaps = [2.0, 3.0, 4.0]
-    num_tries_by_lmg = [30000, 30000, 30000]
     num_target_vals = [2, 5, 10]
     rows_multiplier = [5, 10, 100]
     dims = [20, 0]
@@ -405,9 +442,11 @@ def run_attack(job_num=None, count_jobs=False):
             for i in range(len(low_mean_gaps)):
                 low_mean_gap = low_mean_gaps[i]
                 results['low_mean_gap'] = low_mean_gap
-                results['samples'] = num_tries_by_lmg[i]
+                results['samples'] = num_tries
                 for dim in dims:
-                    if dim == 2 and low_mean_gap != 2.0:
+                    if dim == 0 and low_mean_gap != 2.0:
+                        continue
+                    if save_results is False and dim != 20:
                         continue
                     results['dim'] = dim
                     if count_jobs is False and (job_num is None or num_jobs == job_num):
