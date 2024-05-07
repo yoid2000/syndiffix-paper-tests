@@ -373,9 +373,8 @@ def check_for_target_nodes_consistency(df, df_syn, forest, c0, c1, c0_supp, c0_c
     if not found_c0:
         print(f"Error: 1dim node not found")
         dump_and_exit(df, df_syn, forest)
-    if not found_c0_c1:
-        print(f"Error: 2dim node not found")
-        dump_and_exit(df, df_syn, forest)
+    # Note that we might not find c0_c1 node if it gets suppressed while not yet
+    # a singularity
     return c0_supp, c0_c1_supp_target, c0_c1_supp_victim
 
 def _run_attack(x, file_name):
@@ -413,7 +412,6 @@ def _run_attack(x, file_name):
                 tw = TreeWalker(syn)
                 forest = tw.get_forest_nodes()
                 c0_supp, c0_c1_supp_target, c0_c1_supp_victim = check_for_target_nodes_consistency(df, df_syn, forest, c0, c1, c0_supp, c0_c1_supp_target, c0_c1_supp_victim)
-                print("ok!")
             num_rows_with_z_and_not_0 = len(df_syn[(df_syn[c0] == 'z') & (df_syn[c1] != 0)])
             if num_rows_with_z_and_not_0 > 0:
                 num_combs_with_z_and_not_0 += 1
