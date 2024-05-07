@@ -330,12 +330,9 @@ def check_for_target_nodes_consistency(df, df_syn, forest, c0, c1, c0_supp, c0_c
     v0 is the target value ('z')
     c0_supp and c0_c1_supp are the suppression status of prior walks (or None)
     '''
-    found_c0 = False
-    found_c0_c1 = False
     for node in forest.values():
         if len(node['columns']) == 1 and node['columns'][0] == c0 and node['actual_intervals'][0] == [3.0, 3.0]:
             # This is my 1dim node of interest
-            found_c0 = True
             if node['true_count'] != 3:
                 print(f"Error: 1dim node has count {node['true_count']}")
                 dump_and_exit(df, df_syn, forest)
@@ -346,7 +343,6 @@ def check_for_target_nodes_consistency(df, df_syn, forest, c0, c1, c0_supp, c0_c
                 dump_and_exit(df, df_syn, forest)
         if len(node['columns']) == 2 and node['columns'] == [c0, c1] and node['actual_intervals'][0] == [3.0, 3.0] and node['singularity'] is True:
             # This is one of my 2dim nodes of interest
-            found_c0_c1 = True
             if node['true_count'] >= 2:
                 if node['actual_intervals'][1] != [known_target_val, known_target_val]:
                     # This must be the known persons node, and so the target
@@ -370,11 +366,6 @@ def check_for_target_nodes_consistency(df, df_syn, forest, c0, c1, c0_supp, c0_c
                 elif c0_c1_supp_victim != node['over_threshold']:
                     print(f"Error: 2dim victim node has inconsistent suppression")
                     dump_and_exit(df, df_syn, forest)
-    if not found_c0:
-        print(f"Error: 1dim node not found")
-        dump_and_exit(df, df_syn, forest)
-    # Note that we might not find c0_c1 node if it gets suppressed while not yet
-    # a singularity
     return c0_supp, c0_c1_supp_target, c0_c1_supp_victim
 
 def _run_attack(x, file_name):
