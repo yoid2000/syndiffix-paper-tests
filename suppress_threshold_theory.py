@@ -331,8 +331,8 @@ def check_for_target_nodes_consistency(forest, c0, c1, c0_supp, c0_c1_supp_targe
                 pp.pprint(forest)
                 sys.exit(1)
             if c0_supp is None:
-                c0_supp = node['suppressed']
-            elif c0_supp != node['suppressed']:
+                c0_supp = node['over_threshold']
+            elif c0_supp != node['over_threshold']:
                 print(f"Error: 1dim node has inconsistent suppression")
                 pp.pprint(forest)
                 sys.exit(1)
@@ -348,8 +348,8 @@ def check_for_target_nodes_consistency(forest, c0, c1, c0_supp, c0_c1_supp_targe
                     sys.exit(1)
                 if node['true_count'] == 2:
                     if c0_c1_supp_target is None:
-                        c0_c1_supp_target = node['suppressed']
-                    elif c0_c1_supp_target != node['suppressed']:
+                        c0_c1_supp_target = node['over_threshold']
+                    elif c0_c1_supp_target != node['over_threshold']:
                         print(f"Error: 2dim target node has inconsistent suppression")
                         pp.pprint(forest)
                         sys.exit(1)
@@ -361,8 +361,8 @@ def check_for_target_nodes_consistency(forest, c0, c1, c0_supp, c0_c1_supp_targe
                     pp.pprint(forest)
                     sys.exit(1)
                 if c0_c1_supp_victim is None:
-                    c0_c1_supp_victim = node['suppressed']
-                elif c0_c1_supp_victim != node['suppressed']:
+                    c0_c1_supp_victim = node['over_threshold']
+                elif c0_c1_supp_victim != node['over_threshold']:
                     print(f"Error: 2dim victim node has inconsistent suppression")
                     pp.pprint(forest)
                     sys.exit(1)
