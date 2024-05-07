@@ -312,7 +312,16 @@ def make_df(col1_vals, num_rows, num_target_val, dim):
     df = df.sample(frac=1).reset_index(drop=True)
     return df, target_val
 
-def check_for_target_nodes_consistency(forest, c0, c1, c0_supp, c0_c1_supp_target, c0_c1_supp_victim):
+def dump_and_exit(df, df_syn, forest):
+    print("Original")
+    print(df.to_string())
+    print("Synthetic")
+    print(df_syn.to_string())
+    print("Forest")
+    pp.pprint(forest)
+    sys.exit(1)
+
+def check_for_target_nodes_consistency(df, df_syn, forest, c0, c1, c0_supp, c0_c1_supp_target, c0_c1_supp_victim):
     '''
     We're interested in two nodes where 'z' might show up. One is in the 1dim tree for column c0, and the other is in the 2dim tree for columns c0/c1. We want to make sure that the nodes are consistently suppressed or not suppressed.
 
@@ -328,14 +337,12 @@ def check_for_target_nodes_consistency(forest, c0, c1, c0_supp, c0_c1_supp_targe
             found_c0 = True
             if node['true_count'] != 3:
                 print(f"Error: 1dim node has count {node['true_count']}")
-                pp.pprint(forest)
-                sys.exit(1)
+                dump_and_exit(df, df_syn, forest)
             if c0_supp is None:
                 c0_supp = node['over_threshold']
             elif c0_supp != node['over_threshold']:
                 print(f"Error: 1dim node has inconsistent suppression")
-                pp.pprint(forest)
-                sys.exit(1)
+                dump_and_exit(df, df_syn, forest)
         if len(node['columns']) == 2 and node['columns'] == [c0, c1] and node['actual_intervals'][0] == [3.0, 3.0] and node['singularity'] is True:
             # This is one of my 2dim nodes of interest
             found_c0_c1 = True
@@ -344,36 +351,30 @@ def check_for_target_nodes_consistency(forest, c0, c1, c0_supp, c0_c1_supp_targe
                     # This must be the known persons node, and so the target
                     # value must be 0.0
                     print(f"Error: 2dim target node should have value 0")
-                    pp.pprint(forest)
-                    sys.exit(1)
+                    dump_and_exit(df, df_syn, forest)
                 if node['true_count'] == 2:
                     if c0_c1_supp_target is None:
                         c0_c1_supp_target = node['over_threshold']
                     elif c0_c1_supp_target != node['over_threshold']:
                         print(f"Error: 2dim target node has inconsistent suppression")
-                        pp.pprint(forest)
-                        sys.exit(1)
+                        dump_and_exit(df, df_syn, forest)
             if node['true_count'] == 1:
                 if node['actual_intervals'][1] == [0.0, 0.0]:
                     # This must be the victim's node, and so the 
                     # target value must not be 0.0
                     print(f"Error: 2dim victim node should not have value 0")
-                    pp.pprint(forest)
-                    sys.exit(1)
+                    dump_and_exit(df, df_syn, forest)
                 if c0_c1_supp_victim is None:
                     c0_c1_supp_victim = node['over_threshold']
                 elif c0_c1_supp_victim != node['over_threshold']:
                     print(f"Error: 2dim victim node has inconsistent suppression")
-                    pp.pprint(forest)
-                    sys.exit(1)
+                    dump_and_exit(df, df_syn, forest)
     if not found_c0:
         print(f"Error: 1dim node not found")
-        pp.pprint(forest)
-        sys.exit(1)
+        dump_and_exit(df, df_syn, forest)
     if not found_c0_c1:
         print(f"Error: 2dim node not found")
-        pp.pprint(forest)
-        sys.exit(1)
+        dump_and_exit(df, df_syn, forest)
     return c0_supp, c0_c1_supp_target, c0_c1_supp_victim
 
 def _run_attack(x, file_name):
@@ -410,7 +411,7 @@ def _run_attack(x, file_name):
             if len(combs) > 1:
                 tw = TreeWalker(syn)
                 forest = tw.get_forest_nodes()
-                c0_supp, c0_c1_supp_target, c0_c1_supp_victim = check_for_target_nodes_consistency(forest, c0, c1, c0_supp, c0_c1_supp_target, c0_c1_supp_victim)
+                c0_supp, c0_c1_supp_target, c0_c1_supp_victim = check_for_target_nodes_consistency(df, df_syn, forest, c0, c1, c0_supp, c0_c1_supp_target, c0_c1_supp_victim)
             num_rows_with_z_and_not_0 = len(df_syn[(df_syn[c0] == 'z') & (df_syn[c1] != 0)])
             if num_rows_with_z_and_not_0 > 0:
                 num_combs_with_z_and_not_0 += 1
