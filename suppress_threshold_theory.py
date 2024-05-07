@@ -5,6 +5,7 @@ import numpy as np
 import json
 from syndiffix import Synthesizer
 from syndiffix.common import AnonymizationParams, SuppressionParams
+from syndiffix_tools.tree_walker import *
 import pprint
 import sys
 
@@ -322,7 +323,7 @@ def check_for_target_nodes_consistency(forest, c0, c1, v0, c0_supp, c0_c1_supp):
     for node in forest.values():
         print(node)
         pass
-    exit(1)
+    sys.exit(1)
 
 def _run_attack(x, file_name):
     file_path = os.path.join(tests_path, file_name)
@@ -355,7 +356,6 @@ def _run_attack(x, file_name):
                 anonymization_params=AnonymizationParams(low_count_params=SuppressionParams(low_mean_gap=x['low_mean_gap'])))
             df_syn = syn.sample()
             if len(combs) > 1:
-                from syndiffix_tools.tree_walker import *
                 tw = TreeWalker(syn)
                 forest = tw.get_forest_nodes()
                 c0_supp, c0_c1_supp = check_for_target_nodes_consistency(forest, c0, c1, 'z', c0_supp, c0_c1_supp)
