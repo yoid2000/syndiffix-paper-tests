@@ -9,6 +9,7 @@ from syndiffix_tools.tree_walker import *
 import pprint
 import sys
 
+known_target_val = 111.0
 save_results = False
 if 'SDX_TEST_DIR' in os.environ:
     base_path = os.getenv('SDX_TEST_DIR')
@@ -291,10 +292,10 @@ def make_df(col1_vals, num_rows, num_target_val, dim):
     data[f'col{x}_0'] = np.random.choice(col1_vals, num_rows)
 
     # Create col_1 with num_target_val distinct integer values from 0 to num_target_val-1, distributed uniformly randomly
-    data[f'col{x}_1'] = np.random.randint(0, num_target_val, num_rows)
+    data[f'col{x}_1'] = np.random.randint(int(known_target_val), num_target_val+int(known_target_val), num_rows)
 
-    # Create columns col_2 through col_C-1 with two distinct integer values, each chosen randomly from integers between 0 and 1000
-    k, l = np.random.randint(0, 1001, 2)
+    # Create columns col_2 through col_C-1 with two distinct integer values, each chosen randomly from integers between 200 and 1200
+    k, l = np.random.randint(200, 1201, 2)
     for i in range(2, num_cols):
         data[f'col{x}_{i}'] = np.random.choice([k,l], num_rows)
 
@@ -302,9 +303,9 @@ def make_df(col1_vals, num_rows, num_target_val, dim):
 
     # Create the attack conditions
     df.loc[0, f'col{x}_0'] = 'z'
-    df.loc[0, f'col{x}_1'] = 0
+    df.loc[0, f'col{x}_1'] = int(known_target_val)
     df.loc[1, f'col{x}_0'] = 'z'
-    df.loc[1, f'col{x}_1'] = 0
+    df.loc[1, f'col{x}_1'] = int(known_target_val)
     df.loc[2, f'col{x}_0'] = 'z'
     target_val = df.loc[2, f'col{x}_1']
     # Need to shuffle the dataframes otherwise we'll get the same
@@ -347,9 +348,9 @@ def check_for_target_nodes_consistency(df, df_syn, forest, c0, c1, c0_supp, c0_c
             # This is one of my 2dim nodes of interest
             found_c0_c1 = True
             if node['true_count'] >= 2:
-                if node['actual_intervals'][1] != [0.0, 0.0]:
+                if node['actual_intervals'][1] != [known_target_val, known_target_val]:
                     # This must be the known persons node, and so the target
-                    # value must be 0.0
+                    # value must be known_target_val
                     print(f"Error: 2dim target node should have value 0")
                     dump_and_exit(df, df_syn, forest)
                 if node['true_count'] == 2:
@@ -359,9 +360,9 @@ def check_for_target_nodes_consistency(df, df_syn, forest, c0, c1, c0_supp, c0_c
                         print(f"Error: 2dim target node has inconsistent suppression")
                         dump_and_exit(df, df_syn, forest)
             if node['true_count'] == 1:
-                if node['actual_intervals'][1] == [0.0, 0.0]:
+                if node['actual_intervals'][1] == [known_target_val, known_target_val]:
                     # This must be the victim's node, and so the 
-                    # target value must not be 0.0
+                    # target value must not be known_target_val
                     print(f"Error: 2dim victim node should not have value 0")
                     dump_and_exit(df, df_syn, forest)
                 if c0_c1_supp_victim is None:
