@@ -312,7 +312,7 @@ def make_df(col1_vals, num_rows, num_target_val, dim):
     df = df.sample(frac=1).reset_index(drop=True)
     return df, target_val
 
-def check_for_target_nodes_consistency(forest, c0, c1, v0, c0_supp, c0_c1_supp):
+def check_for_target_nodes_consistency(forest, c0, c1, c0_supp, c0_c1_supp_target, c0_c1_supp_victim):
     '''
     We're interested in two nodes where 'z' might show up. One is in the 1dim tree for column c0, and the other is in the 2dim tree for columns c0/c1. We want to make sure that the nodes are consistently suppressed or not suppressed.
 
@@ -320,10 +320,61 @@ def check_for_target_nodes_consistency(forest, c0, c1, v0, c0_supp, c0_c1_supp):
     v0 is the target value ('z')
     c0_supp and c0_c1_supp are the suppression status of prior walks (or None)
     '''
+    found_c0 = False
+    found_c0_c1 = False
     for node in forest.values():
-        print(node)
-        pass
-    sys.exit(1)
+        if len(node['columns']) == 1 and node['columns'][0] == c0 and node['actual_intervals'][0] == [3.0, 3.0]:
+            # This is my 1dim node of interest
+            found_c0 = True
+            if node['true_count'] != 3:
+                print(f"Error: 1dim node has count {node['true_count']}")
+                pp.pprint(forest)
+                sys.exit(1)
+            if c0_supp is None:
+                c0_supp = node['suppressed']
+            elif c0_supp != node['suppressed']:
+                print(f"Error: 1dim node has inconsistent suppression")
+                pp.pprint(forest)
+                sys.exit(1)
+        if len(node['columns']) == 2 and node['columns'] == [c0, c1] and node['actual_intervals'][0] == [3.0, 3.0] and node['singularity'] is True:
+            # This is one of my 2dim nodes of interest
+            found_c0_c1 = True
+            if node['true_count'] >= 2:
+                if node['actual_intervals'][1] != [0.0, 0.0]:
+                    # This must be the known persons node, and so the target
+                    # value must be 0.0
+                    print(f"Error: 2dim target node should have value 0")
+                    pp.pprint(forest)
+                    sys.exit(1)
+                if node['true_count'] == 2:
+                    if c0_c1_supp_target is None:
+                        c0_c1_supp_target = node['suppressed']
+                    elif c0_c1_supp_target != node['suppressed']:
+                        print(f"Error: 2dim target node has inconsistent suppression")
+                        pp.pprint(forest)
+                        sys.exit(1)
+            if node['true_count'] == 1:
+                if node['actual_intervals'][1] == [0.0, 0.0]:
+                    # This must be the victim's node, and so the 
+                    # target value must not be 0.0
+                    print(f"Error: 2dim victim node should not have value 0")
+                    pp.pprint(forest)
+                    sys.exit(1)
+                if c0_c1_supp_victim is None:
+                    c0_c1_supp_victim = node['suppressed']
+                elif c0_c1_supp_victim != node['suppressed']:
+                    print(f"Error: 2dim victim node has inconsistent suppression")
+                    pp.pprint(forest)
+                    sys.exit(1)
+    if not found_c0:
+        print(f"Error: 1dim node not found")
+        pp.pprint(forest)
+        sys.exit(1)
+    if not found_c0_c1:
+        print(f"Error: 2dim node not found")
+        pp.pprint(forest)
+        sys.exit(1)
+    return c0_supp, c0_c1_supp_target, c0_c1_supp_victim
 
 def _run_attack(x, file_name):
     file_path = os.path.join(tests_path, file_name)
@@ -350,7 +401,8 @@ def _run_attack(x, file_name):
         num_combs_with_z_and_0 = 0
         num_combs_with_z_and_not_0 = 0
         c0_supp = None
-        c0_c1_supp = None
+        c0_c1_supp_target = None
+        c0_c1_supp_victim = None
         for comb in combs:
             syn = Synthesizer(df[comb],
                 anonymization_params=AnonymizationParams(low_count_params=SuppressionParams(low_mean_gap=x['low_mean_gap'])))
@@ -358,7 +410,7 @@ def _run_attack(x, file_name):
             if len(combs) > 1:
                 tw = TreeWalker(syn)
                 forest = tw.get_forest_nodes()
-                c0_supp, c0_c1_supp = check_for_target_nodes_consistency(forest, c0, c1, 'z', c0_supp, c0_c1_supp)
+                c0_supp, c0_c1_supp_target, c0_c1_supp_victim = check_for_target_nodes_consistency(forest, c0, c1, c0_supp, c0_c1_supp_target, c0_c1_supp_victim)
             num_rows_with_z_and_not_0 = len(df_syn[(df_syn[c0] == 'z') & (df_syn[c1] != 0)])
             if num_rows_with_z_and_not_0 > 0:
                 num_combs_with_z_and_not_0 += 1
