@@ -5,7 +5,7 @@ import numpy as np
 import json
 from syndiffix import Synthesizer
 from syndiffix.common import AnonymizationParams, SuppressionParams
-from syndiffix_tools.tree_walker import *
+# from syndiffix_tools.tree_walker import *
 import pprint
 import sys
 
@@ -30,6 +30,69 @@ pp = pprint.PrettyPrinter(indent=4)
 num_tries = 30000
 no_positives = 40000
 no_positives_label = str(int(num_tries/1000)) + 'k'
+
+def membership_attack():
+    low_mean_gaps = [2.0, 3.0, 4.0]
+    num_tries_by_lmg = [4000, 20000, 40000]
+
+    results = {}
+    for i in range(len(low_mean_gaps)):
+        low_mean_gap = low_mean_gaps[i]
+        lmg_key = f'{low_mean_gap} low_mean_gap'
+        num_tries = num_tries_by_lmg[i]
+        col1_vals = ['a', 'b', 'c']
+        # Compute num_rows such that there are not many suppressed combinations
+        num_rows = 75
+        results[lmg_key] = {'tp':0, 'fp':0, 'tn':0, 'fn':0, 'samples': num_tries, 'num_rows': num_rows}
+        for this_try in range(num_tries):
+            # Use different column names with each run so as to get different noise
+            c1 = f"c1_{this_try}"
+            df = pd.DataFrame({c1: np.random.choice(col1_vals, size=num_rows),})
+            # Add two rows of the attack configuration
+            df = pd.concat([df, pd.DataFrame({c1: ['z']})], ignore_index=True)
+            df = pd.concat([df, pd.DataFrame({c1: ['z']})], ignore_index=True)
+            
+            # add the third row with 50% probability
+            if np.random.randint(0, 2) == 1:
+                df = pd.concat([df, pd.DataFrame({c1: ['z']})], ignore_index=True)
+                status = 'positive'
+            else:
+                status = 'negative'
+
+            # Need to shuffle the dataframes otherwise we'll get the same
+            # noise due to the same indices assigned by syndiffix
+            df = df.sample(frac=1).reset_index(drop=True)
+
+            syn = Synthesizer(df,
+                anonymization_params=AnonymizationParams(low_count_params=SuppressionParams(low_mean_gap=low_mean_gap)))
+            df_syn = syn.sample()
+            num_rows_with_z = len(df_syn[(df_syn[c1] == 'z')])
+            if num_rows_with_z > 0:
+                # positive guess
+                if status == 'positive':
+                    # correct
+                    results[lmg_key]['tp'] += 1
+                else:
+                    # wrong
+                    results[lmg_key]['fp'] += 1
+            else:
+                # negative guess
+                if status == 'positive':
+                    # wrong
+                    results[lmg_key]['fn'] += 1
+                else:
+                    # correct
+                    results[lmg_key]['tn'] += 1
+        coverage = (results[lmg_key]['tp'] + results[lmg_key]['fp']) / results[lmg_key]['samples']
+        results[lmg_key]['coverage'] = coverage
+
+        print(results)
+    # Dump results as a json file
+    json_path = os.path.join(results_path, 'suppress_threshold_results_no_infer.json')
+    # Dump results as a json file
+    print(f"Writing results to {json_path}")
+    with open(json_path, 'w') as f:
+        json.dump(results, f, indent=4)
 
 def summarize_stats(stats):
     summary = {
@@ -128,6 +191,12 @@ def make_plot():
         tar = datum['num_target_val']
         gap = datum['low_mean_gap']
         rows_mult = int(datum['rows_mult'])
+        # If there are only two target values, then a negative indication can be
+        # considered a positive guess for the non-target value. We catch this case
+        # and update tp and fp accordingly
+        if tar == 2:
+            datum['tp'] += datum['summary']['neg_pos_0_neg_1']
+            datum['fp'] += datum['summary']['pos_pos_0_neg_1']
         if 'num_rows' in datum:
             num_rows = datum['num_rows']
         else:
@@ -220,7 +289,7 @@ def make_plot():
                 df_filtered = df[(df['case'] == case) & (df['target_size'] == target_size) & (df['num_targets'] == num_targets)]
                 print(case, target_size, num_targets)
                 print(df_filtered.to_string())
-                plt.scatter(df_filtered['coverage'], df_filtered['precision_improvement'], color=color, marker=marker, s=size, alpha=0.6)
+                plt.scatter(df_filtered['coverage'], df_filtered['precision_improvement'], color=color, marker=marker, s=size, alpha=0.7)
 
     # Add horizontal lines
     plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--')
@@ -518,6 +587,8 @@ def main():
         run_attack()
     elif args.command == 'gather':
         gather_results()
+    elif args.command == 'membership':
+        membership_attack()
     else:
         try:
             job_num = int(args.command)
