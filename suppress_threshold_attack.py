@@ -110,10 +110,10 @@ def make_attack_setup(tm, file_path, job):
                 if target_val is not None:
                     attack_instance = {
                         'target_col': target_col,
-                        'target_val': target_val,
-                        'victim_val': victim_val,
+                        'target_val': str(target_val),
+                        'victim_val': str(victim_val),
                         'known_cols': comb,
-                        'kwown_vals': known_val_comb,
+                        'known_vals': known_val_comb,
                         'correct_pred': correct_pred,
                         'file_path': file_path,
                         'known_rows': known_rows.to_dict(orient='records'),
