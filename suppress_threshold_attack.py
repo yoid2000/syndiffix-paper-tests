@@ -72,13 +72,19 @@ def make_attack_setup(tm, file_path, job):
     # For each comb, find all values that appear exactly 3 times in tm.df_orig
     print(f"we have {len(combs)} combinations")
     for comb in combs:
-        value_counts = tm.df_orig[comb].value_counts()
-        known_vals = value_counts[value_counts == 3].index.tolist()
+        # Group the DataFrame by the columns in comb and count the number of rows for each group
+        grouped = tm.df_orig.groupby(list(comb)).size()
+
+        # Filter the groups to only include those with exactly 3 rows
+        known_vals = grouped[grouped == 3].index.tolist()
+
         if len(known_vals) == 0:
             continue
+
         print(comb)
         print(known_vals)
         attack_setup['setup']['num_rows'] += len(tm.df_orig)
+
     quit()
 
     '''
