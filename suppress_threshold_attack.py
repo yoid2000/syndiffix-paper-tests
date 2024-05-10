@@ -112,12 +112,12 @@ def make_attack_setup(tm, file_path, job):
                         'target_col': target_col,
                         'target_val': target_val,
                         'victim_val': victim_val,
-                        'known_cols': comb,
-                        'kwown_vals': known_val_comb,
+                        'known_cols': tuple(comb),
+                        'kwown_vals': tuple(known_val_comb),
                         'correct_pred': correct_pred,
                         'file_path': file_path,
                         'known_rows': known_rows.to_dict(orient='records'),
-                        'num_target_vals': tm.df_orig[target_col].nunique()
+                        'num_target_vals': int(tm.df_orig[target_col].nunique())
                     }
                     attack_setup['attack_instances'].append(attack_instance)
     attack_setup['setup']['num_instances'] = len(attack_setup['attack_instances'])
