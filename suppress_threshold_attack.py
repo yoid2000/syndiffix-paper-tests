@@ -82,6 +82,7 @@ def make_attack_setup(tm, file_path, job):
         known_val_combs = grouped[grouped == 3].index.tolist()
         print(comb)
         print(known_val_combs)
+    quit()
 #        for known_val_comb in known_val_combs:
 #            # Find all columns where at least two of the 3 rows have the same value
 #
