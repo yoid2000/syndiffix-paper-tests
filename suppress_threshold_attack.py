@@ -4,20 +4,15 @@ import pandas as pd
 import json
 import sys
 from syndiffix_tools.tables_manager import TablesManager
+import itertools
 
+base_path = os.getenv('SDX_TEST_DIR')
+code_path = os.getenv('SDX_TEST_CODE')
+syn_path = os.path.join(base_path, 'synDatasets')
+attack_path = os.path.join(base_path, 'suppress_attacks')
+os.makedirs(attack_path, exist_ok=True)
 
 def make_config():
-    # Read the environment variable SDX_TEST_DIR and assign it to base_path
-    base_path = os.getenv('SDX_TEST_DIR')
-    code_path = os.getenv('SDX_TEST_CODE')
-
-    # Create syn_path and attack_path
-    syn_path = os.path.join(base_path, 'synDatasets')
-    attack_path = os.path.join(base_path, 'suppress_attacks')
-
-    # Create directory at attack_path if it doesn't exist
-    os.makedirs(attack_path, exist_ok=True)
-
     # Initialize attack_jobs
     attack_jobs = []
 
@@ -25,26 +20,19 @@ def make_config():
     for dir_name in os.listdir(syn_path):
         # Create a TablesManager object with the directory path
         tm = TablesManager(dir_path=os.path.join(syn_path, dir_name))
-
-        # Get the original DataFrame columns
         columns = list(tm.df_orig.columns)
-
         # Get the protected ID columns
         pid_cols = tm.get_pid_cols()
         if len(pid_cols) > 0:
             # We can't really run the attack on time-series data
             continue
-
         # Remove the protected ID columns from columns
         columns = [col for col in columns if col not in pid_cols]
-
-        # Loop over each column in columns
-        for column in columns:
-            # Create a dict and append it to attack_jobs
+        for col1, col2 in itertools.combinations(columns, 2):
             attack_jobs.append({
                 'index': len(attack_jobs),
                 'dir_name': dir_name,
-                'column': column
+                'columns': [col1, col2],
             })
 
     # Write attack_jobs into a JSON file
@@ -126,16 +114,8 @@ def make_attack_setup(tm, file_path, job):
     return attack_setup
 
 def run_attack(job_num):
-    # Your code here
-    base_path = os.getenv('SDX_TEST_DIR')
-
-    # Create syn_path and attack_path
-    syn_path = os.path.join(base_path, 'synDatasets')
-    attack_path = os.path.join(base_path, 'suppress_attacks')
-
     with open(os.path.join(attack_path, 'attack_jobs.json'), 'r') as f:
         jobs = json.load(f)
-
 
     # Make sure job_num is within the range of jobs, and if not, print an error message and exit
     if job_num < 0 or job_num >= len(jobs):
