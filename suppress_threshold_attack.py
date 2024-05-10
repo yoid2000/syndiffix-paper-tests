@@ -62,55 +62,64 @@ python {exe_path} $arrayNum
         f.write(slurm_template)
 
 def make_attack_setup(tm, file_path, job):
-    attack_setup = {'setup': {}, 'attack_instances': []}
+    attack_setup = {'setup': {'num_rows':0, 'job':job}, 'attack_instances': []}
 
-    # Find all values that appear exactly 3 times in tm.df_orig
-    known_column = job['column']
-    value_counts = tm.df_orig[known_column].value_counts()
-    known_vals = value_counts[value_counts == 3].index.tolist()
+    columns = list(tm.df_orig.columns)
+    combinations = list(itertools.combinations(columns, 3)) + list(itertools.combinations(columns, 4))
+    combinations = [comb for comb in combinations if all(col in comb for col in job['columns'])]
+    combs = [job['columns'][0], job['columns'][1]] + combinations
 
-    # Set setup values
-    attack_setup['setup']['num_rows'] = len(tm.df_orig)
-    attack_setup['setup']['job'] = job
+    # For each comb, find all values that appear exactly 3 times in tm.df_orig
+    print(f"we have {len(combs)} combinations")
+    for comb in combs:
+        value_counts = tm.df_orig[comb].value_counts()
+        known_vals = value_counts[value_counts == 3].index.tolist()
+        if len(known_vals) == 0:
+            continue
+        print(comb)
+        print(known_vals)
+        attack_setup['setup']['num_rows'] += len(tm.df_orig)
+    quit()
 
-    for known_val in known_vals:
-        # Find all columns where at least two of the 3 rows have the same value
-        known_rows = tm.df_orig[tm.df_orig[known_column] == known_val]
-        for col in known_rows.columns:
-            if col == known_column:
-                continue
-            target_col = col
-            target_val = None
-            if known_rows[col].nunique() == 1:
-                # set target_val to the mode of known_rows[col]
-                target_val = known_rows[col].mode()[0]
-                victim_val = target_val
-                correct_pred = 'positive'
-            elif known_rows[col].nunique() == 2:
-                # set target_val to the mode value of known_rows[col]
-                target_val = known_rows[col].mode()[0]
-                # set victim_val to the other value
-                victim_val = known_rows[col][known_rows[col] != target_val].values[0]
-                correct_pred = 'negative'
-            if target_val is not None:
-                attack_instance = {
-                    'target_col': target_col,
-                    'target_val': target_val,
-                    'victim_val': victim_val,
-                    'known_col': known_column,
-                    'kwown_val': known_val,
-                    'correct_pred': correct_pred,
-                    'file_path': file_path,
-                    'known_rows': known_rows.to_dict(orient='records'),
-                    'num_target_vals': tm.df_orig[target_col].nunique()
-                }
-                attack_setup['attack_instances'].append(attack_instance)
+    '''
+        for known_val in known_vals:
+            # Find all columns where at least two of the 3 rows have the same value
+            known_rows = tm.df_orig[tm.df_orig[known_column] == known_val]
+            for col in known_rows.columns:
+                if col == known_column:
+                    continue
+                target_col = col
+                target_val = None
+                if known_rows[col].nunique() == 1:
+                    # set target_val to the mode of known_rows[col]
+                    target_val = known_rows[col].mode()[0]
+                    victim_val = target_val
+                    correct_pred = 'positive'
+                elif known_rows[col].nunique() == 2:
+                    # set target_val to the mode value of known_rows[col]
+                    target_val = known_rows[col].mode()[0]
+                    # set victim_val to the other value
+                    victim_val = known_rows[col][known_rows[col] != target_val].values[0]
+                    correct_pred = 'negative'
+                if target_val is not None:
+                    attack_instance = {
+                        'target_col': target_col,
+                        'target_val': target_val,
+                        'victim_val': victim_val,
+                        'known_col': known_column,
+                        'kwown_val': known_val,
+                        'correct_pred': correct_pred,
+                        'file_path': file_path,
+                        'known_rows': known_rows.to_dict(orient='records'),
+                        'num_target_vals': tm.df_orig[target_col].nunique()
+                    }
+                    attack_setup['attack_instances'].append(attack_instance)
     attack_setup['setup']['num_instances'] = len(attack_setup['attack_instances'])
 
     # Write attack_setup to file_path
     with open(file_path, 'w') as f:
         json.dump(attack_setup, f, indent=4)
-
+    '''
     return attack_setup
 
 def run_attack(job_num):
