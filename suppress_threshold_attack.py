@@ -80,14 +80,15 @@ def make_attack_setup(tm, file_path, job):
 
         # Filter the groups to only include those with exactly 3 rows
         known_val_combs = grouped[grouped == 3].index.tolist()
+        print(comb)
         print(known_val_combs)
-        for known_val_comb in known_val_combs:
-            # Find all columns where at least two of the 3 rows have the same value
-
-            known_rows = tm.df_orig[tm.df_orig[comb].isin([known_val_comb])]
-            print(known_rows.to_string())
-
-
+#        for known_val_comb in known_val_combs:
+#            # Find all columns where at least two of the 3 rows have the same value
+#
+#            known_rows = tm.df_orig[tm.df_orig[comb].isin([known_val_comb])]
+#            print(known_rows.to_string())
+#
+#
 #            known_rows = tm.df_orig[tm.df_orig[comb] == known_val]
 #            for col in known_rows.columns:
 #                if col == known_column:
