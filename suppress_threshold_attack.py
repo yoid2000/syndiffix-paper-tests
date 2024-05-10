@@ -67,7 +67,7 @@ def make_attack_setup(tm, file_path, job):
     columns = list(tm.df_orig.columns)
     combinations = list(itertools.combinations(columns, 3)) + list(itertools.combinations(columns, 4))
     combinations = [comb for comb in combinations if all(col in comb for col in job['columns'])]
-    combs = [job['columns'][0], job['columns'][1]] + combinations
+    combs = [[job['columns'][0]], [job['columns'][1]], job['columns']] + combinations
 
     # For each comb, find all values that appear exactly 3 times in tm.df_orig
     print(f"we have {len(combs)} combinations")
