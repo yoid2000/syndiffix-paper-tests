@@ -72,6 +72,7 @@ def make_attack_setup(tm, file_path, job):
     # For each comb, find all values that appear exactly 3 times in tm.df_orig
     print(f"we have {len(combs)} combinations")
     for comb in combs:
+        print(comb)
         # Group the DataFrame by the columns in comb and count the number of rows for each group
         grouped = tm.df_orig.groupby(list(comb)).size()
 
@@ -81,7 +82,6 @@ def make_attack_setup(tm, file_path, job):
         if len(known_vals) == 0:
             continue
 
-        print(comb)
         print(known_vals)
         attack_setup['setup']['num_rows'] += len(tm.df_orig)
 
