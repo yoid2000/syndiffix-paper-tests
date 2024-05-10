@@ -89,8 +89,8 @@ def make_attack_setup(tm, file_path, job):
         for known_val_comb in known_val_combs:
             # Find all columns where at least two of the 3 rows have the same value
             known_val_comb = to_list(known_val_comb)
-
-            known_rows = tm.df_orig[tm.df_orig[comb].isin([known_val_comb])]
+            mask = (tm.df_orig[comb] == known_val_comb).all(axis=1)
+            known_rows = tm.df_orig[mask]
             print(known_rows.to_string())
 #
 #
