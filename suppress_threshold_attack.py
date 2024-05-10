@@ -139,7 +139,9 @@ def run_attack(job_num):
     os.makedirs(instances_path, exist_ok=True)
 
     # Make a file_name and file_path
-    file_name = f"{job['column']}_{job['dir_name']}.json"
+    # make a string that contains the column names in job['columns'] separated by '_'
+    column_str = '_'.join(job['columns'])
+    file_name = f"{job['dir_name']}.{column_str}.json"
     file_path = os.path.join(instances_path, file_name)
 
     # Make a TablesManager object
