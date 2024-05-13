@@ -67,7 +67,7 @@ def to_list(value):
     else:
         return list(value)
 
-def get_attack_info(tm, comb, known_val_comb, target_col, target_val):
+def get_attack_info(df_syn, comb, known_val_comb, target_col, target_val):
     ''' Find the synthetic data that correpsonds to the columns in comb+target_col.
         This might be the full synthetic table (for instance, if comb has 3 columns).
         Prior to this, we have already determined that there are either 2 or 3 rows
