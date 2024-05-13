@@ -97,6 +97,10 @@ def run_attacks(tm, file_path, job):
                               'num_possible_known_value_combs': 0,
                               'num_rows': tm.df_orig.shape[0],
                               'num_attacks': 0,
+                              'tp': 0,
+                              'fp': 0,
+                              'tn': 0,
+                              'fn': 0,
                               'job':job},
                        'sample_instances': [[],[],[],[],[]],
                        'attack_results': []}
@@ -121,6 +125,7 @@ def run_attacks(tm, file_path, job):
         # Filter the groups to only include those with exactly 3 rows
         known_val_combs = grouped[grouped == 3].index.tolist()
         got_instance_sample = False
+        sum_base_probs = 0
         for known_val_comb in known_val_combs:
             # Find all columns where at least two of the 3 rows have the same value
             known_val_comb = to_list(known_val_comb)
@@ -162,6 +167,18 @@ def run_attacks(tm, file_path, job):
                         }
                         attack_summary['sample_instances'][num_known_columns].append(attack_instance)
                     num_with_target, num_without_target, best_syn = get_attack_info(tm, comb, known_val_comb, target_col, target_val)
+                    got_tp = False
+                    # probability that simply guessing positive would be correct
+                    sum_base_probs += num_rows_with_target_val / tm.df_orig.shape[0]
+                    if correct_pred == 'positive' and num_with_target > 0 and num_without_target == 0:
+                        attack_summary['summary']['tp'] += 1
+                        got_tp = True
+                    elif correct_pred == 'negative' and num_with_target > 0 and num_without_target == 0:
+                        attack_summary['summary']['fp'] += 1
+                    elif correct_pred == 'positive' and (num_with_target == 0 or num_without_target > 0):
+                        attack_summary['summary']['fn'] += 1
+                    elif correct_pred == 'negative' and (num_with_target == 0 or num_without_target > 0):
+                        attack_summary['summary']['tn'] += 1
                     attack_result = {
                         # number rows with target value
                         'nrtv': num_rows_with_target_val,
@@ -177,9 +194,26 @@ def run_attacks(tm, file_path, job):
                         'bs': best_syn,
                         # the number of known columns
                         'nkc': num_known_columns,
+                        # whether simple critieria yielded true positive
+                        'tp': got_tp,
                     }
                     attack_summary['attack_results'].append(attack_result)
-    attack_summary['summary']['num_attacks'] = len(attack_summary['attack_results'])
+    tp = attack_summary['summary']['tp']
+    fp = attack_summary['summary']['fp']
+    tn = attack_summary['summary']['tn']
+    fn = attack_summary['summary']['fn']
+    num_attacks = tp + fp + tn + fn
+    avg_base = sum_base_probs / num_attacks if num_attacks > 0 else 0
+    prec = tp / (tp + fp) if (tp + fp) > 0 else 0
+    pi = (prec - avg_base) / (1 - avg_base) if (1 - avg_base) != 0 else 0
+    if (tp + fp + tn + fn) != len(attack_summary['attack_results']):
+        print(f"Error: {tp} + {fp} + {tn} + {fn} != {len(attack_summary['attack_results'])}")
+        sys.exit(1)
+    attack_summary['summary']['num_attacks'] = num_attacks
+    attack_summary['summary']['precision'] = prec
+    attack_summary['summary']['precision_improvement'] = pi
+    attack_summary['summary']['coverage_known'] = (tp + fp) / num_attacks if num_attacks != 0 else 0
+    attack_summary['summary']['coverage_all_possible'] = (tp + fp) / len(attack_summary['num_possible_known_value_combs']) if len(attack_summary['num_possible_known_value_combs']) != 0 else 0
 
     # Write attack_summary to file_path
     with open(file_path, 'w') as f:
