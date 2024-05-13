@@ -124,7 +124,7 @@ def run_attacks(tm, file_path, job):
 
         # Filter the groups to only include those with exactly 3 rows
         known_val_combs = grouped[grouped == 3].index.tolist()
-        for col in known_rows.columns:
+        for col in list(rm.df_orig.columns):
             # We loop through the columns first so that we only need to pull in the
             # relevant df_syn once per col
             if col in comb:
