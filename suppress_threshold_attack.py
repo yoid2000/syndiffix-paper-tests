@@ -67,8 +67,39 @@ def to_list(value):
     else:
         return list(value)
 
-def make_attack_setup(tm, file_path, job):
-    attack_setup = {'setup': {'num_instances':0, 'job':job}, 'attack_instances': []}
+def get_attack_info(tm, comb, known_val_comb, target_col, target_val):
+    ''' Find the synthetic data that correpsonds to the columns in comb+target_col.
+        This might be the full synthetic table (for instance, if comb has 3 columns).
+        Prior to this, we have already determined that there are either 2 or 3 rows
+        that contain the known_val_comb values in the columns in comb. We have also
+        determined that 2 of those rows have value target_val in target_col. We want
+        to see if the corresponding rows appear in the synthetic data.
+    '''
+    df_syn = tm.get_best_syn_df(columns=comb+[target_col])
+    if df_syn is None:
+        print(f"Could not find a synthetic table for columns {comb}")
+        sys.exit(1)
+    if len(list(df_syn.columns)) == len(comb):
+        best_syn = True
+    else:
+        best_syn = False
+    mask = (df_syn[comb] == known_val_comb).all(axis=1)
+    subset = df_syn[mask]
+    mask_with_target = subset[target_col] == target_val
+    num_with_target = mask_with_target.sum()
+    mask_without_target = subset[target_col] != target_val
+    num_without_target = mask_without_target.sum()
+    return num_with_target, num_without_target, best_syn
+
+def run_attacks(tm, file_path, job):
+    max_attack_instances = 100
+    attack_summary = {'summary': {'num_samples':[0,0,0,0,0],
+                              'num_possible_known_value_combs': 0,
+                              'num_rows': tm.df_orig.shape[0],
+                              'num_attacks': 0,
+                              'job':job},
+                       'sample_instances': [[],[],[],[],[]],
+                       'attack_results': []}
 
     columns = list(tm.df_orig.columns)
     combinations = list(itertools.combinations(columns, 3)) + list(itertools.combinations(columns, 4))
@@ -81,11 +112,15 @@ def make_attack_setup(tm, file_path, job):
             # Can't have a target unknown column in this case
             continue
         comb = list(comb)
+        num_known_columns = len(comb)
         # Group the DataFrame by the columns in comb and count the number of rows for each group
         grouped = tm.df_orig.groupby(comb).size()
+        # This is the total number of 
+        attack_summary['summary']['num_possible_known_value_combs'] += grouped.shape[0]
 
         # Filter the groups to only include those with exactly 3 rows
         known_val_combs = grouped[grouped == 3].index.tolist()
+        got_instance_sample = False
         for known_val_comb in known_val_combs:
             # Find all columns where at least two of the 3 rows have the same value
             known_val_comb = to_list(known_val_comb)
@@ -108,24 +143,47 @@ def make_attack_setup(tm, file_path, job):
                     victim_val = known_rows[col][known_rows[col] != target_val].values[0]
                     correct_pred = 'negative'
                 if target_val is not None:
-                    attack_instance = {
-                        'target_col': target_col,
-                        'target_val': str(target_val),
-                        'victim_val': str(victim_val),
-                        'known_cols': comb,
-                        'known_vals': known_val_comb,
-                        'correct_pred': correct_pred,
-                        'file_path': file_path,
-                        'known_rows': known_rows.to_dict(orient='records'),
-                        'num_target_vals': int(tm.df_orig[target_col].nunique())
+                    num_rows_with_target_val = len(tm.df_orig[tm.df_orig[target_col] == target_val])
+                    num_distinct_values = len(tm.df_orig[target_col].unique())
+                    attack_summary['summary']['num_samples'][num_known_columns] += 1
+                    if len(attack_summary['sample_instances'][num_known_columns]) < max_attack_instances and not got_instance_sample:
+                        got_instance_sample = True
+                        attack_instance = {
+                            'target_col': target_col,
+                            'num_rows_with_target_val': num_rows_with_target_val,
+                            'num_distinct_target_col_vals': num_distinct_values,
+                            'target_val': str(target_val),
+                            'victim_val': str(victim_val),
+                            'known_cols': comb,
+                            'known_vals': known_val_comb,
+                            'correct_pred': correct_pred,
+                            'file_path': file_path,
+                            'known_rows': known_rows.to_dict(orient='records'),
+                        }
+                        attack_summary['sample_instances'][num_known_columns].append(attack_instance)
+                    num_with_target, num_without_target, best_syn = get_attack_info(tm, comb, known_val_comb, target_col, target_val)
+                    attack_result = {
+                        # number rows with target value
+                        'nrtv': num_rows_with_target_val,
+                        # number of distinct target values
+                        'ndtv': num_distinct_values,
+                        # What a correct prediction would be
+                        'c': correct_pred,
+                        # number of synthetic rows with knwon values and target value
+                        'nkwt': num_with_target,
+                        # number of synthetic rows with known values and not target value
+                        'nkwot': num_without_target,
+                        # whether the synthetic table is the best one
+                        'bs': best_syn,
+                        # the number of known columns
+                        'nkc': num_known_columns,
                     }
-                    attack_setup['attack_instances'].append(attack_instance)
-    attack_setup['setup']['num_instances'] = len(attack_setup['attack_instances'])
+                    attack_summary['attack_results'].append(attack_result)
+    attack_summary['summary']['num_attacks'] = len(attack_summary['attack_results'])
 
-    # Write attack_setup to file_path
+    # Write attack_summary to file_path
     with open(file_path, 'w') as f:
-        json.dump(attack_setup, f, indent=4)
-    return attack_setup
+        json.dump(attack_summary, f, indent=4)
 
 def run_attack(job_num):
     with open(os.path.join(attack_path, 'attack_jobs.json'), 'r') as f:
@@ -151,19 +209,11 @@ def run_attack(job_num):
 
     # Make a TablesManager object
     tm = TablesManager(dir_path=os.path.join(syn_path, job['dir_name']))
-
-    # If file_path exists, read it into attack_setup. Otherwise, call make_attack_setup()
-    if os.path.exists(file_path):
-        with open(file_path, 'r') as f:
-            attack_setup = json.load(f)
-    else:
-        attack_setup = make_attack_setup(tm, file_path, job)
-
-    pass
+    run_attacks(tm, file_path, job)
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", help="'config' to run make_config(), or an integer to run run_attack()")
+    parser.add_argument("command", help="'config' to run make_config(), or an integer to run run_attacks()")
     args = parser.parse_args()
 
     if args.command == 'config':
