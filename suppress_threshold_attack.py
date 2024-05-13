@@ -3,14 +3,85 @@ import os
 import pandas as pd
 import json
 import sys
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import precision_recall_curve, auc
+import matplotlib.pyplot as plt
 from syndiffix_tools.tables_manager import TablesManager
 import itertools
 
-base_path = os.getenv('SDX_TEST_DIR')
-code_path = os.getenv('SDX_TEST_CODE')
+if 'SDX_TEST_DIR' in os.environ:
+    base_path = os.getenv('SDX_TEST_DIR')
+else:
+    base_path = os.getcwd()
+if 'SDX_TEST_CODE' in os.environ:
+    code_path = os.getenv('SDX_TEST_CODE')
+else:
+    code_path = None
 syn_path = os.path.join(base_path, 'synDatasets')
 attack_path = os.path.join(base_path, 'suppress_attacks')
 os.makedirs(attack_path, exist_ok=True)
+
+def do_model():
+    # Read in the parquet file
+    res_path = os.path.join(attack_path, 'results.parquet')
+    df = pd.read_parquet(res_path)
+
+    # Convert 'c' column to binary
+    df['c'] = df['c'].map({'positive': 1, 'negative': 0})
+
+    # Separate features and target
+    X = df.drop(columns=['c'])
+    y = df['c']
+
+    # Split the data into training and test sets
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=42)
+
+    # Retain a copy of X_test which includes 'cap'
+    X_test_copy = X_test.copy()
+
+    # Standardize the features
+    scaler = StandardScaler()
+    X_train = scaler.fit_transform(X_train.drop(columns=['cap']))
+    X_test = scaler.transform(X_test.drop(columns=['cap']))
+
+    # Train the model
+    model = LogisticRegression()
+    model.fit(X_train, y_train)
+
+    # Get the probability of positive class
+    y_score = model.predict_proba(X_test)[:,1]
+
+    # Add y_score into the retained copy as an additional column
+    X_test_copy['y_score'] = y_score
+
+    # Save X_test_copy, y_test, and y_score to parquet files
+    X_test_copy.to_parquet(os.path.join(attack_path, 'X_test.parquet'))
+    y_test.to_parquet(os.path.join(attack_path, 'y_test.parquet'))
+    pd.Series(y_score).to_parquet(os.path.join(attack_path, 'y_score.parquet'))
+
+def do_plots():
+    # Read in the parquet files
+    X_test_copy = pd.read_parquet(os.path.join(attack_path, 'X_test.parquet'))
+    y_test = pd.read_parquet(os.path.join(attack_path, 'y_test.parquet'))
+    y_score = pd.read_parquet(os.path.join(attack_path, 'y_score.parquet'))
+
+    # Compute precision-recall curve and AUC
+    precision, recall, _ = precision_recall_curve(y_test, y_score)
+    pr_auc = auc(recall, precision)
+
+    # Plot precision-recall curve
+    plt.figure()
+    plt.plot(recall, precision, color='darkorange', lw=2, label='PR curve (area = %0.2f)' % pr_auc)
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.title('Precision-Recall curve')
+    plt.legend(loc="lower right")
+    plot_path = os.path.join(attack_path, 'pr_curve.png')
+    plt.savefig(plot_path)
 
 def gather(instances_path):
     all_entries = []
@@ -21,7 +92,7 @@ def gather(instances_path):
     for i, filename in enumerate(all_files):
         if filename.endswith('.json'):
             with open(os.path.join(instances_path, filename), 'r') as f:
-                print(f"Reading {i} of {len(all_files)} {filename}")
+                print(f"Reading {i+1} of {len(all_files)} {filename}")
                 res = json.load(f)
                 cap = res['summary']['coverage_all_possible']
                 for entry in res['attack_results']:
@@ -286,6 +357,10 @@ def main():
         make_config()
     elif args.command == 'gather':
         gather(instances_path=os.path.join(attack_path, 'instances'))
+    elif args.command == 'model':
+        do_model()
+    elif args.command == 'plots':
+        do_plots()
     else:
         try:
             job_num = int(args.command)
