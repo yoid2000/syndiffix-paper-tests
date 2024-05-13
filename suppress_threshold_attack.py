@@ -29,7 +29,8 @@ def gather(instances_path):
     df = pd.DataFrame(all_entries)
     
     # Step 5: Store df as a parquet file called results.parquet
-    df.to_parquet('results.parquet')
+    file_path = os.path.join(attack_path, 'results.parquet')
+    df.to_parquet(file_path)
 
 def make_config():
     # Initialize attack_jobs
