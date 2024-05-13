@@ -213,7 +213,7 @@ def run_attacks(tm, file_path, job):
     attack_summary['summary']['precision'] = prec
     attack_summary['summary']['precision_improvement'] = pi
     attack_summary['summary']['coverage_known'] = (tp + fp) / num_attacks if num_attacks != 0 else 0
-    attack_summary['summary']['coverage_all_possible'] = (tp + fp) / len(attack_summary['num_possible_known_value_combs']) if len(attack_summary['num_possible_known_value_combs']) != 0 else 0
+    attack_summary['summary']['coverage_all_possible'] = (tp + fp) / len(attack_summary['summary']['num_possible_known_value_combs']) if len(attack_summary['summary']['num_possible_known_value_combs']) != 0 else 0
 
     # Write attack_summary to file_path
     with open(file_path, 'w') as f:
