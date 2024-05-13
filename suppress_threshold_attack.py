@@ -16,10 +16,12 @@ def gather(instances_path):
     all_entries = []
     
     # Step 1: Read in all of the json files in the directory at instances_path
-    for filename in os.listdir(instances_path):
+    all_files = list(os.listdir(instances_path))
+    # loop through the index and filename of all_files
+    for i, filename in enumerate(all_files):
         if filename.endswith('.json'):
             with open(os.path.join(instances_path, filename), 'r') as f:
-                print(f"Reading {filename}")
+                print(f"Reading {i} of {len(all_files)} {filename}")
                 res = json.load(f)
                 cap = res['summary']['coverage_all_possible']
                 for entry in res['attack_results']:
