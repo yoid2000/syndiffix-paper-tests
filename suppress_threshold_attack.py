@@ -86,9 +86,9 @@ def get_attack_info(tm, comb, known_val_comb, target_col, target_val):
     mask = (df_syn[comb] == known_val_comb).all(axis=1)
     subset = df_syn[mask]
     mask_with_target = subset[target_col] == target_val
-    num_with_target = mask_with_target.sum()
+    num_with_target = int(mask_with_target.sum())
     mask_without_target = subset[target_col] != target_val
-    num_without_target = mask_without_target.sum()
+    num_without_target = int(mask_without_target.sum())
     return num_with_target, num_without_target, best_syn
 
 def run_attacks(tm, file_path, job):
