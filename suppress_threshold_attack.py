@@ -111,6 +111,7 @@ def run_attacks(tm, file_path, job):
     combs = [[job['columns'][0]], [job['columns'][1]], job['columns']] + combinations
 
     # For each comb, find all values that appear exactly 3 times in tm.df_orig
+    sum_base_probs = 0
     for comb in combs:
         if len(comb) == len(columns):
             # Can't have a target unknown column in this case
@@ -124,8 +125,6 @@ def run_attacks(tm, file_path, job):
 
         # Filter the groups to only include those with exactly 3 rows
         known_val_combs = grouped[grouped == 3].index.tolist()
-        got_instance_sample = False
-        sum_base_probs = 0
         for known_val_comb in known_val_combs:
             # Find all columns where at least two of the 3 rows have the same value
             known_val_comb = to_list(known_val_comb)
@@ -151,8 +150,7 @@ def run_attacks(tm, file_path, job):
                     num_rows_with_target_val = len(tm.df_orig[tm.df_orig[target_col] == target_val])
                     num_distinct_values = len(tm.df_orig[target_col].unique())
                     attack_summary['summary']['num_samples'][num_known_columns] += 1
-                    if len(attack_summary['sample_instances'][num_known_columns]) < max_attack_instances and not got_instance_sample:
-                        got_instance_sample = True
+                    if len(attack_summary['sample_instances'][num_known_columns]) < max_attack_instances:
                         attack_instance = {
                             'target_col': target_col,
                             'num_rows_with_target_val': num_rows_with_target_val,
