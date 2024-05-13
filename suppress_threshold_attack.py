@@ -12,6 +12,25 @@ syn_path = os.path.join(base_path, 'synDatasets')
 attack_path = os.path.join(base_path, 'suppress_attacks')
 os.makedirs(attack_path, exist_ok=True)
 
+def gather(instances_path):
+    all_entries = []
+    
+    # Step 1: Read in all of the json files in the directory at instances_path
+    for filename in os.listdir(instances_path):
+        if filename.endswith('.json'):
+            with open(os.path.join(instances_path, filename), 'r') as f:
+                res = json.load(f)
+                cap = res['summary']['coverage_all_possible']
+                for entry in res['attack_results']:
+                    entry['cap'] = cap
+                    all_entries.append(entry)
+    
+    # Step 4: Make a dataframe df where each key in each entry of all_entries is a column
+    df = pd.DataFrame(all_entries)
+    
+    # Step 5: Store df as a parquet file called results.parquet
+    df.to_parquet('results.parquet')
+
 def make_config():
     # Initialize attack_jobs
     attack_jobs = []
@@ -260,6 +279,8 @@ def main():
 
     if args.command == 'config':
         make_config()
+    elif args.command == 'gather':
+        gather(instances_path=os.path.join(attack_path, 'instances'))
     else:
         try:
             job_num = int(args.command)
