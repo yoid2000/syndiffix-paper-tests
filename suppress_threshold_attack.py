@@ -19,6 +19,7 @@ def gather(instances_path):
     for filename in os.listdir(instances_path):
         if filename.endswith('.json'):
             with open(os.path.join(instances_path, filename), 'r') as f:
+                print(f"Reading {filename}")
                 res = json.load(f)
                 cap = res['summary']['coverage_all_possible']
                 for entry in res['attack_results']:
@@ -27,6 +28,7 @@ def gather(instances_path):
     
     # Step 4: Make a dataframe df where each key in each entry of all_entries is a column
     df = pd.DataFrame(all_entries)
+    print(df.head())
     
     # Step 5: Store df as a parquet file called results.parquet
     file_path = os.path.join(attack_path, 'results.parquet')
