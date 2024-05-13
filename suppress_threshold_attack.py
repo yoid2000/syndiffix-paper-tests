@@ -75,7 +75,6 @@ def get_attack_info(tm, comb, known_val_comb, target_col, target_val):
         determined that 2 of those rows have value target_val in target_col. We want
         to see if the corresponding rows appear in the synthetic data.
     '''
-    df_syn = tm.get_best_syn_df(columns=comb+[target_col], cache=True)
     if df_syn is None:
         print(f"Could not find a synthetic table for columns {comb}")
         sys.exit(1)
@@ -125,14 +124,17 @@ def run_attacks(tm, file_path, job):
 
         # Filter the groups to only include those with exactly 3 rows
         known_val_combs = grouped[grouped == 3].index.tolist()
-        for known_val_comb in known_val_combs:
-            # Find all columns where at least two of the 3 rows have the same value
-            known_val_comb = to_list(known_val_comb)
-            mask = (tm.df_orig[comb] == known_val_comb).all(axis=1)
-            known_rows = tm.df_orig[mask]
-            for col in known_rows.columns:
-                if col in comb:
-                    continue
+        for col in known_rows.columns:
+            # We loop through the columns first so that we only need to pull in the
+            # relevant df_syn once per col
+            if col in comb:
+                continue
+            df_syn = None
+            for known_val_comb in known_val_combs:
+                # Find all columns where at least two of the 3 rows have the same value
+                known_val_comb = to_list(known_val_comb)
+                mask = (tm.df_orig[comb] == known_val_comb).all(axis=1)
+                known_rows = tm.df_orig[mask]
                 target_col = col
                 target_val = None
                 if known_rows[col].nunique() == 1:
@@ -146,56 +148,60 @@ def run_attacks(tm, file_path, job):
                     # set victim_val to the other value
                     victim_val = known_rows[col][known_rows[col] != target_val].values[0]
                     correct_pred = 'negative'
-                if target_val is not None:
-                    num_rows_with_target_val = len(tm.df_orig[tm.df_orig[target_col] == target_val])
-                    num_distinct_values = len(tm.df_orig[target_col].unique())
-                    attack_summary['summary']['num_samples'][num_known_columns] += 1
-                    if len(attack_summary['sample_instances'][num_known_columns]) < max_attack_instances:
-                        attack_instance = {
-                            'target_col': target_col,
-                            'num_rows_with_target_val': num_rows_with_target_val,
-                            'num_distinct_target_col_vals': num_distinct_values,
-                            'target_val': str(target_val),
-                            'victim_val': str(victim_val),
-                            'known_cols': comb,
-                            'known_vals': known_val_comb,
-                            'correct_pred': correct_pred,
-                            'file_path': file_path,
-                            'known_rows': known_rows.to_dict(orient='records'),
-                        }
-                        attack_summary['sample_instances'][num_known_columns].append(attack_instance)
-                    num_with_target, num_without_target, best_syn = get_attack_info(tm, comb, known_val_comb, target_col, target_val)
-                    got_tp = False
-                    # probability that simply guessing positive would be correct
-                    sum_base_probs += num_rows_with_target_val / tm.df_orig.shape[0]
-                    if correct_pred == 'positive' and num_with_target > 0 and num_without_target == 0:
-                        attack_summary['summary']['tp'] += 1
-                        got_tp = True
-                    elif correct_pred == 'negative' and num_with_target > 0 and num_without_target == 0:
-                        attack_summary['summary']['fp'] += 1
-                    elif correct_pred == 'positive' and (num_with_target == 0 or num_without_target > 0):
-                        attack_summary['summary']['fn'] += 1
-                    elif correct_pred == 'negative' and (num_with_target == 0 or num_without_target > 0):
-                        attack_summary['summary']['tn'] += 1
-                    attack_result = {
-                        # number rows with target value
-                        'nrtv': num_rows_with_target_val,
-                        # number of distinct target values
-                        'ndtv': num_distinct_values,
-                        # What a correct prediction would be
-                        'c': correct_pred,
-                        # number of synthetic rows with knwon values and target value
-                        'nkwt': num_with_target,
-                        # number of synthetic rows with known values and not target value
-                        'nkwot': num_without_target,
-                        # whether the synthetic table is the best one
-                        'bs': best_syn,
-                        # the number of known columns
-                        'nkc': num_known_columns,
-                        # whether simple critieria yielded true positive
-                        'tp': got_tp,
+                if target_val is None:
+                    continue
+                num_rows_with_target_val = len(tm.df_orig[tm.df_orig[target_col] == target_val])
+                num_distinct_values = len(tm.df_orig[target_col].unique())
+                attack_summary['summary']['num_samples'][num_known_columns] += 1
+                if len(attack_summary['sample_instances'][num_known_columns]) < max_attack_instances:
+                    attack_instance = {
+                        'target_col': target_col,
+                        'num_rows_with_target_val': num_rows_with_target_val,
+                        'num_distinct_target_col_vals': num_distinct_values,
+                        'target_val': str(target_val),
+                        'victim_val': str(victim_val),
+                        'known_cols': comb,
+                        'known_vals': known_val_comb,
+                        'correct_pred': correct_pred,
+                        'file_path': file_path,
+                        'known_rows': known_rows.to_dict(orient='records'),
                     }
-                    attack_summary['attack_results'].append(attack_result)
+                    attack_summary['sample_instances'][num_known_columns].append(attack_instance)
+                if df_syn is None:
+                    df_syn = tm.get_best_syn_df(columns=comb+[target_col])
+                num_with_target, num_without_target, best_syn = get_attack_info(df_syn, comb, known_val_comb, target_col, target_val)
+                got_tp = False
+                # probability that simply guessing positive would be correct
+                sum_base_probs += num_rows_with_target_val / tm.df_orig.shape[0]
+                if correct_pred == 'positive' and num_with_target > 0 and num_without_target == 0:
+                    attack_summary['summary']['tp'] += 1
+                    got_tp = True
+                elif correct_pred == 'negative' and num_with_target > 0 and num_without_target == 0:
+                    attack_summary['summary']['fp'] += 1
+                elif correct_pred == 'positive' and (num_with_target == 0 or num_without_target > 0):
+                    attack_summary['summary']['fn'] += 1
+                elif correct_pred == 'negative' and (num_with_target == 0 or num_without_target > 0):
+                    attack_summary['summary']['tn'] += 1
+                attack_result = {
+                    # number rows with target value
+                    'nrtv': num_rows_with_target_val,
+                    # number of distinct target values
+                    'ndtv': num_distinct_values,
+                    # What a correct prediction would be
+                    'c': correct_pred,
+                    # number of synthetic rows with knwon values and target value
+                    'nkwt': num_with_target,
+                    # number of synthetic rows with known values and not target value
+                    'nkwot': num_without_target,
+                    # whether the synthetic table is the best one
+                    'bs': best_syn,
+                    # the number of known columns
+                    'nkc': num_known_columns,
+                    # whether simple critieria yielded true positive
+                    'tp': got_tp,
+                }
+                attack_summary['attack_results'].append(attack_result)
+            df_syn = None
     tp = attack_summary['summary']['tp']
     fp = attack_summary['summary']['fp']
     tn = attack_summary['summary']['tn']
