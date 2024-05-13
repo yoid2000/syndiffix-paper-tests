@@ -201,9 +201,7 @@ def run_attacks(tm, file_path, job):
     tn = attack_summary['summary']['tn']
     fn = attack_summary['summary']['fn']
     num_attacks = tp + fp + tn + fn
-    print(f"num_attacks: {num_attacks}")
     avg_base = sum_base_probs / num_attacks if num_attacks > 0 else 0
-    print(f"avg_base: {avg_base}")
     prec = tp / (tp + fp) if (tp + fp) > 0 else 0
     pi = (prec - avg_base) / (1 - avg_base) if (1 - avg_base) != 0 else 0
     if (tp + fp + tn + fn) != len(attack_summary['attack_results']):
@@ -240,6 +238,10 @@ def run_attack(job_num):
     column_str = '_'.join(job['columns'])
     file_name = f"{job['dir_name']}.{column_str}.json"
     file_path = os.path.join(instances_path, file_name)
+
+    if os.path.exists(file_path):
+        print(f"File already exists: {file_path}")
+        return
 
     # Make a TablesManager object
     tm = TablesManager(dir_path=os.path.join(syn_path, job['dir_name']))
