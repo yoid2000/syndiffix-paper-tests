@@ -75,11 +75,11 @@ def get_attack_info(tm, comb, known_val_comb, target_col, target_val):
         determined that 2 of those rows have value target_val in target_col. We want
         to see if the corresponding rows appear in the synthetic data.
     '''
-    df_syn = tm.get_best_syn_df(columns=comb+[target_col])
+    df_syn = tm.get_best_syn_df(columns=comb+[target_col], cache=True)
     if df_syn is None:
         print(f"Could not find a synthetic table for columns {comb}")
         sys.exit(1)
-    if len(list(df_syn.columns)) == len(comb):
+    if len(list(df_syn.columns)) == len(comb+[target_col]):
         best_syn = True
     else:
         best_syn = False
