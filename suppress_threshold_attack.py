@@ -44,7 +44,7 @@ def do_model():
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=42)
 
     # Retain a copy of X_test which includes 'cap'
-    X_test_copy = X_test.copy()
+    X_test_all = X_test.copy()
 
     # Standardize the features
     scaler = StandardScaler()
@@ -59,25 +59,24 @@ def do_model():
     y_score = model.predict_proba(X_test)[:,1]
 
     # Add y_score into the retained copy as an additional column
-    X_test_copy['y_score'] = y_score
+    X_test_all['prob_pos'] = y_score
 
-    # Save X_test_copy, y_test, and y_score to parquet files
-    X_test_copy.to_parquet(os.path.join(attack_path, 'X_test.parquet'))
-    pd.DataFrame(y_score, columns=['y_score']).to_parquet(os.path.join(attack_path, 'y_score.parquet'))
+    # Save X_test_all, y_test, and y_score to parquet files
+    X_test_all.to_parquet(os.path.join(attack_path, 'X_test.parquet'))
+    pd.DataFrame(y_score, columns=['prob_pos']).to_parquet(os.path.join(attack_path, 'y_score.parquet'))
     pd.DataFrame(y_test).to_parquet(os.path.join(attack_path, 'y_test.parquet'))
 
 def do_plots():
     # Read in the parquet files
-    X_test_copy = pd.read_parquet(os.path.join(attack_path, 'X_test.parquet'))
+    X_test_all = pd.read_parquet(os.path.join(attack_path, 'X_test.parquet'))
     y_test = pd.read_parquet(os.path.join(attack_path, 'y_test.parquet')).squeeze()
     y_score = pd.read_parquet(os.path.join(attack_path, 'y_score.parquet')).squeeze()
     print("X_test:")
-    print(X_test_copy.head())
+    print(X_test_all.head())
 
     # Compute precision-recall curve and AUC
     precision, recall, _ = precision_recall_curve(y_test, y_score)
     pr_auc = auc(recall, precision)
-    print(len(y_test), len(y_score), len(precision), len(recall))
 
     # Plot precision-recall curve
     plt.figure()
