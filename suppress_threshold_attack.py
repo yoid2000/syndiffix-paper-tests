@@ -71,6 +71,8 @@ def do_plots():
     X_test_copy = pd.read_parquet(os.path.join(attack_path, 'X_test.parquet'))
     y_test = pd.read_parquet(os.path.join(attack_path, 'y_test.parquet')).squeeze()
     y_score = pd.read_parquet(os.path.join(attack_path, 'y_score.parquet')).squeeze()
+    print("X_test:")
+    print(X_test_copy.head())
 
     # Compute precision-recall curve and AUC
     precision, recall, _ = precision_recall_curve(y_test, y_score)
