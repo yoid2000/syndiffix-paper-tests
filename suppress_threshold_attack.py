@@ -260,7 +260,7 @@ def run_attacks(tm, file_path, job):
                 num_distinct_values = len(tm.df_orig[target_col].unique())
                 attack_summary['summary']['num_samples'][num_known_columns] += 1
                 if len(attack_summary['sample_instances'][num_known_columns]) < max_attack_instances:
-                    known_rows_str = known_rows.to_dict(orient='records'),
+                    known_rows_str = known_rows.to_dict(orient='records')[0],
                     pp.pprint(known_rows_str)
                     for row in known_rows_str:
                         for key, val in row.items():
