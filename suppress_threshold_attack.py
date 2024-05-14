@@ -3,12 +3,12 @@ import os
 import pandas as pd
 import json
 import sys
+import random
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import precision_recall_curve, auc
 import matplotlib.pyplot as plt
-from syndiffix_tools.tables_manager import TablesManager
 import itertools
 
 if 'SDX_TEST_DIR' in os.environ:
@@ -22,6 +22,7 @@ else:
 syn_path = os.path.join(base_path, 'synDatasets')
 attack_path = os.path.join(base_path, 'suppress_attacks')
 os.makedirs(attack_path, exist_ok=True)
+max_attacks = 500000
 
 def do_model():
     # Read in the parquet file
@@ -58,14 +59,14 @@ def do_model():
 
     # Save X_test_copy, y_test, and y_score to parquet files
     X_test_copy.to_parquet(os.path.join(attack_path, 'X_test.parquet'))
-    y_test.to_parquet(os.path.join(attack_path, 'y_test.parquet'))
-    pd.Series(y_score).to_parquet(os.path.join(attack_path, 'y_score.parquet'))
+    pd.DataFrame(y_score, columns=['y_score']).to_parquet(os.path.join(attack_path, 'y_score.parquet'))
+    pd.DataFrame(y_test).to_parquet(os.path.join(attack_path, 'y_test.parquet'))
 
 def do_plots():
     # Read in the parquet files
     X_test_copy = pd.read_parquet(os.path.join(attack_path, 'X_test.parquet'))
-    y_test = pd.read_parquet(os.path.join(attack_path, 'y_test.parquet'))
-    y_score = pd.read_parquet(os.path.join(attack_path, 'y_score.parquet'))
+    y_test = pd.read_parquet(os.path.join(attack_path, 'y_test.parquet')).squeeze()
+    y_score = pd.read_parquet(os.path.join(attack_path, 'y_score.parquet')).squeeze()
 
     # Compute precision-recall curve and AUC
     precision, recall, _ = precision_recall_curve(y_test, y_score)
@@ -129,6 +130,8 @@ def make_config():
                 'dir_name': dir_name,
                 'columns': [col1, col2],
             })
+    # randomize the order in which the attack_jobs are run
+    random.shuffle(attack_jobs)
 
     # Write attack_jobs into a JSON file
     with open(os.path.join(attack_path, 'attack_jobs.json'), 'w') as f:
@@ -195,6 +198,7 @@ def run_attacks(tm, file_path, job):
                               'fp': 0,
                               'tn': 0,
                               'fn': 0,
+                              'finished': True,
                               'job':job},
                        'sample_instances': [[],[],[],[],[]],
                        'attack_results': []}
@@ -207,6 +211,9 @@ def run_attacks(tm, file_path, job):
     # For each comb, find all values that appear exactly 3 times in tm.df_orig
     sum_base_probs = 0
     for comb in combs:
+        if attack_summary['summary']['num_attacks'] >= max_attacks:
+            attack_summary['summary']['finished'] = False
+            break
         if len(comb) == len(columns):
             # Can't have a target unknown column in this case
             continue
@@ -354,6 +361,7 @@ def main():
     args = parser.parse_args()
 
     if args.command == 'config':
+        from syndiffix_tools.tables_manager import TablesManager
         make_config()
     elif args.command == 'gather':
         gather(instances_path=os.path.join(attack_path, 'instances'))
@@ -362,6 +370,7 @@ def main():
     elif args.command == 'plots':
         do_plots()
     else:
+        from syndiffix_tools.tables_manager import TablesManager
         try:
             job_num = int(args.command)
             run_attack(job_num)
