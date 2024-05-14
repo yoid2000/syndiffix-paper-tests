@@ -260,6 +260,7 @@ def run_attacks(tm, file_path, job):
                 num_distinct_values = len(tm.df_orig[target_col].unique())
                 attack_summary['summary']['num_samples'][num_known_columns] += 1
                 if len(attack_summary['sample_instances'][num_known_columns]) < max_attack_instances:
+                    # The stringify's are needed to avoid json serialization issues
                     attack_instance = {
                         'target_col': target_col,
                         'num_rows_with_target_val': num_rows_with_target_val,
