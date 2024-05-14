@@ -10,6 +10,9 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import precision_recall_curve, auc
 import matplotlib.pyplot as plt
 import itertools
+import pprint
+
+pp = pprint.PrettyPrinter(indent=4)
 
 if 'SDX_TEST_DIR' in os.environ:
     base_path = os.getenv('SDX_TEST_DIR')
