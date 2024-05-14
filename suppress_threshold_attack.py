@@ -193,7 +193,7 @@ def get_attack_info(df_syn, comb, known_val_comb, target_col, target_val):
     return num_with_target, num_without_target, best_syn
 
 def run_attacks(tm, file_path, job):
-    max_attack_instances = 100
+    max_attack_instances = 10
     attack_summary = {'summary': {'num_samples':[0,0,0,0,0],
                               'num_possible_known_value_combs': 0,
                               'num_rows': tm.df_orig.shape[0],
