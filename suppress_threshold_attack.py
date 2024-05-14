@@ -76,9 +76,8 @@ def do_plots():
 
     # Compute precision-recall curve and AUC
     precision, recall, _ = precision_recall_curve(y_test, y_score)
-    print(recall)
-    print(len(recall))
     pr_auc = auc(recall, precision)
+    print(len(y_test), len(y_score), len(precision), len(recall))
 
     # Plot precision-recall curve
     plt.figure()
