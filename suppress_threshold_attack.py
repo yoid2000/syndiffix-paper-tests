@@ -261,7 +261,7 @@ def run_attacks(tm, file_path, job):
                 attack_summary['summary']['num_samples'][num_known_columns] += 1
                 if len(attack_summary['sample_instances'][num_known_columns]) < max_attack_instances:
                     known_rows_str = known_rows.to_dict(orient='records'),
-                    pp.print(known_rows_str)
+                    pp.pprint(known_rows_str)
                     for row in known_rows_str:
                         for key, val in row.items():
                             row[key] = str(val)
