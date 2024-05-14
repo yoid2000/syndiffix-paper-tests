@@ -17,6 +17,7 @@ else:
     base_path = os.getcwd()
 if 'SDX_TEST_CODE' in os.environ:
     code_path = os.getenv('SDX_TEST_CODE')
+    from syndiffix_tools.tables_manager import TablesManager
 else:
     code_path = None
 syn_path = os.path.join(base_path, 'synDatasets')
@@ -361,7 +362,6 @@ def main():
     args = parser.parse_args()
 
     if args.command == 'config':
-        from syndiffix_tools.tables_manager import TablesManager
         make_config()
     elif args.command == 'gather':
         gather(instances_path=os.path.join(attack_path, 'instances'))
@@ -370,7 +370,6 @@ def main():
     elif args.command == 'plots':
         do_plots()
     else:
-        from syndiffix_tools.tables_manager import TablesManager
         try:
             job_num = int(args.command)
             run_attack(job_num)
