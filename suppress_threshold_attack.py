@@ -76,6 +76,8 @@ def do_plots():
     print("X_test:")
     print(X_test_all.head())
 
+    X_test_all['pi'] = (X_test_all['prob_tp'] - X_test_all['frac_tar']) / (1.00001 - X_test_all['frac_tar'])
+
     # Compute precision-recall curve and AUC
     #precision, recall, _ = precision_recall_curve(y_test, y_score)
     precision, recall, _ = precision_recall_curve(y_test, X_test_all['prob_tp'])
@@ -111,6 +113,10 @@ def gather(instances_path):
                     continue
                 try:
                     res = json.load(f)
+                    # cap was computed as (tp+fp)/num_possible_combs, 
+                    # But it num_possible_combs didn't take into account
+                    # each possible target value. So we need to divide cap by the
+                    # total number of columns - number of known columns
                     cap = res['summary']['coverage_all_possible']
                     num_rows = res['summary']['num_rows']
                     for entry in res['attack_results']:
@@ -218,8 +224,9 @@ def get_attack_info(df_syn, comb, known_val_comb, target_col, target_val):
 def run_attacks(tm, file_path, job):
     max_attack_instances = 10
     attack_summary = {'summary': {'num_samples':[0,0,0,0,0],
-                              'num_possible_known_value_combs': 0,
+                              'num_possible_combs': 0,
                               'num_rows': tm.df_orig.shape[0],
+                              'num_cols': tm.df_orig.shape[1],
                               'num_attacks': 0,
                               'tp': 0,
                               'fp': 0,
@@ -249,7 +256,7 @@ def run_attacks(tm, file_path, job):
         # Group the DataFrame by the columns in comb and count the number of rows for each group
         grouped = tm.df_orig.groupby(comb).size()
         # This is the total number of 
-        attack_summary['summary']['num_possible_known_value_combs'] += grouped.shape[0]
+        attack_summary['summary']['num_possible_combs'] += grouped.shape[0] * (tm.df_orig.shape[1] - num_known_columns)
 
         # Filter the groups to only include those with exactly 3 rows
         known_val_combs = grouped[grouped == 3].index.tolist()
@@ -352,7 +359,7 @@ def summarize_and_write(attack_summary, file_path, sum_base_probs):
     attack_summary['summary']['precision'] = prec
     attack_summary['summary']['precision_improvement'] = pi
     attack_summary['summary']['coverage_known'] = (tp + fp) / num_attacks if num_attacks != 0 else 0
-    attack_summary['summary']['coverage_all_possible'] = (tp + fp) / attack_summary['summary']['num_possible_known_value_combs'] if attack_summary['summary']['num_possible_known_value_combs'] != 0 else 0
+    attack_summary['summary']['coverage_all_possible'] = (tp + fp) / attack_summary['summary']['num_possible_combs'] if attack_summary['summary']['num_possible_combs'] != 0 else 0
 
     # Write attack_summary to file_path
     with open(file_path, 'w') as f:
