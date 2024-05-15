@@ -26,7 +26,7 @@ else:
 syn_path = os.path.join(base_path, 'synDatasets')
 attack_path = os.path.join(base_path, 'suppress_attacks')
 os.makedirs(attack_path, exist_ok=True)
-max_attacks = 100000
+max_attacks = 200000
 
 def do_model():
     # Read in the parquet file
@@ -225,7 +225,7 @@ def run_attacks(tm, file_path, job):
     # For each comb, find all values that appear exactly 3 times in tm.df_orig
     sum_base_probs = 0
     for comb in combs:
-        if attack_summary['summary']['num_attacks'] >= max_attacks:
+        if len(attack_summary['attack_results']) >= max_attacks:
             attack_summary['summary']['finished'] = False
             break
         if len(comb) == len(columns):
@@ -318,7 +318,7 @@ def run_attacks(tm, file_path, job):
                     'tp': got_tp,
                 }
                 attack_summary['attack_results'].append(attack_result)
-                if len(attack_summary) % 10000 == 0:
+                if len(attack_summary['attack_results']) % 10000 == 0:
                     summarize_and_write(attack_summary, file_path, sum_base_probs)
             df_syn = None
     summarize_and_write(attack_summary, file_path, sum_base_probs, df_syn)
