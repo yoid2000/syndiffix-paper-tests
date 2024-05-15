@@ -79,9 +79,9 @@ def do_plots():
     print("X_test:")
     print(X_test_all.head())
 
-    # print the distribution of frac_tar
-    print("Distribution of frac_tar:")
-    print(X_test_all['frac_tar'].describe())
+    # print the distribution of cap
+    print("Distribution of cap:")
+    print(X_test_all['cap'].describe())
 
     # Compute precision-recall curve and AUC
     #precision, recall, _ = precision_recall_curve(y_test, y_score)
