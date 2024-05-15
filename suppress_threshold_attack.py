@@ -76,6 +76,8 @@ def do_plots():
 
     X_test_all['pi'] = (X_test_all['prob_tp'] - X_test_all['frac_tar']) / (1.00001 - X_test_all['frac_tar'])
 
+    X_test_all['pi_fl'] = X_test_all['pi'].clip(lower=0)
+
     print("X_test:")
     print(X_test_all.head())
 
@@ -86,11 +88,10 @@ def do_plots():
     # Compute precision-recall curve and AUC
     #precision, recall, _ = precision_recall_curve(y_test, y_score)
     precision, recall, _ = precision_recall_curve(y_test, X_test_all['prob_tp'])
-    pr_auc = auc(recall, precision)
 
     # Plot precision-recall curve
     plt.figure()
-    plt.plot(recall, precision, color='darkorange', lw=2, label='PR curve (area = %0.2f)' % pr_auc)
+    plt.plot(recall, precision, color='darkorange', lw=2, label='PR curve')
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.05])
     plt.xlabel('Recall')
