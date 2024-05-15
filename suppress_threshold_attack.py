@@ -73,10 +73,11 @@ def do_plots():
     X_test_all = pd.read_parquet(os.path.join(attack_path, 'X_test.parquet'))
     y_test = pd.read_parquet(os.path.join(attack_path, 'y_test.parquet')).squeeze()
     y_score = pd.read_parquet(os.path.join(attack_path, 'y_score.parquet')).squeeze()
-    print("X_test:")
-    print(X_test_all.head())
 
     X_test_all['pi'] = (X_test_all['prob_tp'] - X_test_all['frac_tar']) / (1.00001 - X_test_all['frac_tar'])
+
+    print("X_test:")
+    print(X_test_all.head())
 
     # Compute precision-recall curve and AUC
     #precision, recall, _ = precision_recall_curve(y_test, y_score)
