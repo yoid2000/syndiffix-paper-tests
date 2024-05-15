@@ -59,11 +59,11 @@ def do_model():
     y_score = model.predict_proba(X_test)[:,1]
 
     # Add y_score into the retained copy as an additional column
-    X_test_all['prob_pos'] = y_score
+    X_test_all['prob_tp'] = y_score
 
     # Save X_test_all, y_test, and y_score to parquet files
     X_test_all.to_parquet(os.path.join(attack_path, 'X_test.parquet'))
-    pd.DataFrame(y_score, columns=['prob_pos']).to_parquet(os.path.join(attack_path, 'y_score.parquet'))
+    pd.DataFrame(y_score, columns=['prob_tp']).to_parquet(os.path.join(attack_path, 'y_score.parquet'))
     pd.DataFrame(y_test).to_parquet(os.path.join(attack_path, 'y_test.parquet'))
 
 def do_plots():
@@ -74,11 +74,9 @@ def do_plots():
     print("X_test:")
     print(X_test_all.head())
 
-    
-
     # Compute precision-recall curve and AUC
     #precision, recall, _ = precision_recall_curve(y_test, y_score)
-    precision, recall, _ = precision_recall_curve(y_test, X_test_all['prob_pos'])
+    precision, recall, _ = precision_recall_curve(y_test, X_test_all['prob_tp'])
     pr_auc = auc(recall, precision)
 
     # Plot precision-recall curve
