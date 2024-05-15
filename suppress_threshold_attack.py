@@ -14,6 +14,8 @@ import pprint
 
 pp = pprint.PrettyPrinter(indent=4)
 
+remove_bad_files = False
+
 if 'SDX_TEST_DIR' in os.environ:
     base_path = os.getenv('SDX_TEST_DIR')
 else:
@@ -116,8 +118,11 @@ def gather(instances_path):
                         all_entries.append(entry)
                 except json.JSONDecodeError:
                     num_fail += 1
-                    print(f"---- Error reading {filename}, deleting")
-                    os.remove(os.path.join(instances_path, filename))
+                    if remove_bad_files:
+                        print(f"---- Error reading {filename}, deleting")
+                        os.remove(os.path.join(instances_path, filename))
+                    else:
+                        print(f"---- Error reading {filename}, skipping")
                     continue
                 
     # Step 4: Make a dataframe df where each key in each entry of all_entries is a column
@@ -288,7 +293,7 @@ def run_attacks(tm, file_path, job):
                         'known_vals': known_val_comb,
                         'correct_pred': correct_pred,
                         'file_path': file_path,
-                        'known_rows': str(known_rows.to_dict(orient='records')),
+                        #'known_rows': str(known_rows.to_dict(orient='records')),
                     }
                     attack_summary['sample_instances'][num_known_columns].append(attack_instance)
                 if df_syn is None:
