@@ -88,7 +88,6 @@ def do_plots():
     # Compute precision-recall curve and AUC
     #precision, recall, _ = precision_recall_curve(y_test, y_score)
     precision, recall, _ = precision_recall_curve(y_test, X_test_all['prob_tp'])
-
     # Plot precision-recall curve
     plt.figure()
     plt.plot(recall, precision, color='darkorange', lw=2, label='PR curve')
@@ -99,6 +98,22 @@ def do_plots():
     plt.title('Precision-Recall curve')
     plt.legend(loc="lower right")
     plot_path = os.path.join(attack_path, 'pr_curve.png')
+    plt.savefig(plot_path)
+
+    avg_cap = X_test_all['cap'].mean()
+    precision, recall, _ = precision_recall_curve(y_test, X_test_all['pi_fl'])
+    # Divide all recall values by avg_cap
+    recall = recall / avg_cap
+    # Plot precision-recall curve
+    plt.figure()
+    plt.plot(recall, precision, color='darkorange', lw=2, label='PI/Cov curve')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('Coverage, all possible combinations')
+    plt.ylabel('Precision Improvement')
+    plt.title('PI/Coverage curve')
+    plt.legend(loc="lower right")
+    plot_path = os.path.join(attack_path, 'pi_cov_curve.png')
     plt.savefig(plot_path)
 
 
