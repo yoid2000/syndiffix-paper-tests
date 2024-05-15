@@ -14,7 +14,7 @@ import pprint
 
 pp = pprint.PrettyPrinter(indent=4)
 
-remove_bad_files = False
+remove_bad_files = True
 
 if 'SDX_TEST_DIR' in os.environ:
     base_path = os.getenv('SDX_TEST_DIR')
