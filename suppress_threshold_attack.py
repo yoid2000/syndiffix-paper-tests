@@ -74,6 +74,8 @@ def do_plots():
     print("X_test:")
     print(X_test_all.head())
 
+    
+
     # Compute precision-recall curve and AUC
     #precision, recall, _ = precision_recall_curve(y_test, y_score)
     precision, recall, _ = precision_recall_curve(y_test, X_test_all['prob_pos'])
@@ -101,12 +103,17 @@ def gather(instances_path):
         if filename.endswith('.json'):
             with open(os.path.join(instances_path, filename), 'r') as f:
                 print(f"Reading {i+1} of {len(all_files)} {filename}")
-                res = json.load(f)
-                cap = res['summary']['coverage_all_possible']
-                for entry in res['attack_results']:
-                    entry['cap'] = cap
-                    all_entries.append(entry)
-    
+                try:
+                    res = json.load(f)
+                    cap = res['summary']['coverage_all_possible']
+                    for entry in res['attack_results']:
+                        entry['cap'] = cap
+                        all_entries.append(entry)
+                except json.JSONDecodeError:
+                    print(f"---- Error reading {filename}, deleting")
+                    os.remove(os.path.join(instances_path, filename))
+                    continue
+                
     # Step 4: Make a dataframe df where each key in each entry of all_entries is a column
     df = pd.DataFrame(all_entries)
     print(df.head())
