@@ -84,6 +84,10 @@ def do_plots():
     # print the distribution of cap
     print("Distribution of cap:")
     print(X_test_all['cap'].describe())
+    print("Distribution of pi_fl:")
+    print(X_test_all['pi_fl'].describe())
+    avg_cap = X_test_all['cap'].mean()
+    print(f"Average cap: {avg_cap}")
 
     # Compute precision-recall curve and AUC
     #precision, recall, _ = precision_recall_curve(y_test, y_score)
@@ -100,7 +104,6 @@ def do_plots():
     plot_path = os.path.join(attack_path, 'pr_curve.png')
     plt.savefig(plot_path)
 
-    avg_cap = X_test_all['cap'].mean()
     precision, recall, _ = precision_recall_curve(y_test, X_test_all['pi_fl'])
     # Divide all recall values by avg_cap
     recall = recall / avg_cap
