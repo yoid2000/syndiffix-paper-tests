@@ -96,6 +96,7 @@ def do_plots():
 def gather(instances_path):
     all_entries = []
     
+    num_fail = 0
     # Step 1: Read in all of the json files in the directory at instances_path
     all_files = list(os.listdir(instances_path))
     # loop through the index and filename of all_files
@@ -110,6 +111,7 @@ def gather(instances_path):
                         entry['cap'] = cap
                         all_entries.append(entry)
                 except json.JSONDecodeError:
+                    num_fail += 1
                     print(f"---- Error reading {filename}, deleting")
                     os.remove(os.path.join(instances_path, filename))
                     continue
@@ -121,6 +123,7 @@ def gather(instances_path):
     # Step 5: Store df as a parquet file called results.parquet
     file_path = os.path.join(attack_path, 'results.parquet')
     df.to_parquet(file_path)
+    print(f"{num_fail} files were corrupted and deleted")
 
 def make_config():
     # Initialize attack_jobs
