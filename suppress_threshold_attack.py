@@ -112,9 +112,11 @@ def gather(instances_path):
                     res = json.load(f)
                     cap = res['summary']['coverage_all_possible']
                     num_rows = res['summary']['num_rows']
+                    print(num_rows)
                     for entry in res['attack_results']:
                         entry['cap'] = cap
                         entry['frac_tar'] = entry['nrtv'] / num_rows
+                        print(entry['frac_tar'])
                         all_entries.append(entry)
                 except json.JSONDecodeError:
                     num_fail += 1
