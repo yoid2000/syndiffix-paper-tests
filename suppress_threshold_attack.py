@@ -100,6 +100,8 @@ def do_plots():
     plot_path = os.path.join(attack_path, 'pr_curve.png')
     plt.savefig(plot_path)
 
+
+
 def gather(instances_path):
     all_entries = []
     
@@ -249,10 +251,14 @@ def run_attacks(tm, file_path, job):
 
     # For each comb, find all values that appear exactly 3 times in tm.df_orig
     sum_base_probs = 0
+    do_summarize = False
     for comb in combs:
         if len(attack_summary['attack_results']) >= max_attacks:
             attack_summary['summary']['finished'] = False
             break
+        if do_summarize:
+            summarize_and_write(attack_summary, file_path, sum_base_probs)
+            do_summarize = False
         if len(comb) == len(columns):
             # Can't have a target unknown column in this case
             continue
@@ -344,7 +350,7 @@ def run_attacks(tm, file_path, job):
                 }
                 attack_summary['attack_results'].append(attack_result)
                 if len(attack_summary['attack_results']) % 10000 == 0:
-                    summarize_and_write(attack_summary, file_path, sum_base_probs)
+                    do_summarize = True
             df_syn = None
     summarize_and_write(attack_summary, file_path, sum_base_probs, df_syn)
 
