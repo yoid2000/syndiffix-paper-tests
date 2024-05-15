@@ -104,7 +104,8 @@ def gather(instances_path):
         if filename.endswith('.json'):
             with open(os.path.join(instances_path, filename), 'r') as f:
                 print(f"Reading {i+1} of {len(all_files)} {filename}")
-                if len(f.read()) < 10:
+                file_length = os.path.getsize(f.name)
+                if file_length < 10:
                     # Can happen if the file is still under construction
                     print(f"---- File {filename} is too short, skipping")
                     continue
