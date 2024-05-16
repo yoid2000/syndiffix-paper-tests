@@ -142,8 +142,8 @@ def do_plots():
     X_test_all_sorted = X_test_all.sort_values(by='pi_fl', ascending=False).reset_index(drop=True)
 
     X_test_all_sorted['prob_perfect'] = (X_test_all_sorted.index + 1) / len(X_test_all_sorted)
-    X_test_all_sorted['prob_combs_targets'] = X_test_all_sorted['probability'] * avg_cap
-    X_test_all_sorted['prob_combs'] = X_test_all_sorted['probability'] * avg_cap
+    X_test_all_sorted['prob_combs_targets'] = X_test_all_sorted['prob_perfect'] * avg_cap
+    X_test_all_sorted['prob_combs'] = X_test_all_sorted['prob_perfect'] * avg_cap
     # Reverse the DataFrame
     df_reversed = X_test_all_sorted.iloc[::-1]
     df_reversed = df_reversed.rolling(window=roll_window).mean()
