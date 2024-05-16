@@ -38,15 +38,19 @@ Besides the above, `exact_count_gather.py` and `exact_count_analyze.py` were use
 
 This attack exploits the suppression mechanism of SynDiffix to try to determine if a given user has a certain value in some column. Under the conditions when the attacker knows that there are exactly three persons with a given value in column A, and knows that two of them have a certain other value in column B, the presence or absence of the column A value in the output allows the attacker, in certain situations, to determine whether the third person has the column B value.
 
-This attack can be run with `suppress_threshold_theory.py`.
+There are two versions of this attack. One of them simulates ideal attack conditions, and is good to study the basic characteristics of the attacks (`suppress_threshold_theory.py`). The other runs attacks on the real datasets (`suppress_threshold_attack.py`)
 
-Requires two environment variables:
+Both variants require two environment variables:
 
 `SDX_TEST_DIR`: This is where the results are stored
 
 `SDX_TEST_CODE`: This is the path to the directory where `suppress_threshold_theory.py` resides.
 
-Requires that a virtual environment exists at `SDX_TEST_DIR/sdx_venv`
+They also require that a virtual environment exists at `SDX_TEST_DIR/sdx_venv`
+
+### Simulated suppress threshold attack
+
+The simulated attack can be run with `suppress_threshold_theory.py`.
 
 The syntax is:
 
@@ -54,8 +58,28 @@ The syntax is:
 
 `command = slurm`: Generates a slurm file at `SDX_TEST_DIR/suppress_theory/theory.slurm`. Running `sbatch theory.slrum` will run the simulated attacks and place the results in a set of json files at `SDX_TEST_DIR/suppress_theory/tests`
 
-`command = gather`: Reads in the json files at `SDX_TEST_DIR/suppress_theory/tests`, summarizes them, and and puts the summary in the file `SDX_TEST_DIR/suppress_theory/results/suppress_threshold_results.json`
+`command = gather`: Reads in the json files at `SDX_TEST_DIR/suppress_theory/tests`, summarizes them, and puts the summary in the file `SDX_TEST_DIR/suppress_theory/results/suppress_threshold_results.json`
 
 `command = plot`: Creates a visual plot from `SDX_TEST_DIR/suppress_theory/results/suppress_threshold_results.json`, and puts it at `SDX_TEST_DIR/suppress_theory/results/suppress.png`.
 
 `command = membership`: Runs a simple membership variant of the attack.  In this variant the attacker knows that there are either two or three persons in the dataset with a given column value, and knows that if there is a third person in the dataset then they must also have the column values, and wants to determine if the third person is indeed in the dataset.  Puts the result in `SDX_TEST_DIR/suppress_theory/results/suppress_threshold_results_no_infer.json`
+
+### Real suppress threshold attack
+
+The real attack can be run with `suppress_threshold_attack.py`.
+
+The syntax is:
+
+`python suppress_threshold_attack.py <command>`
+
+`command = slurm`: Generates a slurm file at `SDX_TEST_DIR/suppress_attack/attack.slurm`. Running `sbatch attack.slrum` will run the simulated attacks and place the results in a set of json files at `SDX_TEST_DIR/suppress_attack/instances`
+
+`command = gather`: Reads in the json files at `SDX_TEST_DIR/suppress_attack/instances`, summarizes them, and puts the summary in the file `SDX_TEST_DIR/suppress_attack/results.parquet`.
+
+`command = model`: Reads in `results.parquet`, creates a LogisticRegression model to determine the best attack, and runs the model against the test set. It places the results of the models in these files under `suppress_attack`:
+
+* `X_test.parquet`
+* `y_score.parquet`
+* `y_test.parquet`
+
+`command = plots`: Creates visual plots from the models, and puts the resulting `png` files in `suppress_attack`.
