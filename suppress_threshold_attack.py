@@ -33,6 +33,7 @@ max_attacks = 200000
 
 def do_model():
     # Read in the parquet file
+    model_stats = {}
     res_path = os.path.join(attack_path, 'results.parquet')
     df = pd.read_parquet(res_path)
 
@@ -79,6 +80,9 @@ def do_model():
     feature_importance = feature_importance.sort_values(by='abs_importance', ascending=False)
     print(feature_importance[['Feature', 'Importance']])
 
+    # save feature_importance as a dictionary
+    model_stats['feature_importance'] = feature_importance.set_index('Feature')['Importance'].to_dict()
+
     # Get the probability of positive class
     y_score = model.predict_proba(X_test)[:,1]
 
@@ -89,6 +93,10 @@ def do_model():
     X_test_all.to_parquet(os.path.join(attack_path, 'X_test.parquet'))
     pd.DataFrame(y_score, columns=['prob_tp']).to_parquet(os.path.join(attack_path, 'y_score.parquet'))
     pd.DataFrame(y_test).to_parquet(os.path.join(attack_path, 'y_test.parquet'))
+
+    # write model_stats to json file
+    with open(os.path.join(attack_path, 'model_stats.json'), 'w') as f:
+        json.dump(model_stats, f, indent=4)
 
 def do_plots():
     # Read in the parquet files
