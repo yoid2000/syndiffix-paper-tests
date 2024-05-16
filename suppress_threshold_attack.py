@@ -60,6 +60,7 @@ def do_model():
     # Convert back to DataFrame
     X_train = pd.DataFrame(X_train_scaled, columns=columns)
     X_test = scaler.transform(X_test.drop(columns=['cap', 'tp']))
+    print(f"X_train type is {type(X_train)}, y_train type is {type(y_train)}")
 
     # Train the model
     model = LogisticRegression()
