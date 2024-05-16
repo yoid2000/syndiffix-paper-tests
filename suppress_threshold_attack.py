@@ -16,7 +16,7 @@ pp = pprint.PrettyPrinter(indent=4)
 
 remove_bad_files = False
 sample_for_model = 200000
-roll_window = 5000
+roll_window = 500
 
 if 'SDX_TEST_DIR' in os.environ:
     base_path = os.getenv('SDX_TEST_DIR')
@@ -145,12 +145,9 @@ def do_plots():
     X_test_all_sorted['prob_combs_targets'] = X_test_all_sorted['prob_perfect'] * avg_cap
     X_test_all_sorted['prob_combs'] = X_test_all_sorted['prob_perfect'] * avg_cap
     # Reverse the DataFrame
-    df_reversed = X_test_all_sorted.iloc[::-1]
-    df_reversed = df_reversed.rolling(window=roll_window).mean()
-    df_plot = df_reversed.iloc[::-1]
+    df_plot = X_test_all_sorted.rolling(window=roll_window).mean()
     df_plot = df_plot.reset_index(drop=True)
 
-# Reset the index
     # Plot 'probability' vs 'pi_fl'
     plt.figure(figsize=(8, 4))
     plt.plot(df_plot['prob_perfect'], df_plot['pi_fl'], label='Attack conditions exist')
