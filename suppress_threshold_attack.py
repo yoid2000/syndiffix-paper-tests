@@ -105,19 +105,19 @@ def do_plots():
     plot_path = os.path.join(attack_path, 'pr_curve.png')
     plt.savefig(plot_path)
 
-    # Compute the cumulative distribution function (CDF) of pi_fl
-    pi_fl_cdf = X_test_all['pi_fl'].value_counts(normalize=True).sort_index().cumsum()
-    print(pi_fl_cdf.head())
+    # Sort the DataFrame by 'pi_fl' in descending order
+    X_test_all_sorted = X_test_all.sort_values(by='pi_fl', ascending=False)
 
-    # Plot the CDF
-    plt.figure()
-    plt.plot(pi_fl_cdf.values, pi_fl_cdf.index, color='blue', lw=2, label='CDF')
-    plt.xlabel('Precision Improvement')
+    # Create a new column 'probability'
+    X_test_all_sorted['probability'] = (X_test_all_sorted.index + 1) / len(X_test_all_sorted)
+    # Plot 'pi_fl' vs 'probability'
+    plt.figure(figsize=(10, 6))
+    plt.plot(X_test_all_sorted['pi_fl'], X_test_all_sorted['probability'])
+    plt.xlabel('pi_fl')
     plt.ylabel('Probability')
-    plt.title('Cumulative Distribution Function of pi_fl')
-    plt.legend(loc="lower right")
+    plt.title('Probability of getting value >= pi_fl')
     plt.savefig(os.path.join(attack_path, 'pi_fl_cdf.png'))
-
+    plt.close()
 
 
 def gather(instances_path):
