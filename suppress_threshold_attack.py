@@ -153,7 +153,7 @@ def do_plots():
     plt.close()
 
     # divide all probability values by avg_cap
-    X_test_all_sorted['probability'] = X_test_all_sorted['probability'] / avg_cap
+    X_test_all_sorted['probability'] = X_test_all_sorted['probability'] * avg_cap
     plt.figure(figsize=(8, 4))
     plt.plot(X_test_all_sorted['probability'], X_test_all_sorted['pi_fl'])
     plt.xscale('log')
