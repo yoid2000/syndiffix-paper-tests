@@ -51,10 +51,14 @@ def do_model():
 
     # Retain a copy of X_test which includes all columns
     X_test_all = X_test.copy()
+    columns = X_train.drop(columns=['cap', 'tp']).columns
 
     # Standardize the features
     scaler = StandardScaler()
-    X_train = scaler.fit_transform(X_train.drop(columns=['cap', 'tp']))
+    # Scale the data
+    X_train_scaled = scaler.fit_transform(X_train.drop(columns=['cap', 'tp']))
+    # Convert back to DataFrame
+    X_train = pd.DataFrame(X_train_scaled, columns=columns)
     X_test = scaler.transform(X_test.drop(columns=['cap', 'tp']))
 
     # Train the model
