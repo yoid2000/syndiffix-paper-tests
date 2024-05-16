@@ -111,7 +111,7 @@ def do_plots():
 
     # Plot the CDF
     plt.figure()
-    plt.plot(pi_fl_cdf.index, pi_fl_cdf.values, color='blue', lw=2, label='CDF')
+    plt.plot(pi_fl_cdf.values, pi_fl_cdf.index, color='blue', lw=2, label='CDF')
     plt.xlabel('Precision Improvement')
     plt.ylabel('Probability')
     plt.title('Cumulative Distribution Function of pi_fl')
