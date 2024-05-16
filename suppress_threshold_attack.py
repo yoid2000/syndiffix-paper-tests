@@ -110,11 +110,11 @@ def do_plots():
 
     # Create a new column 'probability'
     X_test_all_sorted['probability'] = (X_test_all_sorted.index + 1) / len(X_test_all_sorted)
-    # Plot 'pi_fl' vs 'probability'
+    # Plot 'probability' vs 'pi_fl'
     plt.figure(figsize=(10, 6))
-    plt.plot(X_test_all_sorted['pi_fl'], X_test_all_sorted['probability'])
-    plt.xlabel('pi_fl')
-    plt.ylabel('Probability')
+    plt.plot(X_test_all_sorted['probability'], X_test_all_sorted['pi_fl'])
+    plt.xlabel('Probability')
+    plt.ylabel('pi_fl')
     plt.title('Probability of getting value >= pi_fl')
     plt.savefig(os.path.join(attack_path, 'pi_fl_cdf.png'))
     plt.close()
