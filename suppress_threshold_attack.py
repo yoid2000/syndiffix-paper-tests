@@ -106,7 +106,8 @@ def do_plots():
 
     X_test_all['pi'] = (X_test_all['prob_tp'] - X_test_all['frac_tar']) / (1.00001 - X_test_all['frac_tar'])
 
-    X_test_all['pi_fl'] = X_test_all['pi'].clip(lower=-1)
+    pi_floor = 0
+    X_test_all['pi_fl'] = X_test_all['pi'].clip(lower=pi_floor)
 
     print("X_test:")
     print(X_test_all.head())
@@ -147,8 +148,10 @@ def do_plots():
     plt.figure(figsize=(8, 4))
     plt.plot(X_test_all_sorted['probability'], X_test_all_sorted['pi_fl'])
     plt.xscale('log')
-    plt.xlabel('Probability given attack conditions (log)')
-    plt.ylabel('Precision Improvement (floored at -1)')
+    plt.axhline(y=0.5, color='b', linestyle='--')
+    plt.xlabel('Coverage given attack conditions (log)')
+    plt.ylabel(f'Precision Improvement (floored at {pi_floor})')
+    plt.tight_layout()
     plt.savefig(os.path.join(attack_path, 'pi_fl_attack_conditions.png'))
     plt.close()
 
@@ -157,8 +160,10 @@ def do_plots():
     plt.figure(figsize=(8, 4))
     plt.plot(X_test_all_sorted['probability'], X_test_all_sorted['pi_fl'])
     plt.xscale('log')
-    plt.xlabel('Probability given victim knowledge (log)')
-    plt.ylabel('Precision Improvement (floored at -1)')
+    plt.axhline(y=0.5, color='b', linestyle='--')
+    plt.xlabel('Coverage given victim knowledge (log)')
+    plt.ylabel(f'Precision Improvement (floored at {pi_floor})')
+    plt.tight_layout()
     plt.savefig(os.path.join(attack_path, 'pi_fl_victim_knowledge.png'))
     plt.close()
 
