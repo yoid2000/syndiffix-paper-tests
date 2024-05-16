@@ -17,7 +17,8 @@ pp = pprint.PrettyPrinter(indent=4)
 remove_bad_files = False
 #sample_for_model = 200000
 sample_for_model = None
-roll_window = 500
+roll_window = 5000
+do_comb_3_and_4 = False
 
 if 'SDX_TEST_DIR' in os.environ:
     base_path = os.getenv('SDX_TEST_DIR')
@@ -123,6 +124,8 @@ def do_plots():
     print(X_test_all['cap'].describe())
     print("Distribution of pi_fl:")
     print(X_test_all['pi_fl'].describe())
+    print("Distribution of bs:")
+    print(X_test_all['bs'].describe())
     avg_capt = X_test_all['capt'].mean()
     print(f"Average capt: {avg_capt}")
     avg_cap = X_test_all['cap'].mean()
@@ -154,7 +157,7 @@ def do_plots():
     df_plot = df_plot.reset_index(drop=True)
 
     # Plot 'probability' vs 'pi_fl'
-    plt.figure(figsize=(8, 4))
+    plt.figure(figsize=(6, 3))
     plt.plot(df_plot['prob_perfect'], df_plot['pi_fl'], label='Attack conditions exist')
     plt.plot(df_plot['prob_combs'], df_plot['pi_fl'], label='Attacker knowledge, any target ok')
     plt.plot(df_plot['prob_combs_targets'], df_plot['pi_fl'], label='Attacker knowledge, only specific target')
@@ -162,8 +165,8 @@ def do_plots():
     plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--', linewidth=0.5)
     plt.vlines(0.001, 0.5, 1.0, colors='black', linestyles='--', linewidth=0.5)
     plt.xlabel('Coverage (log)')
-    plt.ylabel(f'Precision Improvement (floored at {pi_floor})')
-    plt.legend(loc="lower left")
+    plt.ylabel(f'Precision Improvement\n(floored at {pi_floor})')
+    plt.legend(loc="lower left", prop={'size': 8})
     plt.tight_layout()
     plt.savefig(os.path.join(attack_path, 'pi_cov.png'))
     plt.close()
@@ -310,9 +313,12 @@ def run_attacks(tm, file_path, job):
                        'attack_results': []}
 
     columns = list(tm.df_orig.columns)
-    combinations = list(itertools.combinations(columns, 3)) + list(itertools.combinations(columns, 4))
-    combinations = [comb for comb in combinations if all(col in comb for col in job['columns'])]
-    combs = [[job['columns'][0]], [job['columns'][1]], job['columns']] + combinations
+    if do_comb_3_and_4:
+        combinations = list(itertools.combinations(columns, 3)) + list(itertools.combinations(columns, 4))
+        combinations = [comb for comb in combinations if all(col in comb for col in job['columns'])]
+        combs = [[job['columns'][0]], [job['columns'][1]], job['columns']] + combinations
+    else:
+        combs = [[job['columns'][0]], [job['columns'][1]], job['columns']]
 
     # For each comb, find all values that appear exactly 3 times in tm.df_orig
     sum_base_probs = 0
