@@ -147,7 +147,8 @@ def do_plots():
     # Plot 'probability' vs 'pi_fl'
     plt.figure(figsize=(10, 6))
     plt.plot(X_test_all_sorted['probability'], X_test_all_sorted['pi_fl'])
-    plt.xlabel('Probability')
+    plt.xscale('log')
+    plt.xlabel('Probability (log)')
     plt.ylabel('pi_fl')
     plt.title('Probability of getting value >= pi_fl')
     plt.savefig(os.path.join(attack_path, 'pi_fl_cdf.png'))
