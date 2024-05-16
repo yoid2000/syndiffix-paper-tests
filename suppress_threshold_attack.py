@@ -15,6 +15,7 @@ import pprint
 pp = pprint.PrettyPrinter(indent=4)
 
 remove_bad_files = False
+sample_for_model = True
 
 if 'SDX_TEST_DIR' in os.environ:
     base_path = os.getenv('SDX_TEST_DIR')
@@ -35,6 +36,9 @@ def do_model():
     res_path = os.path.join(attack_path, 'results.parquet')
     df = pd.read_parquet(res_path)
 
+    if sample_for_model:
+        df = df.sample(n=200000, random_state=42)
+
     # Convert 'c' column to binary
     df['c'] = df['c'].map({'positive': 1, 'negative': 0})
 
@@ -45,17 +49,28 @@ def do_model():
     # Split the data into training and test sets
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=42)
 
-    # Retain a copy of X_test which includes 'cap'
+    # Retain a copy of X_test which includes all columns
     X_test_all = X_test.copy()
 
     # Standardize the features
     scaler = StandardScaler()
-    X_train = scaler.fit_transform(X_train.drop(columns=['cap']))
-    X_test = scaler.transform(X_test.drop(columns=['cap']))
+    X_train = scaler.fit_transform(X_train.drop(columns=['cap', 'tp']))
+    X_test = scaler.transform(X_test.drop(columns=['cap', 'tp']))
 
     # Train the model
     model = LogisticRegression()
     model.fit(X_train, y_train)
+
+    # Get the feature importance
+    importance = model.coef_[0]
+    # Map feature numbers to names
+    feature_names = X_train.columns
+    feature_importance = pd.DataFrame({'Feature': feature_names, 'Importance': importance})
+
+    # Sort by absolute value of importance
+    feature_importance['abs_importance'] = feature_importance['Importance'].abs()
+    feature_importance = feature_importance.sort_values(by='abs_importance', ascending=False)
+    print(feature_importance[['Feature', 'Importance']])
 
     # Get the probability of positive class
     y_score = model.predict_proba(X_test)[:,1]
