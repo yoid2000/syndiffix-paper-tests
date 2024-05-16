@@ -105,11 +105,15 @@ def do_plots():
     plot_path = os.path.join(attack_path, 'pr_curve.png')
     plt.savefig(plot_path)
 
-    # Sort the DataFrame by 'pi_fl' in descending order
-    X_test_all_sorted = X_test_all.sort_values(by='pi_fl', ascending=False)
+    # Sort the DataFrame by 'pi_fl' in descending order and reset the index
+    X_test_all_sorted = X_test_all.sort_values(by='pi_fl', ascending=False).reset_index(drop=True)
 
     # Create a new column 'probability'
-    X_test_all_sorted['probability'] = (X_test_all_sorted.index + 1) / len(X_test_all_sorted)
+    X_test_all_sorted['probability'] = (len(X_test_all_sorted) - X_test_all_sorted.index) / len(X_test_all_sorted)
+
+    # Create a new column 'probability'
+    #X_test_all_sorted['probability'] = (X_test_all_sorted.index + 1) / len(X_test_all_sorted)
+
     # Plot 'probability' vs 'pi_fl'
     plt.figure(figsize=(10, 6))
     plt.plot(X_test_all_sorted['probability'], X_test_all_sorted['pi_fl'])
