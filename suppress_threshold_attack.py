@@ -109,10 +109,10 @@ def do_plots():
     X_test_all_sorted = X_test_all.sort_values(by='pi_fl', ascending=False).reset_index(drop=True)
 
     # Create a new column 'probability'
-    X_test_all_sorted['probability'] = (len(X_test_all_sorted) - X_test_all_sorted.index) / len(X_test_all_sorted)
+    #X_test_all_sorted['probability'] = (len(X_test_all_sorted) - X_test_all_sorted.index) / len(X_test_all_sorted)
 
     # Create a new column 'probability'
-    #X_test_all_sorted['probability'] = (X_test_all_sorted.index + 1) / len(X_test_all_sorted)
+    X_test_all_sorted['probability'] = (X_test_all_sorted.index + 1) / len(X_test_all_sorted)
 
     # Plot 'probability' vs 'pi_fl'
     plt.figure(figsize=(10, 6))
