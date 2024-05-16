@@ -106,7 +106,7 @@ def do_plots():
 
     X_test_all['pi'] = (X_test_all['prob_tp'] - X_test_all['frac_tar']) / (1.00001 - X_test_all['frac_tar'])
 
-    X_test_all['pi_fl'] = X_test_all['pi'].clip(lower=0)
+    X_test_all['pi_fl'] = X_test_all['pi'].clip(lower=-1)
 
     print("X_test:")
     print(X_test_all.head())
@@ -143,17 +143,24 @@ def do_plots():
 
     # Create a new column 'probability'
     X_test_all_sorted['probability'] = (X_test_all_sorted.index + 1) / len(X_test_all_sorted)
-
     # Plot 'probability' vs 'pi_fl'
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(8, 4))
     plt.plot(X_test_all_sorted['probability'], X_test_all_sorted['pi_fl'])
     plt.xscale('log')
-    plt.xlabel('Probability (log)')
-    plt.ylabel('pi_fl')
-    plt.title('Probability of getting value >= pi_fl')
-    plt.savefig(os.path.join(attack_path, 'pi_fl_cdf.png'))
+    plt.xlabel('Probability given attack conditions (log)')
+    plt.ylabel('Precision Improvement (floored at -1)')
+    plt.savefig(os.path.join(attack_path, 'pi_fl_attack_conditions.png'))
     plt.close()
 
+    # divide all probability values by avg_cap
+    X_test_all_sorted['probability'] = X_test_all_sorted['probability'] / avg_cap
+    plt.figure(figsize=(8, 4))
+    plt.plot(X_test_all_sorted['probability'], X_test_all_sorted['pi_fl'])
+    plt.xscale('log')
+    plt.xlabel('Probability given victim knowledge (log)')
+    plt.ylabel('Precision Improvement (floored at -1)')
+    plt.savefig(os.path.join(attack_path, 'pi_fl_victim_knowledge.png'))
+    plt.close()
 
 def gather(instances_path):
     all_entries = []
