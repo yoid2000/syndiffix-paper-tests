@@ -80,6 +80,7 @@ def do_plots():
 
     print("X_test:")
     print(X_test_all.head())
+    print(f"Total rows: {X_test_all.shape[0]}")
 
     # print the distribution of cap
     print("Distribution of cap:")
@@ -104,20 +105,18 @@ def do_plots():
     plot_path = os.path.join(attack_path, 'pr_curve.png')
     plt.savefig(plot_path)
 
-    precision, recall, _ = precision_recall_curve(y_test, X_test_all['pi_fl'])
-    # Divide all recall values by avg_cap
-    recall = recall / avg_cap
-    # Plot precision-recall curve
+    # Compute the cumulative distribution function (CDF) of pi_fl
+    pi_fl_cdf = X_test_all['pi_fl'].value_counts(normalize=True).sort_index().cumsum()
+    print(pi_fl_cdf.head())
+
+    # Plot the CDF
     plt.figure()
-    plt.plot(recall, precision, color='darkorange', lw=2, label='PI/Cov curve')
-    plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
-    plt.xlabel('Coverage, all possible combinations')
-    plt.ylabel('Precision Improvement')
-    plt.title('PI/Coverage curve')
+    plt.plot(pi_fl_cdf.index, pi_fl_cdf.values, color='blue', lw=2, label='CDF')
+    plt.xlabel('Precision Improvement')
+    plt.ylabel('Probability')
+    plt.title('Cumulative Distribution Function of pi_fl')
     plt.legend(loc="lower right")
-    plot_path = os.path.join(attack_path, 'pi_cov_curve.png')
-    plt.savefig(plot_path)
+    plt.savefig(os.path.join(attack_path, 'pi_fl_cdf.png'))
 
 
 
