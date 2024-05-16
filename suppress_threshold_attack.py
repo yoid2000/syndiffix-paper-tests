@@ -53,15 +53,16 @@ def do_model():
     # Retain a copy of X_test which includes all columns
     X_test_all = X_test.copy()
 
+    unneeded_columns = ['cap', 'tp']
     # Standardize the features
     scaler = StandardScaler()
     # Scale the data
-    columns = X_train.drop(columns=['cap', 'tp']).columns
-    X_train_scaled = scaler.fit_transform(X_train.drop(columns=['cap', 'tp']))
+    columns = X_train.drop(columns=unneeded_columns).columns
+    X_train_scaled = scaler.fit_transform(X_train.drop(columns=unneeded_columns))
     X_train = pd.DataFrame(X_train_scaled, columns=columns)
 
-    columns = X_test.drop(columns=['cap', 'tp']).columns
-    X_test_scaled = scaler.transform(X_test.drop(columns=['cap', 'tp']))
+    columns = X_test.drop(columns=unneeded_columns).columns
+    X_test_scaled = scaler.transform(X_test.drop(columns=unneeded_columns))
     X_test = pd.DataFrame(X_test_scaled, columns=columns)
     print(f"X_train type is {type(X_train)}, y_train type is {type(y_train)}")
 
@@ -148,7 +149,8 @@ def do_plots():
     plt.figure(figsize=(8, 4))
     plt.plot(X_test_all_sorted['probability'], X_test_all_sorted['pi_fl'])
     plt.xscale('log')
-    plt.axhline(y=0.5, color='b', linestyle='--')
+    plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--', linewidth=0.5)
+    plt.vlines(0.001, 0.5, 1.0, colors='black', linestyles='--', linewidth=0.5)
     plt.xlabel('Coverage given attack conditions (log)')
     plt.ylabel(f'Precision Improvement (floored at {pi_floor})')
     plt.tight_layout()
@@ -160,7 +162,8 @@ def do_plots():
     plt.figure(figsize=(8, 4))
     plt.plot(X_test_all_sorted['probability'], X_test_all_sorted['pi_fl'])
     plt.xscale('log')
-    plt.axhline(y=0.5, color='b', linestyle='--')
+    plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--', linewidth=0.5)
+    plt.vlines(0.001, 0.5, 1.0, colors='black', linestyles='--', linewidth=0.5)
     plt.xlabel('Coverage given victim knowledge (log)')
     plt.ylabel(f'Precision Improvement (floored at {pi_floor})')
     plt.tight_layout()
@@ -185,11 +188,7 @@ def gather(instances_path):
                     continue
                 try:
                     res = json.load(f)
-                    # cap was computed as (tp+fp)/num_possible_combs, 
-                    # But it num_possible_combs didn't take into account
-                    # each possible target value. So we need to divide cap by the
-                    # total number of columns - number of known columns
-                    cap = res['summary']['coverage_all_possible']
+                    cap = res['summary']['coverage_all_combs_targets']
                     num_rows = res['summary']['num_rows']
                     for entry in res['attack_results']:
                         entry['cap'] = cap
@@ -296,6 +295,7 @@ def get_attack_info(df_syn, comb, known_val_comb, target_col, target_val):
 def run_attacks(tm, file_path, job):
     max_attack_instances = 10
     attack_summary = {'summary': {'num_samples':[0,0,0,0,0],
+                              'num_possible_combs_targets': 0,
                               'num_possible_combs': 0,
                               'num_rows': tm.df_orig.shape[0],
                               'num_cols': tm.df_orig.shape[1],
@@ -331,8 +331,8 @@ def run_attacks(tm, file_path, job):
         num_known_columns = len(comb)
         # Group the DataFrame by the columns in comb and count the number of rows for each group
         grouped = tm.df_orig.groupby(comb).size()
-        # This is the total number of 
-        attack_summary['summary']['num_possible_combs'] += grouped.shape[0] * (tm.df_orig.shape[1] - num_known_columns)
+        attack_summary['summary']['num_possible_combs'] += grouped.shape[0]
+        attack_summary['summary']['num_possible_combs_targets'] += grouped.shape[0] * (tm.df_orig.shape[1] - num_known_columns)
 
         # Filter the groups to only include those with exactly 3 rows
         known_val_combs = grouped[grouped == 3].index.tolist()
@@ -434,8 +434,9 @@ def summarize_and_write(attack_summary, file_path, sum_base_probs):
     attack_summary['summary']['num_attacks'] = num_attacks
     attack_summary['summary']['precision'] = prec
     attack_summary['summary']['precision_improvement'] = pi
-    attack_summary['summary']['coverage_known'] = (tp + fp) / num_attacks if num_attacks != 0 else 0
-    attack_summary['summary']['coverage_all_possible'] = (tp + fp) / attack_summary['summary']['num_possible_combs'] if attack_summary['summary']['num_possible_combs'] != 0 else 0
+    attack_summary['summary']['coverage_known_naive'] = (tp + fp) / num_attacks if num_attacks != 0 else 0
+    attack_summary['summary']['coverage_all_combs'] = (tp + fp) / attack_summary['summary']['num_possible_combs'] if attack_summary['summary']['num_possible_combs'] != 0 else 0
+    attack_summary['summary']['coverage_all_combs_targets'] = (tp + fp) / attack_summary['summary']['num_possible_combs_targets'] if attack_summary['summary']['num_possible_combs_targets'] != 0 else 0
 
     # Write attack_summary to file_path
     with open(file_path, 'w') as f:
