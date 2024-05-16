@@ -15,7 +15,8 @@ import pprint
 pp = pprint.PrettyPrinter(indent=4)
 
 remove_bad_files = False
-sample_for_model = 200000
+#sample_for_model = 200000
+sample_for_model = None
 roll_window = 500
 
 if 'SDX_TEST_DIR' in os.environ:
@@ -54,7 +55,7 @@ def do_model():
     # Retain a copy of X_test which includes all columns
     X_test_all = X_test.copy()
 
-    unneeded_columns = ['cap', 'tp']
+    unneeded_columns = ['cap', 'capt', 'tp']
     # Standardize the features
     scaler = StandardScaler()
     # Scale the data
@@ -115,11 +116,15 @@ def do_plots():
     print(X_test_all.head())
     print(f"Total rows: {X_test_all.shape[0]}")
 
-    # print the distribution of cap
+    # print distributions
+    print("Distribution of capt:")
+    print(X_test_all['capt'].describe())
     print("Distribution of cap:")
     print(X_test_all['cap'].describe())
     print("Distribution of pi_fl:")
     print(X_test_all['pi_fl'].describe())
+    avg_capt = X_test_all['capt'].mean()
+    print(f"Average capt: {avg_capt}")
     avg_cap = X_test_all['cap'].mean()
     print(f"Average cap: {avg_cap}")
 
@@ -142,7 +147,7 @@ def do_plots():
     X_test_all_sorted = X_test_all.sort_values(by='pi_fl', ascending=False).reset_index(drop=True)
 
     X_test_all_sorted['prob_perfect'] = (X_test_all_sorted.index + 1) / len(X_test_all_sorted)
-    X_test_all_sorted['prob_combs_targets'] = X_test_all_sorted['prob_perfect'] * avg_cap
+    X_test_all_sorted['prob_combs_targets'] = X_test_all_sorted['prob_perfect'] * avg_capt
     X_test_all_sorted['prob_combs'] = X_test_all_sorted['prob_perfect'] * avg_cap
     # Reverse the DataFrame
     df_plot = X_test_all_sorted.rolling(window=roll_window).mean()
@@ -156,9 +161,9 @@ def do_plots():
     plt.xscale('log')
     plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--', linewidth=0.5)
     plt.vlines(0.001, 0.5, 1.0, colors='black', linestyles='--', linewidth=0.5)
-    plt.xlabel('Coverage given attack conditions (log)')
+    plt.xlabel('Coverage (log)')
     plt.ylabel(f'Precision Improvement (floored at {pi_floor})')
-    plt.legend(loc="lower right")
+    plt.legend(loc="lower left")
     plt.tight_layout()
     plt.savefig(os.path.join(attack_path, 'pi_cov.png'))
     plt.close()
@@ -181,9 +186,11 @@ def gather(instances_path):
                     continue
                 try:
                     res = json.load(f)
-                    cap = res['summary']['coverage_all_combs_targets']
+                    capt = res['summary']['coverage_all_combs_targets']
+                    cap = res['summary']['coverage_all_combs']
                     num_rows = res['summary']['num_rows']
                     for entry in res['attack_results']:
+                        entry['capt'] = capt
                         entry['cap'] = cap
                         entry['frac_tar'] = entry['nrtv'] / num_rows
                         all_entries.append(entry)
