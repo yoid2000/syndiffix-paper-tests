@@ -15,7 +15,8 @@ import pprint
 pp = pprint.PrettyPrinter(indent=4)
 
 remove_bad_files = False
-sample_for_model = True
+sample_for_model = 200000
+roll_window = 5000
 
 if 'SDX_TEST_DIR' in os.environ:
     base_path = os.getenv('SDX_TEST_DIR')
@@ -37,8 +38,8 @@ def do_model():
     res_path = os.path.join(attack_path, 'results.parquet')
     df = pd.read_parquet(res_path)
 
-    if sample_for_model:
-        df = df.sample(n=200000, random_state=42)
+    if sample_for_model is not None:
+        df = df.sample(n=sample_for_model, random_state=42)
 
     # Convert 'c' column to binary
     df['c'] = df['c'].map({'positive': 1, 'negative': 0})
@@ -140,34 +141,29 @@ def do_plots():
     # Sort the DataFrame by 'pi_fl' in descending order and reset the index
     X_test_all_sorted = X_test_all.sort_values(by='pi_fl', ascending=False).reset_index(drop=True)
 
-    # Create a new column 'probability'
-    #X_test_all_sorted['probability'] = (len(X_test_all_sorted) - X_test_all_sorted.index) / len(X_test_all_sorted)
+    X_test_all_sorted['prob_perfect'] = (X_test_all_sorted.index + 1) / len(X_test_all_sorted)
+    X_test_all_sorted['prob_combs_targets'] = X_test_all_sorted['probability'] * avg_cap
+    X_test_all_sorted['prob_combs'] = X_test_all_sorted['probability'] * avg_cap
+    # Reverse the DataFrame
+    df_reversed = X_test_all_sorted.iloc[::-1]
+    df_reversed = df_reversed.rolling(window=roll_window).mean()
+    df_plot = df_reversed.iloc[::-1]
+    df_plot = df_plot.reset_index(drop=True)
 
-    # Create a new column 'probability'
-    X_test_all_sorted['probability'] = (X_test_all_sorted.index + 1) / len(X_test_all_sorted)
+# Reset the index
     # Plot 'probability' vs 'pi_fl'
     plt.figure(figsize=(8, 4))
-    plt.plot(X_test_all_sorted['probability'], X_test_all_sorted['pi_fl'])
+    plt.plot(df_plot['prob_perfect'], df_plot['pi_fl'], label='Attack conditions exist')
+    plt.plot(df_plot['prob_combs'], df_plot['pi_fl'], label='Attacker knowledge, any target ok')
+    plt.plot(df_plot['prob_combs_targets'], df_plot['pi_fl'], label='Attacker knowledge, only specific target')
     plt.xscale('log')
     plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--', linewidth=0.5)
     plt.vlines(0.001, 0.5, 1.0, colors='black', linestyles='--', linewidth=0.5)
     plt.xlabel('Coverage given attack conditions (log)')
     plt.ylabel(f'Precision Improvement (floored at {pi_floor})')
+    plt.legend(loc="lower right")
     plt.tight_layout()
-    plt.savefig(os.path.join(attack_path, 'pi_fl_attack_conditions.png'))
-    plt.close()
-
-    # divide all probability values by avg_cap
-    X_test_all_sorted['probability'] = X_test_all_sorted['probability'] * avg_cap
-    plt.figure(figsize=(8, 4))
-    plt.plot(X_test_all_sorted['probability'], X_test_all_sorted['pi_fl'])
-    plt.xscale('log')
-    plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--', linewidth=0.5)
-    plt.vlines(0.001, 0.5, 1.0, colors='black', linestyles='--', linewidth=0.5)
-    plt.xlabel('Coverage given victim knowledge (log)')
-    plt.ylabel(f'Precision Improvement (floored at {pi_floor})')
-    plt.tight_layout()
-    plt.savefig(os.path.join(attack_path, 'pi_fl_victim_knowledge.png'))
+    plt.savefig(os.path.join(attack_path, 'pi_cov.png'))
     plt.close()
 
 def gather(instances_path):
