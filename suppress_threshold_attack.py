@@ -172,7 +172,7 @@ def do_plots():
                                 'frac_tar_avg': [frac_tar_avg]})
         df_bin = pd.concat([df_bin, new_row], ignore_index=True)
 
-    df_bin = df_bin.sort_values(by='pi_fl_mid')
+    df_bin = df_bin.sort_values(by='pi_fl_mid', ascending=False)
     # Reset the index
     df_bin = df_bin.reset_index(drop=True)
 
