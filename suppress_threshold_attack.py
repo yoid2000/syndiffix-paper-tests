@@ -168,6 +168,7 @@ def do_plots():
 
     # Create a temporary DataFrame that excludes rows where pi_fl == 0 or pi_fl == 1
     #df_temp = X_test_all[(X_test_all['pi_fl'] > 0) & (X_test_all['pi_fl'] < 1)].copy()
+    df_temp = X_test_all.copy()
 
     # Create bins of equal width
     df_temp['bin'] = pd.cut(df_temp['pi_fl'], bins=num_bins)
