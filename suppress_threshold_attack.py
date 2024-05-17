@@ -168,7 +168,7 @@ def do_plots():
     plt.ylabel(f'Precision Improvement\n(floored at {pi_floor})')
     plt.legend(loc="lower left", prop={'size': 8})
     plt.tight_layout()
-    plt.savefig(os.path.join(attack_path, 'pi_cov_roll.png'))
+    plt.savefig(os.path.join(attack_path, 'pi_cov.png'))
     plt.close()
 
     # Plot 'probability' vs 'pi_fl' with rolling average
@@ -185,6 +185,12 @@ def do_plots():
     plt.tight_layout()
     plt.savefig(os.path.join(attack_path, 'pi_cov_roll.png'))
     plt.close()
+
+    # Generate a dataframe that bins pi_fl with 20 bins of equal width
+    bins = pd.cut(df_plot['pi_fl'], bins=20)
+    df_bin['pi_fl_mid'] = bins.apply(lambda x: x.mid)
+    df_bin['count'] = df_bin.groupby(bins)['pi_fl'].transform('count')
+    df_bin['frac'] = df_bin['count'] / df_bin['count'].sum()
 
 def gather(instances_path):
     all_entries = []
