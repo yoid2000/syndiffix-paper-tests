@@ -178,6 +178,7 @@ def do_plots():
     # Create a basic scatterplot from the bins
     plt.figure(figsize=(10, 6))
     plt.scatter(df_bin['frac'], df_bin['pi_fl_mid'], c=df_bin['frac_tar_avg'], cmap='viridis')
+    plt.colorbar(label='frac_tar_avg')
     plt.xscale('log')
     plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--', linewidth=0.5)
     plt.vlines(0.001, 0.5, 1.0, colors='black', linestyles='--', linewidth=0.5)
