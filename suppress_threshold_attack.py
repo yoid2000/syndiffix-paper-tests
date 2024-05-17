@@ -35,18 +35,6 @@ attack_path = os.path.join(base_path, 'suppress_attacks')
 os.makedirs(attack_path, exist_ok=True)
 max_attacks = 200000
 
-def naive_decision(c, nkwt, nkwot):
-    if c == 'positive' and nkwt > 0 and nkwot == 0:
-        attack_summary['summary']['tp'] += 1
-        got_tp = True
-    elif c == 'negative' and nkwt > 0 and nkwot == 0:
-        attack_summary['summary']['fp'] += 1
-    elif c == 'positive' and (nkwt == 0 or nkwot > 0):
-        attack_summary['summary']['fn'] += 1
-    elif c == 'negative' and (nkwt == 0 or nkwot > 0):
-        attack_summary['summary']['tn'] += 1
-
-
 def do_model():
     # Read in the parquet file
     model_stats = {}
@@ -118,18 +106,28 @@ def do_model():
     with open(os.path.join(attack_path, 'model_stats.json'), 'w') as f:
         json.dump(model_stats, f, indent=4)
 
+def naive_decision(c, nkwt, nkwot):
+    if c == 'positive' and nkwt > 0 and nkwot == 0:
+        return 'tp'
+    elif c == 'negative' and nkwt > 0 and nkwot == 0:
+        return 'fp'
+    elif c == 'positive' and (nkwt == 0 or nkwot > 0):
+        return 'fn'
+    elif c == 'negative' and (nkwt == 0 or nkwot > 0):
+        return 'tn'
+
 def do_plots():
     # Read in the parquet files
     X_test_all = pd.read_parquet(os.path.join(attack_path, 'X_test.parquet'))
     y_test = pd.read_parquet(os.path.join(attack_path, 'y_test.parquet')).squeeze()
     y_score = pd.read_parquet(os.path.join(attack_path, 'y_score.parquet')).squeeze()
 
-    # zzzz we only want to compute pi when prob_tp_model is > 0.5 !!!
-
     X_test_all['pi'] = (X_test_all['prob_tp_model'] - X_test_all['frac_tar']) / (1.000001 - X_test_all['frac_tar'])
 
     # This makes up for the use of 1.000001 in the above line
     X_test_all.loc[X_test_all['pi'] >= 0.9999, 'pi'] = 1.0
+
+    X_test_all['naive_pred'] = X_test_all.apply(lambda row: naive_decision(row['capt'], row['nkwt'], row['nkwot']), axis=1)
 
     pi_floor = 0
     X_test_all['pi_fl'] = X_test_all['pi'].clip(lower=pi_floor)
@@ -198,7 +196,7 @@ def do_plots():
 
     # Create a basic scatterplot from the bins
     plt.figure(figsize=(7, 3.5))
-    plt.scatter(df_bin['frac_perfect'], df_bin['pi_fl_mid'], c=df_bin['frac_tar_avg'], cmap='viridis', marker='o', label='Attack any person\nand any target')
+    plt.scatter(df_bin['frac_perfect'], df_bin['pi_fl_mid'], c=df_bin['frac_tar_avg'], cmap='viridis', marker='o', label='Attack contitions\nhappen to exist')
     plt.scatter(df_bin['frac_capt'], df_bin['pi_fl_mid'], c=df_bin['frac_tar_avg'], cmap='viridis', marker='x', label='Attack specific person\nand target')
     plt.scatter(df_bin['frac_perfect'], df_bin['pi_fl_mid'], c=df_bin['frac_tar_avg'], cmap='viridis')
     plt.colorbar(label='Fraction of rows with target value')
