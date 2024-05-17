@@ -151,7 +151,7 @@ def do_plots():
     # Compute the count, midpoint, and fraction for each bin
     df_bin = df_temp.groupby('bin', observed=True).size().reset_index(name='count')
     df_bin['pi_fl_mid'] = df_bin['bin'].apply(lambda x: (x.right + x.left) / 2)
-    df_bin['frac'] = df_bin['count'] / X_test_all.shape[0]
+    df_bin['frac_perfect'] = df_bin['count'] / X_test_all.shape[0]
 
     df_bin['capt_avg'] = df_temp.groupby('bin', observed=True)['capt'].mean().values
     df_bin['cap_avg'] = df_temp.groupby('bin', observed=True)['cap'].mean().values
@@ -166,19 +166,21 @@ def do_plots():
         new_row = pd.DataFrame({'bin': [pd.Interval(value, value, closed='both')],
                                 'count': [count],
                                 'pi_fl_mid': [value],
-                                'frac': [count / X_test_all.shape[0]],
+                                'frac_perfect': [count / X_test_all.shape[0]],
                                 'capt_avg': [capt_avg],
                                 'cap_avg': [cap_avg],
                                 'frac_tar_avg': [frac_tar_avg]})
         df_bin = pd.concat([df_bin, new_row], ignore_index=True)
 
     df_bin = df_bin.sort_values(by='pi_fl_mid', ascending=False).reset_index(drop=True)
+    df_bin['frac_capt'] = df_bin['frac_perfect'] / df_bin['capt_avg']
+    df_bin['frac_cap'] = df_bin['frac_perfect'] / df_bin['cap_avg']
     print(df_bin.to_string())
 
     # Create a basic scatterplot from the bins
     plt.figure(figsize=(10, 6))
-    plt.scatter(df_bin['frac'], df_bin['pi_fl_mid'], c=df_bin['frac_tar_avg'], cmap='viridis')
-    plt.colorbar(label='frac_tar_avg')
+    plt.scatter(df_bin['frac_perfect'], df_bin['pi_fl_mid'], c=df_bin['frac_tar_avg'], cmap='viridis')
+    plt.colorbar(label='Fraction of rows with target value')
     plt.xscale('log')
     plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--', linewidth=0.5)
     plt.vlines(0.001, 0.5, 1.0, colors='black', linestyles='--', linewidth=0.5)
