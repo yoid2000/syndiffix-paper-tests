@@ -147,6 +147,8 @@ def do_plots():
 
     # Create bins of equal width
     df_temp['bin'] = pd.cut(df_temp['pi_fl'], bins=num_bins)
+    print(df_temp.head(100))
+    quit()
 
     # Compute the count, midpoint, and fraction for each bin
     df_bin = df_temp.groupby('bin').size().reset_index(name='count')
