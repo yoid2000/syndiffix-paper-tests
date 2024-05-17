@@ -220,7 +220,7 @@ def do_plots():
                 new_row[f'{column}_avg'] = [X_test_all[X_test_all['pi_fl'] == value][column].mean()]
 
         new_df = pd.DataFrame(new_row)
-        df_bin = pd.concat([df_bin, new_row], ignore_index=True)
+        df_bin = pd.concat([df_bin, new_df], ignore_index=True)
 
     df_bin = df_bin.sort_values(by='pi_fl_mid', ascending=False).reset_index(drop=True)
     df_bin['frac_capt'] = df_bin['frac_perfect'] * df_bin['capt_avg']
