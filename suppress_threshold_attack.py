@@ -173,8 +173,17 @@ def do_plots():
         df_bin = pd.concat([df_bin, new_row], ignore_index=True)
 
     df_bin = df_bin.sort_values(by='pi_fl_mid', ascending=False).reset_index(drop=True)
-
     print(df_bin.to_string())
+
+    # Create a basic scatterplot from the bins
+    plt.figure(figsize=(10, 6))
+    plt.scatter(df_bin['frac'], df_bin['pi_fl_mid'])
+    plt.xscale('log')
+    plt.xlabel('Coverage')
+    plt.ylabel('Precision Improvement')
+    plt.tight_layout()
+    plt.savefig('pi_cov_bins.png')
+    plt.close()
     quit()
 
     if False:
