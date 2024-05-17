@@ -231,6 +231,9 @@ def do_plots():
     bin_dict = {}
     for index, row in df_bin.iterrows():
         bin_dict[row['bin']] = row.drop('bin').to_dict()
+        bin_dict[row['bin']]['filename_counts'] = df_temp[df_temp['bin'] == row['bin']]['filename'].value_counts().to_dict()
+    with open(os.path.join(attack_path, 'bins.json'), 'w') as f:
+        json.dump(bin_dict, f, indent=4) 
 
     # Save df_bin.to_string() to file bin.txt
     with open(os.path.join(attack_path, 'bins.txt'), 'w') as f:
