@@ -182,7 +182,8 @@ def do_plots():
     plt.xlabel('Coverage')
     plt.ylabel('Precision Improvement')
     plt.tight_layout()
-    plt.savefig('pi_cov_bins.png')
+    plot_path = os.path.join(attack_path, 'pi_cov_bins.png')
+    plt.savefig(plot_path)
     plt.close()
     quit()
 
