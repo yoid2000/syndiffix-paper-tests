@@ -35,6 +35,18 @@ attack_path = os.path.join(base_path, 'suppress_attacks')
 os.makedirs(attack_path, exist_ok=True)
 max_attacks = 200000
 
+def naive_decision(c, nkwt, nkwot):
+    if c == 'positive' and nkwt > 0 and nkwot == 0:
+        attack_summary['summary']['tp'] += 1
+        got_tp = True
+    elif c == 'negative' and nkwt > 0 and nkwot == 0:
+        attack_summary['summary']['fp'] += 1
+    elif c == 'positive' and (nkwt == 0 or nkwot > 0):
+        attack_summary['summary']['fn'] += 1
+    elif c == 'negative' and (nkwt == 0 or nkwot > 0):
+        attack_summary['summary']['tn'] += 1
+
+
 def do_model():
     # Read in the parquet file
     model_stats = {}
@@ -112,6 +124,8 @@ def do_plots():
     y_test = pd.read_parquet(os.path.join(attack_path, 'y_test.parquet')).squeeze()
     y_score = pd.read_parquet(os.path.join(attack_path, 'y_score.parquet')).squeeze()
 
+    # zzzz we only want to compute pi when prob_tp_model is > 0.5 !!!
+
     X_test_all['pi'] = (X_test_all['prob_tp_model'] - X_test_all['frac_tar']) / (1.000001 - X_test_all['frac_tar'])
 
     # This makes up for the use of 1.000001 in the above line
@@ -154,11 +168,12 @@ def do_plots():
     # Compute the count, midpoint, and fraction for each bin
     df_bin = df_temp.groupby('bin', observed=True).size().reset_index(name='count')
     df_bin['pi_fl_mid'] = df_bin['bin'].apply(lambda x: (x.right + x.left) / 2)
-    df_bin['frac_perfect'] = df_bin['count'] / X_test_all.shape[0]
 
     df_bin['capt_avg'] = df_temp.groupby('bin', observed=True)['capt'].mean().values
     df_bin['cap_avg'] = df_temp.groupby('bin', observed=True)['cap'].mean().values
     df_bin['frac_tar_avg'] = df_temp.groupby('bin', observed=True)['frac_tar'].mean().values
+    df_bin['guess_pos'] = df_temp[df_temp['prob_tp_model'] > 0.5].groupby('bin')['prob_tp_model'].count().values
+    df_bin['frac_perfect'] = df_bin['guess_pos'] / X_test_all.shape[0]
 
     # Add bins for pi_fl == 0 and pi_fl == 1
     for value in [0, 1]:
@@ -166,10 +181,11 @@ def do_plots():
         capt_avg = X_test_all[X_test_all['pi_fl'] == value]['capt'].mean()
         cap_avg = X_test_all[X_test_all['pi_fl'] == value]['cap'].mean()
         frac_tar_avg = X_test_all[X_test_all['pi_fl'] == value]['frac_tar'].mean()
+        pos_count = X_test_all[X_test_all['pi_fl'] == value and X_test_all['prob_tp_model'] > 0.5].shape[0]
         new_row = pd.DataFrame({'bin': [pd.Interval(value, value, closed='both')],
                                 'count': [count],
                                 'pi_fl_mid': [value],
-                                'frac_perfect': [count / X_test_all.shape[0]],
+                                'frac_perfect': [pos_count / X_test_all.shape[0]],
                                 'capt_avg': [capt_avg],
                                 'cap_avg': [cap_avg],
                                 'frac_tar_avg': [frac_tar_avg]})
@@ -198,21 +214,21 @@ def do_plots():
     plt.close()
     quit()
 
-    if False:
-        # Compute precision-recall curve
-        #precision, recall, _ = precision_recall_curve(y_test, y_score)
-        precision, recall, _ = precision_recall_curve(y_test, X_test_all['prob_tp_model'])
-        # Plot precision-recall curve
-        plt.figure()
-        plt.plot(recall, precision, color='darkorange', lw=2, label='PR curve')
-        plt.xlim([0.0, 1.0])
-        plt.ylim([0.0, 1.05])
-        plt.xlabel('Recall')
-        plt.ylabel('Precision')
-        plt.title('Precision-Recall curve')
-        plt.legend(loc="lower right")
-        plot_path = os.path.join(attack_path, 'pr_curve.png')
-        plt.savefig(plot_path)
+    # This is the basic precision/recall curve. We use it to validate that
+    # the model is working well, and we can therefore trust the postive prediction
+    # probabilities that we are using (prob_tp_model)
+    precision, recall, _ = precision_recall_curve(y_test, X_test_all['prob_tp_model'])
+    # Plot precision-recall curve
+    plt.figure()
+    plt.plot(recall, precision, color='darkorange', lw=2, label='PR curve')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.title('Precision-Recall curve')
+    plt.legend(loc="lower right")
+    plot_path = os.path.join(attack_path, 'pr_curve.png')
+    plt.savefig(plot_path)
 
     # Sort the DataFrame by 'pi_fl' in descending order and reset the index
     X_test_all_sorted = X_test_all.sort_values(by='pi_fl', ascending=False).reset_index(drop=True)
