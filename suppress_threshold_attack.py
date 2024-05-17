@@ -160,6 +160,9 @@ def do_plots():
     # Add bins for pi_fl == 0 and pi_fl == 1
     for value in [0, 1]:
         count = X_test_all[X_test_all['pi_fl'] == value].shape[0]
+        capt_avg = X_test_all[X_test_all['pi_fl'] == value]['capt'].mean()
+        cap_avg = X_test_all[X_test_all['pi_fl'] == value]['cap'].mean()
+        frac_tar_avg = X_test_all[X_test_all['pi_fl'] == value]['frac_tar'].mean()
         new_row = pd.DataFrame({'bin': [pd.Interval(value, value, closed='both')],
                                 'count': [count],
                                 'pi_fl_mid': [value],
