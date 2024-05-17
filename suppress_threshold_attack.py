@@ -176,9 +176,14 @@ def do_plots():
     df_bin = df_temp.groupby('bin', observed=True).size().reset_index(name='count')
     df_bin['pi_fl_mid'] = df_bin['bin'].apply(lambda x: (x.right + x.left) / 2)
 
-    df_bin['capt_avg'] = df_temp.groupby('bin', observed=True)['capt'].mean().values
-    df_bin['cap_avg'] = df_temp.groupby('bin', observed=True)['cap'].mean().values
-    df_bin['frac_tar_avg'] = df_temp.groupby('bin', observed=True)['frac_tar'].mean().values
+    for column in df_temp.columns:
+        # If the dtype is numeric, compute the mean for each bin
+        if pd.api.types.is_numeric_dtype(df_temp[column]):
+            df_bin[f'{column}_avg'] = df_temp.groupby('bin', observed=True)[column].mean().values
+
+    #df_bin['capt_avg'] = df_temp.groupby('bin', observed=True)['capt'].mean().values
+    #df_bin['cap_avg'] = df_temp.groupby('bin', observed=True)['cap'].mean().values
+    #df_bin['frac_tar_avg'] = df_temp.groupby('bin', observed=True)['frac_tar'].mean().values
     df_bin['guess_pos'] = df_temp[df_temp['prob_tp_model'] > 0.5].groupby('bin', observed=True)['prob_tp_model'].count().values
     df_bin['model_tp'] = df_temp[df_temp['model_pred'] == 'tp'].groupby('bin', observed=True)['model_pred'].count().values
     df_bin['model_fp'] = df_temp[df_temp['model_pred'] == 'fp'].groupby('bin', observed=True)['model_pred'].count().values
@@ -189,25 +194,32 @@ def do_plots():
     # Add bins for pi_fl == 0 and pi_fl == 1
     for value in [0, 1]:
         count = X_test_all[X_test_all['pi_fl'] == value].shape[0]
-        capt_avg = X_test_all[X_test_all['pi_fl'] == value]['capt'].mean()
-        cap_avg = X_test_all[X_test_all['pi_fl'] == value]['cap'].mean()
-        frac_tar_avg = X_test_all[X_test_all['pi_fl'] == value]['frac_tar'].mean()
+        #capt_avg = X_test_all[X_test_all['pi_fl'] == value]['capt'].mean()
+        #cap_avg = X_test_all[X_test_all['pi_fl'] == value]['cap'].mean()
+        #frac_tar_avg = X_test_all[X_test_all['pi_fl'] == value]['frac_tar'].mean()
         pos_count = X_test_all[(X_test_all['pi_fl'] == value) & (X_test_all['prob_tp_model'] > 0.5)].shape[0]
         model_tp = X_test_all[(X_test_all['pi_fl'] == value) & (X_test_all['model_pred'] == 'tp')].shape[0]
         model_fp = X_test_all[(X_test_all['pi_fl'] == value) & (X_test_all['model_pred'] == 'fp')].shape[0]
         naive_tp = X_test_all[(X_test_all['pi_fl'] == value) & (X_test_all['naive_pred'] == 'tp')].shape[0]
         naive_fp = X_test_all[(X_test_all['pi_fl'] == value) & (X_test_all['naive_pred'] == 'fp')].shape[0]
-        new_row = pd.DataFrame({'bin': [pd.Interval(value, value, closed='both')],
-                                'count': [count],
-                                'pi_fl_mid': [value],
-                                'frac_perfect': [pos_count / X_test_all.shape[0]],
-                                'capt_avg': [capt_avg],
-                                'cap_avg': [cap_avg],
-                                'model_tp': [model_tp],
-                                'model_fp': [model_fp],
-                                'naive_tp': [naive_tp],
-                                'naive_fp': [naive_fp],
-                                'frac_tar_avg': [frac_tar_avg]})
+        new_row = {'bin': [pd.Interval(value, value, closed='both')],
+                    'count': [count],
+                    'pi_fl_mid': [value],
+                    'frac_perfect': [pos_count / X_test_all.shape[0]],
+                    #'capt_avg': [capt_avg],
+                    #'cap_avg': [cap_avg],
+                    'model_tp': [model_tp],
+                    'model_fp': [model_fp],
+                    'naive_tp': [naive_tp],
+                    'naive_fp': [naive_fp],
+                    #'frac_tar_avg': [frac_tar_avg],
+                    }
+        for column in df_temp.columns:
+            # If the dtype is numeric, compute the mean for each bin
+            if pd.api.types.is_numeric_dtype(df_temp[column]):
+                new_row[f'{column}_avg'] = [X_test_all[X_test_all['pi_fl'] == value][column].mean()]
+
+        new_df = pd.Dataframe(new_row)
         df_bin = pd.concat([df_bin, new_row], ignore_index=True)
 
     df_bin = df_bin.sort_values(by='pi_fl_mid', ascending=False).reset_index(drop=True)
