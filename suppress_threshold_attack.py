@@ -180,7 +180,11 @@ def do_plots():
     df_bin['capt_avg'] = df_temp.groupby('bin', observed=True)['capt'].mean().values
     df_bin['cap_avg'] = df_temp.groupby('bin', observed=True)['cap'].mean().values
     df_bin['frac_tar_avg'] = df_temp.groupby('bin', observed=True)['frac_tar'].mean().values
-    df_bin['guess_pos'] = df_temp[df_temp['prob_tp_model'] > 0.5].groupby('bin')['prob_tp_model'].count().values
+    df_bin['guess_pos'] = df_temp[df_temp['prob_tp_model'] > 0.5].groupby('bin', observed=True)['prob_tp_model'].count().values
+    df_bin['model_tp'] = df_temp[df_temp['model_pred'] == 'tp'].groupby('bin')['model_pred'].count().values
+    df_bin['model_fp'] = df_temp[df_temp['model_pred'] == 'fp'].groupby('bin')['model_pred'].count().values
+    df_bin['naive_tp'] = df_temp[df_temp['naive_pred'] == 'tp'].groupby('bin')['naive_pred'].count().values
+    df_bin['naive_fp'] = df_temp[df_temp['naive_pred'] == 'fp'].groupby('bin')['naive_pred'].count().values
     df_bin['frac_perfect'] = df_bin['guess_pos'] / X_test_all.shape[0]
 
     # Add bins for pi_fl == 0 and pi_fl == 1
@@ -190,12 +194,20 @@ def do_plots():
         cap_avg = X_test_all[X_test_all['pi_fl'] == value]['cap'].mean()
         frac_tar_avg = X_test_all[X_test_all['pi_fl'] == value]['frac_tar'].mean()
         pos_count = X_test_all[(X_test_all['pi_fl'] == value) & (X_test_all['prob_tp_model'] > 0.5)].shape[0]
+        model_tp = X_test_all[(X_test_all['pi_fl'] == value) & (X_test_all['model_pred'] == 'tp')].shape[0]
+        model_fp = X_test_all[(X_test_all['pi_fl'] == value) & (X_test_all['model_pred'] == 'fp')].shape[0]
+        naive_tp = X_test_all[(X_test_all['pi_fl'] == value) & (X_test_all['naive_pred'] == 'tp')].shape[0]
+        naive_fp = X_test_all[(X_test_all['pi_fl'] == value) & (X_test_all['naive_pred'] == 'fp')].shape[0]
         new_row = pd.DataFrame({'bin': [pd.Interval(value, value, closed='both')],
                                 'count': [count],
                                 'pi_fl_mid': [value],
                                 'frac_perfect': [pos_count / X_test_all.shape[0]],
                                 'capt_avg': [capt_avg],
                                 'cap_avg': [cap_avg],
+                                'model_tp': [model_tp],
+                                'model_fp': [model_fp],
+                                'naive_tp': [naive_tp],
+                                'naive_fp': [naive_fp],
                                 'frac_tar_avg': [frac_tar_avg]})
         df_bin = pd.concat([df_bin, new_row], ignore_index=True)
 
@@ -203,6 +215,11 @@ def do_plots():
     df_bin['frac_capt'] = df_bin['frac_perfect'] * df_bin['capt_avg']
     df_bin['frac_cap'] = df_bin['frac_perfect'] * df_bin['cap_avg']
     print(df_bin.to_string())
+
+    # Save df_bin.to_string() to file bin.txt
+    with open(os.path.join(attack_path, 'bins.txt'), 'w') as f:
+        f.write(df_bin.to_string())
+
 
     # Create a basic scatterplot from the bins
     plt.figure(figsize=(7, 3.5))
