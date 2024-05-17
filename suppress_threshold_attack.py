@@ -134,7 +134,7 @@ def do_plots():
     # Generate a dataframe that bins pi_fl with 20 bins of equal width
     df_bin = pd.cut(X_test_all['pi_fl'], bins=20)
     df_bin['pi_fl_mid'] = df_bin.apply(lambda x: x.mid)
-    df_bin['count'] = df_bin.groupby(bins)['pi_fl'].transform('count')
+    df_bin['count'] = df_bin.groupby(df_bin)['pi_fl'].transform('count')
     df_bin['frac_perfect'] = df_bin['count'] / df_bin['count'].sum()
     print(df_bin.head())
     quit()
