@@ -132,6 +132,10 @@ def do_plots():
     print(X_test_all.head())
     print(f"Total rows: {X_test_all.shape[0]}")
 
+    # Count the number of rows where pi_fl == 1
+    count_pi_fl_1 = X_test_all[X_test_all['pi_fl'] == 1].shape[0]
+    print(f"Count of rows where pi_fl == 1: {count_pi_fl_1}")
+
     # Define the number of bins
     num_bins = 20
 
