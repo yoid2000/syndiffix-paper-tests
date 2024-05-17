@@ -152,7 +152,7 @@ def do_plots():
     X_test_all_sorted['prob_perfect'] = (X_test_all_sorted.index + 1) / len(X_test_all_sorted)
     X_test_all_sorted['prob_combs_targets'] = X_test_all_sorted['prob_perfect'] * avg_capt
     X_test_all_sorted['prob_combs'] = X_test_all_sorted['prob_perfect'] * avg_cap
-    df_plot = df_plot.reset_index(drop=True)
+    df_plot = X_test_all_sorted.reset_index(drop=True)
     # Reverse the DataFrame
     df_plot_roll = df_plot.rolling(window=roll_window).mean()
 
