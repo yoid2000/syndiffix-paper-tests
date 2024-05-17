@@ -79,7 +79,7 @@ def do_model():
     # Retain a copy of X_test which includes all columns
     X_test_all = X_test.copy()
 
-    unneeded_columns = ['cap', 'capt', 'tp', 'c', 'naive_pred', 'filename']
+    unneeded_columns = ['cap', 'capt', 'tp', 'c', 'naive_pred', 'table']
     # Standardize the features
     scaler = StandardScaler()
     # Scale the data
@@ -232,7 +232,7 @@ def do_plots():
     for index, row in df_bin.iterrows():
         key = str(row['bin'])
         bin_dict[key] = row.drop('bin').to_dict()
-        bin_dict[key]['filename_counts'] = df_temp[df_temp['bin'] == row['bin']]['filename'].value_counts().to_dict()
+        bin_dict[key]['table_counts'] = df_temp[df_temp['bin'] == row['bin']]['table'].value_counts().to_dict()
     with open(os.path.join(attack_path, 'bins.json'), 'w') as f:
         json.dump(bin_dict, f, indent=4) 
 
@@ -319,7 +319,7 @@ def gather(instances_path):
                     cap = res['summary']['coverage_all_combs']
                     num_rows = res['summary']['num_rows']
                     for entry in res['attack_results']:
-                        entry['filename'] = filename
+                        entry['table'] = res['summary']['job']['dir_name']
                         entry['capt'] = capt
                         entry['cap'] = cap
                         entry['frac_tar'] = entry['nrtv'] / num_rows
