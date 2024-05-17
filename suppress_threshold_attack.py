@@ -79,7 +79,7 @@ def do_model():
     # Retain a copy of X_test which includes all columns
     X_test_all = X_test.copy()
 
-    unneeded_columns = ['cap', 'capt', 'tp', 'c', 'naive_pred', 'file_name']
+    unneeded_columns = ['cap', 'capt', 'tp', 'c', 'naive_pred', 'filename']
     # Standardize the features
     scaler = StandardScaler()
     # Scale the data
@@ -228,6 +228,9 @@ def do_plots():
     df_bin['model_prec'] = df_bin['model_tp'] / (df_bin['model_tp'] + df_bin['model_fp'])
     df_bin['naive_prec'] = df_bin['naive_tp'] / (df_bin['naive_tp'] + df_bin['naive_fp'])
     print(df_bin.to_string())
+    bin_dict = {}
+    for index, row in df_bin.iterrows():
+        bin_dict[row['bin']] = row.drop('bin').to_dict()
 
     # Save df_bin.to_string() to file bin.txt
     with open(os.path.join(attack_path, 'bins.txt'), 'w') as f:
