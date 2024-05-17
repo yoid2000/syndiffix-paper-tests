@@ -48,7 +48,10 @@ def do_model():
     df['c'] = df['c'].map({'positive': 1, 'negative': 0})
 
     # Separate features and target
-    X = df.drop(columns=['c'])
+    #X = df.drop(columns=['c'])
+    # We are not dropping the target column c, because we want to use it later
+    # when computing the non-ml approach. Rather we ignore it a scaling time
+    X = df
     y = df['c']
 
     # Split the data into training and test sets
@@ -57,7 +60,7 @@ def do_model():
     # Retain a copy of X_test which includes all columns
     X_test_all = X_test.copy()
 
-    unneeded_columns = ['cap', 'capt', 'tp']
+    unneeded_columns = ['cap', 'capt', 'tp', 'c']
     # Standardize the features
     scaler = StandardScaler()
     # Scale the data
@@ -92,11 +95,11 @@ def do_model():
     y_score = model.predict_proba(X_test)[:,1]
 
     # Add y_score into the retained copy as an additional column
-    X_test_all['prob_tp'] = y_score
+    X_test_all['prob_tp_model'] = y_score
 
     # Save X_test_all, y_test, and y_score to parquet files
     X_test_all.to_parquet(os.path.join(attack_path, 'X_test.parquet'))
-    pd.DataFrame(y_score, columns=['prob_tp']).to_parquet(os.path.join(attack_path, 'y_score.parquet'))
+    pd.DataFrame(y_score, columns=['prob_tp_model']).to_parquet(os.path.join(attack_path, 'y_score.parquet'))
     pd.DataFrame(y_test).to_parquet(os.path.join(attack_path, 'y_test.parquet'))
 
     # write model_stats to json file
@@ -109,7 +112,7 @@ def do_plots():
     y_test = pd.read_parquet(os.path.join(attack_path, 'y_test.parquet')).squeeze()
     y_score = pd.read_parquet(os.path.join(attack_path, 'y_score.parquet')).squeeze()
 
-    X_test_all['pi'] = (X_test_all['prob_tp'] - X_test_all['frac_tar']) / (1.000001 - X_test_all['frac_tar'])
+    X_test_all['pi'] = (X_test_all['prob_tp_model'] - X_test_all['frac_tar']) / (1.000001 - X_test_all['frac_tar'])
 
     # This makes up for the use of 1.000001 in the above line
     X_test_all.loc[X_test_all['pi'] >= 0.9999, 'pi'] = 1.0
@@ -198,7 +201,7 @@ def do_plots():
     if False:
         # Compute precision-recall curve
         #precision, recall, _ = precision_recall_curve(y_test, y_score)
-        precision, recall, _ = precision_recall_curve(y_test, X_test_all['prob_tp'])
+        precision, recall, _ = precision_recall_curve(y_test, X_test_all['prob_tp_model'])
         # Plot precision-recall curve
         plt.figure()
         plt.plot(recall, precision, color='darkorange', lw=2, label='PR curve')
