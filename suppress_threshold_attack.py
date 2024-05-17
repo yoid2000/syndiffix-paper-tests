@@ -80,7 +80,7 @@ def do_model():
     # Retain a copy of X_test which includes all columns
     X_test_all = X_test.copy()
 
-    unneeded_columns = ['cap', 'capt', 'tp', 'c']
+    unneeded_columns = ['cap', 'capt', 'tp', 'c', 'naive_pred']
     # Standardize the features
     scaler = StandardScaler()
     # Scale the data
