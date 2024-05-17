@@ -132,7 +132,7 @@ def do_plots():
     print(f"Total rows: {X_test_all.shape[0]}")
 
     # Generate a dataframe that bins pi_fl with 20 bins of equal width
-    bins = pd.cut(df_plot['pi_fl'], bins=20)
+    bins = pd.cut(X_test_all['pi_fl'], bins=20)
     print(bins.head())
     quit()
     df_bin['pi_fl_mid'] = bins.apply(lambda x: x.mid)
