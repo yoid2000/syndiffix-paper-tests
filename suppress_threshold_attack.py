@@ -230,8 +230,9 @@ def do_plots():
     print(df_bin.to_string())
     bin_dict = {}
     for index, row in df_bin.iterrows():
-        bin_dict[row['bin']] = row.drop('bin').to_dict()
-        bin_dict[row['bin']]['filename_counts'] = df_temp[df_temp['bin'] == row['bin']]['filename'].value_counts().to_dict()
+        key = str(row['bin'])
+        bin_dict[key] = row.drop('bin').to_dict()
+        bin_dict[key]['filename_counts'] = df_temp[df_temp['bin'] == row['bin']]['filename'].value_counts().to_dict()
     with open(os.path.join(attack_path, 'bins.json'), 'w') as f:
         json.dump(bin_dict, f, indent=4) 
 
