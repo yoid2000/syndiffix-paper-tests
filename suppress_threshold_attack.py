@@ -150,10 +150,12 @@ def do_plots():
 
     # Compute the count, midpoint, and fraction for each bin
     df_bin = df_temp.groupby('bin').size().reset_index(name='count')
-    print(df_bin.head(100))
-    quit()
     df_bin['pi_fl_mid'] = df_bin['bin'].apply(lambda x: (x.right + x.left) / 2)
     df_bin['frac'] = df_bin['count'] / X_test_all.shape[0]
+
+    df_bin['capt_avg'] = df_temp.groupby('bin')['capt'].mean().values
+    df_bin['cap_avg'] = df_temp.groupby('bin')['cap'].mean().values
+    df_bin['frac_tar_avg'] = df_temp.groupby('bin')['frac_tar'].mean().values
 
     # Add bins for pi_fl == 0 and pi_fl == 1
     for value in [0, 1]:
@@ -161,7 +163,10 @@ def do_plots():
         new_row = pd.DataFrame({'bin': [pd.Interval(value, value, closed='both')],
                                 'count': [count],
                                 'pi_fl_mid': [value],
-                                'frac': [count / X_test_all.shape[0]]})
+                                'frac': [count / X_test_all.shape[0]],
+                                'capt_avg': [capt_avg],
+                                'cap_avg': [cap_avg],
+                                'frac_tar_avg': [frac_tar_avg]})
         df_bin = pd.concat([df_bin, new_row], ignore_index=True)
 
     # Reset the index
