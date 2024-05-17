@@ -149,7 +149,7 @@ def do_plots():
 
     # Reset the index
     df_bin = df_bin.reset_index(drop=True)
-    print(df_bin.head())
+    print(df_bin.to_string())
     quit()
 
     if False:
