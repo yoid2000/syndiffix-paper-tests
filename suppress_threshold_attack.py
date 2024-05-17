@@ -423,7 +423,7 @@ def run_attacks(tm, file_path, job):
                 if len(attack_summary['attack_results']) % 10000 == 0:
                     do_summarize = True
             df_syn = None
-    summarize_and_write(attack_summary, file_path, sum_base_probs, df_syn)
+    summarize_and_write(attack_summary, file_path, sum_base_probs)
 
 def summarize_and_write(attack_summary, file_path, sum_base_probs):
     tp = attack_summary['summary']['tp']
