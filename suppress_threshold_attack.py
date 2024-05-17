@@ -181,7 +181,7 @@ def do_plots():
         capt_avg = X_test_all[X_test_all['pi_fl'] == value]['capt'].mean()
         cap_avg = X_test_all[X_test_all['pi_fl'] == value]['cap'].mean()
         frac_tar_avg = X_test_all[X_test_all['pi_fl'] == value]['frac_tar'].mean()
-        pos_count = X_test_all[X_test_all['pi_fl'] == value and X_test_all['prob_tp_model'] > 0.5].shape[0]
+        pos_count = X_test_all[(X_test_all['pi_fl'] == value) & (X_test_all['prob_tp_model'] > 0.5)].shape[0]
         new_row = pd.DataFrame({'bin': [pd.Interval(value, value, closed='both')],
                                 'count': [count],
                                 'pi_fl_mid': [value],
