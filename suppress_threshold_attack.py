@@ -173,8 +173,8 @@ def do_plots():
         df_bin = pd.concat([df_bin, new_row], ignore_index=True)
 
     df_bin = df_bin.sort_values(by='pi_fl_mid', ascending=False).reset_index(drop=True)
-    df_bin['frac_capt'] = df_bin['frac_perfect'] / df_bin['capt_avg']
-    df_bin['frac_cap'] = df_bin['frac_perfect'] / df_bin['cap_avg']
+    df_bin['frac_capt'] = df_bin['frac_perfect'] * df_bin['capt_avg']
+    df_bin['frac_cap'] = df_bin['frac_perfect'] * df_bin['cap_avg']
     print(df_bin.to_string())
 
     # Create a basic scatterplot from the bins
