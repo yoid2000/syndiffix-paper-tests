@@ -135,24 +135,24 @@ def do_plots():
     # Define the number of bins
     num_bins = 20
 
-    # Create bins of equal width for values between 0 and 1, excluding 0 and 1
-    bins = np.linspace(0, 1, num_bins + 1)[1:-1]
+    # Create a temporary DataFrame that excludes rows where pi_fl == 0 or pi_fl == 1
+    df_temp = X_test_all[(X_test_all['pi_fl'] > 0) & (X_test_all['pi_fl'] < 1)]
 
-    # Add bins for 0 and 1
-    bins = np.append([0], bins)
-    bins = np.append(bins, [1])
+    # Create bins of equal width
+    df_temp['bin'] = pd.cut(df_temp['pi_fl'], bins=num_bins)
 
-    # Create bins
-    X_test_all['bin'] = pd.cut(X_test_all['pi_fl'], bins=bins, include_lowest=True, right=False)
+    # Compute the count, midpoint, and fraction for each bin
+    df_bin = df_temp.groupby('bin').size().reset_index(name='count')
+    df_bin['pi_fl_mid'] = df_bin['bin'].apply(lambda x: (x.right + x.left) / 2)
+    df_bin['frac'] = df_bin['count'] / X_test_all.shape[0]
 
-    # Compute the count for each bin
-    df_bin = X_test_all.groupby('bin').size().reset_index(name='count')
-
-    # Compute the midpoint for each bin
-    df_bin['pi_fl_mid'] = df_bin['bin'].apply(lambda x: x.left if pd.isnull(x.right) else (x.right + x.left) / 2)
-
-    # Compute the fraction for each bin
-    df_bin['frac'] = df_bin['count'] / df_bin['count'].sum()
+    # Add bins for pi_fl == 0 and pi_fl == 1
+    for value in [0, 1]:
+        count = X_test_all[X_test_all['pi_fl'] == value].shape[0]
+        df_bin = df_bin.append({'bin': pd.Interval(value, value, closed='both'),
+                                'count': count,
+                                'pi_fl_mid': value,
+                                'frac': count / X_test_all.shape[0]}, ignore_index=True)
 
     # Reset the index
     df_bin = df_bin.reset_index(drop=True)
