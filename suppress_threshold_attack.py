@@ -109,8 +109,8 @@ def do_plots():
     y_test = pd.read_parquet(os.path.join(attack_path, 'y_test.parquet')).squeeze()
     y_score = pd.read_parquet(os.path.join(attack_path, 'y_score.parquet')).squeeze()
 
-    X_test_all['pi'] = (X_test_all['prob_tp'] - X_test_all['frac_tar']) / (1.00001 - X_test_all['frac_tar'])
-
+    X_test_all['pi'] = (X_test_all['prob_tp'] - X_test_all['frac_tar']) / (1.0 - X_test_all['frac_tar']) if (1.0-X_test_all['frac_tar']) != 0 else 0.0
+    
     pi_floor = 0
     X_test_all['pi_fl'] = X_test_all['pi'].clip(lower=pi_floor)
 
