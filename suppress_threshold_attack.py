@@ -79,7 +79,7 @@ def do_model():
     # Retain a copy of X_test which includes all columns
     X_test_all = X_test.copy()
 
-    unneeded_columns = ['cap', 'capt', 'tp', 'c', 'naive_pred']
+    unneeded_columns = ['cap', 'capt', 'tp', 'c', 'naive_pred', 'file_name']
     # Standardize the features
     scaler = StandardScaler()
     # Scale the data
@@ -312,6 +312,7 @@ def gather(instances_path):
                     cap = res['summary']['coverage_all_combs']
                     num_rows = res['summary']['num_rows']
                     for entry in res['attack_results']:
+                        entry['filename'] = filename
                         entry['capt'] = capt
                         entry['cap'] = cap
                         entry['frac_tar'] = entry['nrtv'] / num_rows
