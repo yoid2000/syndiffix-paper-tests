@@ -214,6 +214,8 @@ def do_plots():
     df_bin = df_bin.sort_values(by='pi_fl_mid', ascending=False).reset_index(drop=True)
     df_bin['frac_capt'] = df_bin['frac_perfect'] * df_bin['capt_avg']
     df_bin['frac_cap'] = df_bin['frac_perfect'] * df_bin['cap_avg']
+    df_bin['model_prec'] = df_bin['model_tp'] / (df_bin['model_tp'] + df_bin['model_fp'])
+    df_bin['naive_prec'] = df_bin['naive_tp'] / (df_bin['naive_tp'] + df_bin['naive_fp'])
     print(df_bin.to_string())
 
     # Save df_bin.to_string() to file bin.txt
@@ -237,7 +239,6 @@ def do_plots():
     plot_path = os.path.join(attack_path, 'pi_cov_bins.png')
     plt.savefig(plot_path)
     plt.close()
-    quit()
 
     # This is the basic precision/recall curve. We use it to validate that
     # the model is working well, and we can therefore trust the postive prediction
