@@ -9,7 +9,19 @@ from syndiffix.common import AnonymizationParams, SuppressionParams
 import pprint
 import sys
 
-known_target_val = 111.0
+'''
+All outlier tests are based on detecting whether there are:
+        0 or 1 outlier
+        1 or 2 outliers
+        2 or 3 outliers
+Value outlier tests:
+    Detect presence:
+        We know the presence of the outlier will raise the average value
+        of the column with the outlier value.
+    Infer value of another column:
+'''
+
+
 save_results = False
 if 'SDX_TEST_DIR' in os.environ:
     base_path = os.getenv('SDX_TEST_DIR')
@@ -20,310 +32,13 @@ if 'SDX_TEST_CODE' in os.environ:
 else:
     code_path = None
 os.makedirs(base_path, exist_ok=True)
-runs_path = os.path.join(base_path, 'suppress_theory')
+runs_path = os.path.join(base_path, 'outlier_theory')
 os.makedirs(runs_path, exist_ok=True)
 tests_path = os.path.join(runs_path, 'tests')
 os.makedirs(tests_path, exist_ok=True)
 results_path = os.path.join(runs_path, 'results')
 os.makedirs(results_path, exist_ok=True)
 pp = pprint.PrettyPrinter(indent=4)
-num_tries = 30000
-no_positives = 40000
-no_positives_label = str(int(num_tries/1000)) + 'k'
-
-def membership_attack():
-    low_mean_gaps = [2.0, 3.0, 4.0]
-    num_tries_by_lmg = [4000, 20000, 40000]
-
-    results = {}
-    for i in range(len(low_mean_gaps)):
-        low_mean_gap = low_mean_gaps[i]
-        lmg_key = f'{low_mean_gap} low_mean_gap'
-        num_tries = num_tries_by_lmg[i]
-        col1_vals = ['a', 'b', 'c']
-        # Compute num_rows such that there are not many suppressed combinations
-        num_rows = 75
-        results[lmg_key] = {'tp':0, 'fp':0, 'tn':0, 'fn':0, 'samples': num_tries, 'num_rows': num_rows}
-        for this_try in range(num_tries):
-            # Use different column names with each run so as to get different noise
-            c1 = f"c1_{this_try}"
-            df = pd.DataFrame({c1: np.random.choice(col1_vals, size=num_rows),})
-            # Add two rows of the attack configuration
-            df = pd.concat([df, pd.DataFrame({c1: ['z']})], ignore_index=True)
-            df = pd.concat([df, pd.DataFrame({c1: ['z']})], ignore_index=True)
-            
-            # add the third row with 50% probability
-            if np.random.randint(0, 2) == 1:
-                df = pd.concat([df, pd.DataFrame({c1: ['z']})], ignore_index=True)
-                status = 'positive'
-            else:
-                status = 'negative'
-
-            # Need to shuffle the dataframes otherwise we'll get the same
-            # noise due to the same indices assigned by syndiffix
-            df = df.sample(frac=1).reset_index(drop=True)
-
-            syn = Synthesizer(df,
-                anonymization_params=AnonymizationParams(low_count_params=SuppressionParams(low_mean_gap=low_mean_gap)))
-            df_syn = syn.sample()
-            num_rows_with_z = len(df_syn[(df_syn[c1] == 'z')])
-            if num_rows_with_z > 0:
-                # positive guess
-                if status == 'positive':
-                    # correct
-                    results[lmg_key]['tp'] += 1
-                else:
-                    # wrong
-                    results[lmg_key]['fp'] += 1
-            else:
-                # negative guess
-                if status == 'positive':
-                    # wrong
-                    results[lmg_key]['fn'] += 1
-                else:
-                    # correct
-                    results[lmg_key]['tn'] += 1
-        coverage = (results[lmg_key]['tp'] + results[lmg_key]['fp']) / results[lmg_key]['samples']
-        results[lmg_key]['coverage'] = coverage
-
-        print(results)
-    # Dump results as a json file
-    json_path = os.path.join(results_path, 'suppress_threshold_results_no_infer.json')
-    # Dump results as a json file
-    print(f"Writing results to {json_path}")
-    with open(json_path, 'w') as f:
-        json.dump(results, f, indent=4)
-
-def summarize_stats(stats):
-    summary = {
-        'neg_pos_1_neg_1': 0,
-        'neg_pos_1_neg_0': 0,
-        'neg_pos_0_neg_1': 0,
-        'neg_pos_0_neg_0': 0,
-        'pos_pos_1_neg_1': 0,
-        'pos_pos_1_neg_0': 0,
-        'pos_pos_0_neg_1': 0,
-        'pos_pos_0_neg_0': 0,
-    }
-    for thing in stats:
-        if thing['case'] == 'positive':
-            if thing['pos_signal'] > 0:
-                if thing['neg_signal'] > 0:
-                    summary['pos_pos_1_neg_1'] += 1
-                else:
-                    summary['pos_pos_1_neg_0'] += 1
-            else:
-                if thing['neg_signal'] > 0:
-                    summary['pos_pos_0_neg_1'] += 1
-                else:
-                    summary['pos_pos_0_neg_0'] += 1
-        else:
-            if thing['pos_signal'] > 0:
-                if thing['neg_signal'] > 0:
-                    summary['neg_pos_1_neg_1'] += 1
-                else:
-                    summary['neg_pos_1_neg_0'] += 1
-            else:
-                if thing['neg_signal'] > 0:
-                    summary['neg_pos_0_neg_1'] += 1
-                else:
-                    summary['neg_pos_0_neg_0'] += 1
-    return summary
-
-def gather_results():
-    json_files = [pos_json for pos_json in os.listdir(tests_path) if pos_json.endswith('.json')]
-
-    output = {'tests': [],
-              'summary0': {
-                'neg_pos_1_neg_1': 0,
-                'neg_pos_1_neg_0': 0,
-                'neg_pos_0_neg_1': 0,
-                'neg_pos_0_neg_0': 0,
-                'pos_pos_1_neg_1': 0,
-                'pos_pos_1_neg_0': 0,
-                'pos_pos_0_neg_1': 0,
-                'pos_pos_0_neg_0': 0,
-               },
-              'summary20': {
-                'neg_pos_1_neg_1': 0,
-                'neg_pos_1_neg_0': 0,
-                'neg_pos_0_neg_1': 0,
-                'neg_pos_0_neg_0': 0,
-                'pos_pos_1_neg_1': 0,
-                'pos_pos_1_neg_0': 0,
-                'pos_pos_0_neg_1': 0,
-                'pos_pos_0_neg_0': 0,
-               },
-             }
-
-    for file in json_files:
-        file_path = os.path.join(tests_path, file)
-        with open(file_path, "r") as json_file:
-            print(f"Reading {file_path}")
-            data = json.load(json_file)
-            data_dict = {key: data[key] for key in ("tp", "fp", "tn", "fn", "rows_mult", "num_target_val", "low_mean_gap", "samples", "dim")}
-            data_dict['summary'] = summarize_stats(data['stats'])
-            if data_dict['dim'] == 0:
-                for key, val in data_dict['summary'].items():
-                    output['summary0'][key] += val
-            else:
-                for key, val in data_dict['summary'].items():
-                    output['summary20'][key] += val
-            output['tests'].append(data_dict)
-    # make a path to suppress_threshold_results.json in directory results
-    json_path = os.path.join(results_path, 'suppress_threshold_results.json')
-    # Dump results as a json file
-    print(f"Writing results to {json_path}")
-    with open(json_path, 'w') as f:
-        json.dump(output, f, indent=4)
-
-def make_plot():
-    import matplotlib.pyplot as plt
-    import matplotlib.lines as mlines
-    import seaborn as sns
-    # read file suppress_threshold_results.json
-    supp_res_path = os.path.join(results_path, 'suppress_threshold_results.json')
-    with open(supp_res_path, 'r') as f:
-        results = json.load(f)
-
-    data = []
-    for datum in results['tests']:
-        tar = datum['num_target_val']
-        gap = datum['low_mean_gap']
-        rows_mult = int(datum['rows_mult'])
-        # If there are only two target values, then a negative indication can be
-        # considered a positive guess for the non-target value. We catch this case
-        # and update tp and fp accordingly
-        if tar == 2:
-            datum['tp'] += datum['summary']['neg_pos_0_neg_1']
-            datum['fp'] += datum['summary']['pos_pos_0_neg_1']
-        if 'num_rows' in datum:
-            num_rows = datum['num_rows']
-        else:
-            # 3 is the number of other c1 vals
-            num_rows = 3 * tar * rows_mult
-        target_size = rows_mult
-        # This would be the TP rate if we made a statistical guess
-        mean = 3 + gap
-        stat_guess = 1 / tar
-        tp_rate = max(1/num_tries, datum['tp'] / datum['samples'])
-        fp_rate = max(1/num_tries, datum['fp'] / datum['samples'])
-        tn_rate = max(1/num_tries, datum['tn'] / datum['samples'])
-        fn_rate = max(1/num_tries, datum['fn'] / datum['samples'])
-        all_pos = datum['tp'] + datum['fp']
-        if all_pos == 0.0:
-            precision = 0
-            precision_improvement = 0.0
-        else:
-            precision = datum['tp'] / all_pos
-            precision_improvement = (precision - stat_guess) / (1.0 - stat_guess) 
-        coverage = all_pos / datum['samples']
-        # A value of 0 would screw up the log scale
-        coverage = max(1/no_positives, coverage)
-        data.append({
-            'dim': int(datum['dim']),
-            'sd_gap': int(gap),
-            'mult': rows_mult,
-            'num_targets': int(tar),
-            'mean': mean,
-            'precision': precision,
-            'precision_improvement': precision_improvement,
-            'coverage': coverage,
-            'target_size': int(target_size),
-            'stat_guess': stat_guess,
-            'tp_rate': tp_rate,
-            'fp_rate': fp_rate,
-            'tn_rate': tn_rate,
-            'fn_rate': fn_rate,
-            'samples': datum['samples'],
-            'num_rows': num_rows,
-            'tp': datum['tp'],
-            'fp': datum['fp'],
-            'tn': datum['tn'],
-            'fn': datum['fn'],
-        })
-
-    df = pd.DataFrame(data)
-    df = df[~((df['sd_gap'] == 3) & (df['dim'] == 20))]
-    df = df[~((df['sd_gap'] == 4) & (df['dim'] == 20))]
-
-    print(df[['sd_gap','sd_gap','num_targets','target_size']].to_string())
-
-    # Make column 'marker' in df, where the marker is deterimned by the combined values of sd_gap and dim
-    def assign_case(row):
-        if row['sd_gap'] == 2 and row['dim'] == 20:
-            return 'sd_gap 2, multi'
-        elif row['sd_gap'] == 2 and row['dim'] == 0:
-            return 'sd_gap 2, single'
-        elif row['sd_gap'] == 3 and row['dim'] == 20:
-            return 'sd_gap 3, multi'
-        elif row['sd_gap'] == 3 and row['dim'] == 0:
-            return 'sd_gap 3, single'
-        elif row['sd_gap'] == 4 and row['dim'] == 20:
-            return 'sd_gap 4, multi'
-        elif row['sd_gap'] == 4 and row['dim'] == 0:
-            return 'sd_gap 4, single'
-        else:
-            print(f"Unknown case: {row['sd_gap']}, {row['dim']}")
-            sys.exit(1)
-
-    df['case'] = df.apply(assign_case, axis=1)
-
-    # define marker map for the sd_gap, dim combinations
-    marker_map = {'sd_gap 2, single': 'v', 'sd_gap 2, multi': '+', 'sd_gap 3, single': 'o', 'sd_gap 4, single': 's'}
-
-    # Define the color map for target_size
-    colors = sns.color_palette()[:3]
-    color_map = {5: colors[0], 10: colors[1], 100: colors[2]}
-
-    # Define the size map for num_targets
-    size_map = {2: 30, 5: 100, 10: 180}
-    legend_size_map = {2: 60, 5: 90, 10: 120}
-
-    # Create the scatter plot
-    plt.figure(figsize=(7, 3.5))
-
-    for (case, marker) in marker_map.items():
-        for (target_size, color) in color_map.items():
-            for (num_targets, size) in size_map.items():
-                df_filtered = df[(df['case'] == case) & (df['target_size'] == target_size) & (df['num_targets'] == num_targets)]
-                print(case, target_size, num_targets)
-                print(df_filtered.to_string())
-                plt.scatter(df_filtered['coverage'], df_filtered['precision_improvement'], color=color, marker=marker, s=size, alpha=0.7)
-
-    # Add horizontal lines
-    plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--')
-    # Add a vertical line at 0.0001
-    plt.vlines(0.001, 0.5, 1.0, colors='black', linestyles='--')
-
-    # Set axis labels
-    plt.xscale('log')
-    plt.xlabel('Coverage (log scale)', fontsize=13, labelpad=10)
-    plt.ylabel('Precision Improvement', fontsize=13, labelpad=10)
-
-    # Create legends
-    legend1 = plt.legend([mlines.Line2D([0], [0], color='black', marker=marker, linestyle='None') for case, marker in marker_map.items()], ['case: {}'.format(case) for case in marker_map.keys()], title='', loc='lower left', bbox_to_anchor=(0.1, 0), fontsize='small')
-    legend2 = plt.legend([mlines.Line2D([0], [0], color=color, marker='o', linestyle='None') for target_size, color in color_map.items()], ['target_size: {}'.format(target_size) for target_size in color_map.keys()], title='', loc='lower left', bbox_to_anchor=(0.43, 0), fontsize='small')
-    plt.legend([mlines.Line2D([0], [0], color='black', marker='o', markersize=size/10, linestyle='None') for num_targets, size in legend_size_map.items()], ['num_targets: {}'.format(num_targets) for num_targets in legend_size_map.keys()], title='', loc='lower left', bbox_to_anchor=(0.0, 0.6), fontsize='small')
-
-    plt.gca().add_artist(legend1)
-    plt.gca().add_artist(legend2)
-
-    # Modify x-axis ticks and labels
-    ticks = list(plt.xticks()[0]) + [1/no_positives]
-    labels = [t if t != 1/no_positives else f'<1/{no_positives_label}' for t in ticks]
-    plt.xticks(ticks, labels)
-
-    # Set x-axis range to min and max 'coverage' values
-    plt.xlim(1/(no_positives + 5000), 0.02)
-
-    # Create the path to suppress.png
-    path_to_suppress_png = os.path.join(results_path, 'suppress.png')
-
-    # Save the plot as a PNG file
-    plt.savefig(path_to_suppress_png, dpi=300, bbox_inches='tight')
-
-    plt.close()
 
 def make_slurm():
     exe_path = os.path.join(code_path, 'suppress_threshold_theory.py')

@@ -113,10 +113,6 @@ def do_plots():
     pi_floor = 0
     X_test_all['pi_fl'] = X_test_all['pi'].clip(lower=pi_floor)
 
-    print("X_test:")
-    print(X_test_all.head())
-    print(f"Total rows: {X_test_all.shape[0]}")
-
     # print distributions
     print("Distribution of capt:")
     print(X_test_all['capt'].describe())
@@ -130,6 +126,10 @@ def do_plots():
     print(f"Average capt: {avg_capt}")
     avg_cap = X_test_all['cap'].mean()
     print(f"Average cap: {avg_cap}")
+
+    print("X_test:")
+    print(X_test_all.head())
+    print(f"Total rows: {X_test_all.shape[0]}")
 
     # Compute precision-recall curve and AUC
     #precision, recall, _ = precision_recall_curve(y_test, y_score)
@@ -152,9 +152,9 @@ def do_plots():
     X_test_all_sorted['prob_perfect'] = (X_test_all_sorted.index + 1) / len(X_test_all_sorted)
     X_test_all_sorted['prob_combs_targets'] = X_test_all_sorted['prob_perfect'] * avg_capt
     X_test_all_sorted['prob_combs'] = X_test_all_sorted['prob_perfect'] * avg_cap
-    # Reverse the DataFrame
-    df_plot = X_test_all_sorted.rolling(window=roll_window).mean()
     df_plot = df_plot.reset_index(drop=True)
+    # Reverse the DataFrame
+    df_plot_roll = df_plot.rolling(window=roll_window).mean()
 
     # Plot 'probability' vs 'pi_fl'
     plt.figure(figsize=(6, 3))
@@ -168,7 +168,22 @@ def do_plots():
     plt.ylabel(f'Precision Improvement\n(floored at {pi_floor})')
     plt.legend(loc="lower left", prop={'size': 8})
     plt.tight_layout()
-    plt.savefig(os.path.join(attack_path, 'pi_cov.png'))
+    plt.savefig(os.path.join(attack_path, 'pi_cov_roll.png'))
+    plt.close()
+
+    # Plot 'probability' vs 'pi_fl' with rolling average
+    plt.figure(figsize=(6, 3))
+    plt.plot(df_plot_roll['prob_perfect'], df_plot_roll['pi_fl'], label='Attack conditions exist')
+    plt.plot(df_plot_roll['prob_combs'], df_plot_roll['pi_fl'], label='Attacker knowledge, any target ok')
+    plt.plot(df_plot_roll['prob_combs_targets'], df_plot_roll['pi_fl'], label='Attacker knowledge, only specific target')
+    plt.xscale('log')
+    plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--', linewidth=0.5)
+    plt.vlines(0.001, 0.5, 1.0, colors='black', linestyles='--', linewidth=0.5)
+    plt.xlabel(f'Coverage (log), rolling average (window={roll_window})')
+    plt.ylabel(f'Precision Improvement\n(floored at {pi_floor})')
+    plt.legend(loc="lower left", prop={'size': 8})
+    plt.tight_layout()
+    plt.savefig(os.path.join(attack_path, 'pi_cov_roll.png'))
     plt.close()
 
 def gather(instances_path):
