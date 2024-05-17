@@ -107,13 +107,13 @@ def do_model():
         json.dump(model_stats, f, indent=4)
 
 def naive_decision(c, nkwt, nkwot):
-    if c == 'positive' and nkwt > 0 and nkwot == 0:
+    if c == 1 and nkwt > 0 and nkwot == 0:
         return 'tp'
-    elif c == 'negative' and nkwt > 0 and nkwot == 0:
+    elif c == 0 and nkwt > 0 and nkwot == 0:
         return 'fp'
-    elif c == 'positive' and (nkwt == 0 or nkwot > 0):
+    elif c == 1 and (nkwt == 0 or nkwot > 0):
         return 'fn'
-    elif c == 'negative' and (nkwt == 0 or nkwot > 0):
+    elif c == 0 and (nkwt == 0 or nkwot > 0):
         return 'tn'
 
 def do_plots():
