@@ -132,12 +132,23 @@ def do_plots():
     print(f"Total rows: {X_test_all.shape[0]}")
 
     # Generate a dataframe that bins pi_fl with 20 bins of equal width
+    # Define the number of bins
     num_bins = 20
-    bin_width = (X_test_all['pi_fl'].max() - X_test_all['pi_fl'].min()) / num_bins
-    bin_edges = [X_test_all['pi_fl'].min() + i * bin_width for i in range(num_bins + 1)]
-    X_test_all['pi_fl_bin'] = pd.cut(X_test_all['pi_fl'], bins=bin_edges)
-    df_bin = X_test_all.groupby('pi_fl_bin').size().reset_index(name='count')
-    df_bin['pi_fl_mid'] = (df_bin['pi_fl_bin'].apply(lambda x: x.left) + df_bin['pi_fl_bin'].apply(lambda x: x.right)) / 2
+
+    # Create bins of equal width
+    X_test_all['bin'] = pd.cut(X_test_all['pi_fl'], bins=num_bins)
+
+    # Compute the count for each bin
+    df_bin = X_test_all.groupby('bin').size().reset_index(name='count')
+
+    # Compute the midpoint for each bin
+    df_bin['pi_fl_mid'] = df_bin['bin'].apply(lambda x: (x.right + x.left) / 2)
+
+    # Compute the fraction for each bin
+    df_bin['frac'] = df_bin['count'] / df_bin['count'].sum()
+
+    # Reset the index
+    df_bin = df_bin.reset_index(drop=True)
     print(df_bin.head())
     quit()
 
