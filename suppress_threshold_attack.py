@@ -153,9 +153,9 @@ def do_plots():
     df_bin['pi_fl_mid'] = df_bin['bin'].apply(lambda x: (x.right + x.left) / 2)
     df_bin['frac'] = df_bin['count'] / X_test_all.shape[0]
 
-    df_bin['capt_avg'] = df_temp.groupby('bin')['capt'].mean().values
-    df_bin['cap_avg'] = df_temp.groupby('bin')['cap'].mean().values
-    df_bin['frac_tar_avg'] = df_temp.groupby('bin')['frac_tar'].mean().values
+    df_bin['capt_avg'] = df_temp.groupby('bin', observed=True)['capt'].mean().values
+    df_bin['cap_avg'] = df_temp.groupby('bin', observed=True)['cap'].mean().values
+    df_bin['frac_tar_avg'] = df_temp.groupby('bin', observed=True)['frac_tar'].mean().values
 
     # Add bins for pi_fl == 0 and pi_fl == 1
     for value in [0, 1]:
