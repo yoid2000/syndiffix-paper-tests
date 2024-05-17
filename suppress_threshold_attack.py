@@ -219,7 +219,7 @@ def do_plots():
             if pd.api.types.is_numeric_dtype(df_temp[column]):
                 new_row[f'{column}_avg'] = [X_test_all[X_test_all['pi_fl'] == value][column].mean()]
 
-        new_df = pd.Dataframe(new_row)
+        new_df = pd.DataFrame(new_row)
         df_bin = pd.concat([df_bin, new_row], ignore_index=True)
 
     df_bin = df_bin.sort_values(by='pi_fl_mid', ascending=False).reset_index(drop=True)
