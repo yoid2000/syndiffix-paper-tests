@@ -18,7 +18,6 @@ pp = pprint.PrettyPrinter(indent=4)
 remove_bad_files = False
 #sample_for_model = 200000
 sample_for_model = None
-roll_window = 5000
 do_comb_3_and_4 = False
 
 if 'SDX_TEST_DIR' in os.environ:
@@ -181,10 +180,10 @@ def do_plots():
     df_bin['cap_avg'] = df_temp.groupby('bin', observed=True)['cap'].mean().values
     df_bin['frac_tar_avg'] = df_temp.groupby('bin', observed=True)['frac_tar'].mean().values
     df_bin['guess_pos'] = df_temp[df_temp['prob_tp_model'] > 0.5].groupby('bin', observed=True)['prob_tp_model'].count().values
-    df_bin['model_tp'] = df_temp[df_temp['model_pred'] == 'tp'].groupby('bin')['model_pred'].count().values
-    df_bin['model_fp'] = df_temp[df_temp['model_pred'] == 'fp'].groupby('bin')['model_pred'].count().values
-    df_bin['naive_tp'] = df_temp[df_temp['naive_pred'] == 'tp'].groupby('bin')['naive_pred'].count().values
-    df_bin['naive_fp'] = df_temp[df_temp['naive_pred'] == 'fp'].groupby('bin')['naive_pred'].count().values
+    df_bin['model_tp'] = df_temp[df_temp['model_pred'] == 'tp'].groupby('bin', observed=True)['model_pred'].count().values
+    df_bin['model_fp'] = df_temp[df_temp['model_pred'] == 'fp'].groupby('bin', observed=True)['model_pred'].count().values
+    df_bin['naive_tp'] = df_temp[df_temp['naive_pred'] == 'tp'].groupby('bin', observed=True)['naive_pred'].count().values
+    df_bin['naive_fp'] = df_temp[df_temp['naive_pred'] == 'fp'].groupby('bin', observed=True)['naive_pred'].count().values
     df_bin['frac_perfect'] = df_bin['guess_pos'] / X_test_all.shape[0]
 
     # Add bins for pi_fl == 0 and pi_fl == 1
@@ -263,8 +262,6 @@ def do_plots():
     X_test_all_sorted['prob_combs_targets'] = X_test_all_sorted['prob_perfect'] * avg_capt
     X_test_all_sorted['prob_combs'] = X_test_all_sorted['prob_perfect'] * avg_cap
     df_plot = X_test_all_sorted.reset_index(drop=True)
-    # Reverse the DataFrame
-    df_plot_roll = df_plot.rolling(window=roll_window).mean()
 
     # Plot 'probability' vs 'pi_fl'
     plt.figure(figsize=(6, 3))
@@ -279,21 +276,6 @@ def do_plots():
     plt.legend(loc="lower left", prop={'size': 8})
     plt.tight_layout()
     plt.savefig(os.path.join(attack_path, 'pi_cov.png'))
-    plt.close()
-
-    # Plot 'probability' vs 'pi_fl' with rolling average
-    plt.figure(figsize=(6, 3))
-    plt.plot(df_plot_roll['prob_perfect'], df_plot_roll['pi_fl'], label='Attack conditions exist')
-    plt.plot(df_plot_roll['prob_combs'], df_plot_roll['pi_fl'], label='Attacker knowledge, any target ok')
-    plt.plot(df_plot_roll['prob_combs_targets'], df_plot_roll['pi_fl'], label='Attacker knowledge, only specific target')
-    plt.xscale('log')
-    plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--', linewidth=0.5)
-    plt.vlines(0.001, 0.5, 1.0, colors='black', linestyles='--', linewidth=0.5)
-    plt.xlabel(f'Coverage (log), rolling average (window={roll_window})')
-    plt.ylabel(f'Precision Improvement\n(floored at {pi_floor})')
-    plt.legend(loc="lower left", prop={'size': 8})
-    plt.tight_layout()
-    plt.savefig(os.path.join(attack_path, 'pi_cov_roll.png'))
     plt.close()
 
 def gather(instances_path):
