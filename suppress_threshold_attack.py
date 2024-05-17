@@ -149,10 +149,11 @@ def do_plots():
     # Add bins for pi_fl == 0 and pi_fl == 1
     for value in [0, 1]:
         count = X_test_all[X_test_all['pi_fl'] == value].shape[0]
-        df_bin = df_bin.append({'bin': pd.Interval(value, value, closed='both'),
-                                'count': count,
-                                'pi_fl_mid': value,
-                                'frac': count / X_test_all.shape[0]}, ignore_index=True)
+        new_row = pd.DataFrame({'bin': [pd.Interval(value, value, closed='both')],
+                                'count': [count],
+                                'pi_fl_mid': [value],
+                                'frac': [count / X_test_all.shape[0]]})
+        df_bin = pd.concat([df_bin, new_row], ignore_index=True)
 
     # Reset the index
     df_bin = df_bin.reset_index(drop=True)
