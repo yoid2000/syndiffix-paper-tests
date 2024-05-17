@@ -48,9 +48,9 @@ def naive_decision(c, nkwt, nkwot):
 def model_decision(c, pos_prob):
     if c == 1 and pos_prob > 0.5:
         return 'tp'
-      if c == 0 and pos_prob > 0.5:
+    if c == 0 and pos_prob > 0.5:
         return 'fp'
-      if c == 1 and pos_prob <= 0.5:
+    if c == 1 and pos_prob <= 0.5:
         return 'fn'
     elif c == 0 and  pos_prob <= 0.5:
         return 'tn'
