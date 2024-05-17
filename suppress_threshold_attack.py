@@ -131,20 +131,29 @@ def do_plots():
     print(X_test_all.head())
     print(f"Total rows: {X_test_all.shape[0]}")
 
-    # Compute precision-recall curve and AUC
-    #precision, recall, _ = precision_recall_curve(y_test, y_score)
-    precision, recall, _ = precision_recall_curve(y_test, X_test_all['prob_tp'])
-    # Plot precision-recall curve
-    plt.figure()
-    plt.plot(recall, precision, color='darkorange', lw=2, label='PR curve')
-    plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
-    plt.xlabel('Recall')
-    plt.ylabel('Precision')
-    plt.title('Precision-Recall curve')
-    plt.legend(loc="lower right")
-    plot_path = os.path.join(attack_path, 'pr_curve.png')
-    plt.savefig(plot_path)
+    # Generate a dataframe that bins pi_fl with 20 bins of equal width
+    bins = pd.cut(df_plot['pi_fl'], bins=20)
+    print(bins.head())
+    quit()
+    df_bin['pi_fl_mid'] = bins.apply(lambda x: x.mid)
+    df_bin['count'] = df_bin.groupby(bins)['pi_fl'].transform('count')
+    df_bin['frac_perfect'] = df_bin['count'] / df_bin['count'].sum()
+
+    if False:
+        # Compute precision-recall curve
+        #precision, recall, _ = precision_recall_curve(y_test, y_score)
+        precision, recall, _ = precision_recall_curve(y_test, X_test_all['prob_tp'])
+        # Plot precision-recall curve
+        plt.figure()
+        plt.plot(recall, precision, color='darkorange', lw=2, label='PR curve')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('Recall')
+        plt.ylabel('Precision')
+        plt.title('Precision-Recall curve')
+        plt.legend(loc="lower right")
+        plot_path = os.path.join(attack_path, 'pr_curve.png')
+        plt.savefig(plot_path)
 
     # Sort the DataFrame by 'pi_fl' in descending order and reset the index
     X_test_all_sorted = X_test_all.sort_values(by='pi_fl', ascending=False).reset_index(drop=True)
@@ -185,12 +194,6 @@ def do_plots():
     plt.tight_layout()
     plt.savefig(os.path.join(attack_path, 'pi_cov_roll.png'))
     plt.close()
-
-    # Generate a dataframe that bins pi_fl with 20 bins of equal width
-    bins = pd.cut(df_plot['pi_fl'], bins=20)
-    df_bin['pi_fl_mid'] = bins.apply(lambda x: x.mid)
-    df_bin['count'] = df_bin.groupby(bins)['pi_fl'].transform('count')
-    df_bin['frac'] = df_bin['count'] / df_bin['count'].sum()
 
 def gather(instances_path):
     all_entries = []
