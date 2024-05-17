@@ -135,20 +135,21 @@ def do_plots():
     # Define the number of bins
     num_bins = 20
 
-    # Create bins of equal width
-    X_test_all['bin'] = pd.cut(X_test_all['pi_fl'], bins=num_bins)
+    # Create bins of equal width for values between 0 and 1
+    X_test_all['bin'] = pd.cut(X_test_all['pi_fl'], bins=np.linspace(0, 1, num_bins + 1), include_lowest=True, right=False)
 
     # Compute the count for each bin
     df_bin = X_test_all.groupby('bin').size().reset_index(name='count')
 
     # Compute the midpoint for each bin
-    df_bin['pi_fl_mid'] = df_bin['bin'].apply(lambda x: (x.right + x.left) / 2)
+    df_bin['pi_fl_mid'] = df_bin['bin'].apply(lambda x: x.left if pd.isnull(x.right) else (x.right + x.left) / 2)
 
     # Compute the fraction for each bin
     df_bin['frac'] = df_bin['count'] / df_bin['count'].sum()
 
     # Reset the index
     df_bin = df_bin.reset_index(drop=True)
+
     print(df_bin.to_string())
     quit()
 
