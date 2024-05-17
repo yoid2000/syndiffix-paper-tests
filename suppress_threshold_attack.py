@@ -132,12 +132,18 @@ def do_plots():
     print(X_test_all.head())
     print(f"Total rows: {X_test_all.shape[0]}")
 
-    # Generate a dataframe that bins pi_fl with 20 bins of equal width
     # Define the number of bins
     num_bins = 20
 
-    # Create bins of equal width for values between 0 and 1
-    X_test_all['bin'] = pd.cut(X_test_all['pi_fl'], bins=np.linspace(0, 1, num_bins + 1), include_lowest=True, right=False)
+    # Create bins of equal width for values between 0 and 1, excluding 0 and 1
+    bins = np.linspace(0, 1, num_bins + 1)[1:-1]
+
+    # Add bins for 0 and 1
+    bins = np.append([0], bins)
+    bins = np.append(bins, [1])
+
+    # Create bins
+    X_test_all['bin'] = pd.cut(X_test_all['pi_fl'], bins=bins, include_lowest=True, right=False)
 
     # Compute the count for each bin
     df_bin = X_test_all.groupby('bin').size().reset_index(name='count')
