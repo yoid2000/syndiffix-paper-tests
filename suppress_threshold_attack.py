@@ -132,10 +132,12 @@ def do_plots():
     print(f"Total rows: {X_test_all.shape[0]}")
 
     # Generate a dataframe that bins pi_fl with 20 bins of equal width
-    df_bin = pd.cut(X_test_all['pi_fl'], bins=20)
-    df_bin['pi_fl_mid'] = df_bin.apply(lambda x: x.mid)
-    df_bin['count'] = df_bin.groupby(df_bin)['pi_fl_mid'].transform('count')
-    df_bin['frac_perfect'] = df_bin['count'] / df_bin['count'].sum()
+    num_bins = 20
+    bin_width = (X_test_all['pi_fl'].max() - X_test_all['pi_fl'].min()) / num_bins
+    bin_edges = [X_test_all['pi_fl'].min() + i * bin_width for i in range(num_bins + 1)]
+    X_test_all['pi_fl_bin'] = pd.cut(X_test_all['pi_fl'], bins=bin_edges)
+    df_bin = X_test_all.groupby('pi_fl_bin').size().reset_index(name='count')
+    df_bin['pi_fl_mid'] = (df_bin['pi_fl_bin'].apply(lambda x: x.left) + df_bin['pi_fl_bin'].apply(lambda x: x.right)) / 2
     print(df_bin.head())
     quit()
 
