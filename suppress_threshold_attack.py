@@ -179,6 +179,8 @@ def do_plots():
 
     # Create a basic scatterplot from the bins
     plt.figure(figsize=(10, 6))
+    plt.scatter(df_bin['frac_perfect'], df_bin['pi_fl_mid'], c=df_bin['frac_tar_avg'], cmap='viridis', marker='o', label='Attack any person and target')
+    plt.scatter(df_bin['frac_capt'], df_bin['pi_fl_mid'], c=df_bin['frac_tar_avg'], cmap='viridis', marker='x', label='Attack specific person and target')
     plt.scatter(df_bin['frac_perfect'], df_bin['pi_fl_mid'], c=df_bin['frac_tar_avg'], cmap='viridis')
     plt.colorbar(label='Fraction of rows with target value')
     plt.xscale('log')
@@ -186,6 +188,7 @@ def do_plots():
     plt.vlines(0.001, 0.5, 1.0, colors='black', linestyles='--', linewidth=0.5)
     plt.xlabel('Coverage')
     plt.ylabel('Precision Improvement')
+    plt.legend()
     plt.tight_layout()
     plot_path = os.path.join(attack_path, 'pi_cov_bins.png')
     plt.savefig(plot_path)
