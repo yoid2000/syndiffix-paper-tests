@@ -203,8 +203,8 @@ def do_plots():
 
     # Create a basic scatterplot from the bins
     plt.figure(figsize=(7, 3.5))
-    plt.scatter(df_bin['frac_perfect'], df_bin['pi_fl_mid'], c=df_bin['frac_tar_avg'], cmap='viridis', s=df_bin['count'], marker='o', label='Attack contitions\nhappen to exist')
-    plt.scatter(df_bin['frac_capt'], df_bin['pi_fl_mid'], c=df_bin['frac_tar_avg'], cmap='viridis', s=df_bin['count'], marker='x', label='Attack specific person\nand target')
+    plt.scatter(df_bin['frac_perfect'], df_bin['pi_fl_mid'], c=df_bin['frac_tar_avg'], cmap='viridis', marker='o', label='Attack contitions\nhappen to exist')
+    plt.scatter(df_bin['frac_capt'], df_bin['pi_fl_mid'], c=df_bin['frac_tar_avg'], cmap='viridis', marker='x', label='Attack specific person\nand target')
     plt.scatter(df_bin['frac_perfect'], df_bin['pi_fl_mid'], c=df_bin['frac_tar_avg'], cmap='viridis')
     plt.colorbar(label='Fraction of rows with target value')
     plt.xscale('log')
