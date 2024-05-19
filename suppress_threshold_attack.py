@@ -127,7 +127,7 @@ def do_model():
     with open(os.path.join(attack_path, 'model_stats.json'), 'w') as f:
         json.dump(model_stats, f, indent=4)
 
-def make_bin_scatterplot(df_bin, color_by='frac_tar_avg', label=label, filename=filename):
+def make_bin_scatterplot(df_bin, color_by, label, filename):
     plt.figure(figsize=(7, 3.5))
     plt.scatter(df_bin['frac_perfect'], df_bin['pi_fl_mid'], c=df_bin[color_by], cmap='viridis', marker='o', label='Attack contitions\nhappen to exist')
     plt.scatter(df_bin['frac_capt'], df_bin['pi_fl_mid'], c=df_bin[color_by], cmap='viridis', marker='x', label='Attack specific person\nand target')
