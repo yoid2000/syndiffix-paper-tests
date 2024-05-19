@@ -60,6 +60,8 @@ def do_model():
     model_stats = {}
     res_path = os.path.join(attack_path, 'results.parquet')
     df = pd.read_parquet(res_path)
+    print(f"Columns in df: {df.columns}")
+    quit()
 
     if sample_for_model is not None:
         df = df.sample(n=sample_for_model, random_state=42)
@@ -79,6 +81,8 @@ def do_model():
 
     # Retain a copy of X_test which includes all columns
     X_test_all = X_test.copy()
+
+    # We are going to make three models. One model uses 
 
     unneeded_columns = ['cap', 'capt', 'tp', 'c', 'naive_pred', 'table']
     # Standardize the features
