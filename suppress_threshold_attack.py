@@ -8,7 +8,8 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import precision_recall_curve, auc
+from sklearn.metrics import precision_recall_curve, auc, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
+from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import itertools
@@ -61,6 +62,73 @@ def get_unneeded(X, needed_columns):
         if column not in needed_columns:
             unneeded.append(column)
     return unneeded
+
+
+def build_and_add_model(X_train, X_test, y_train, y_test, X_test_all, model_stats, unneeded_columns, model_name):
+    # Standardize the features
+    scaler = StandardScaler()
+    # Scale the data
+    columns = X_train.drop(columns=unneeded_columns).columns
+    X_train_scaled = scaler.fit_transform(X_train.drop(columns=unneeded_columns))
+    X_train = pd.DataFrame(X_train_scaled, columns=columns)
+
+    columns = X_test.drop(columns=unneeded_columns).columns
+    X_test_scaled = scaler.transform(X_test.drop(columns=unneeded_columns))
+    X_test = pd.DataFrame(X_test_scaled, columns=columns)
+
+    # Train the model
+    model = LogisticRegression()
+    model.fit(X_train, y_train)
+
+    # Get the feature importance
+    importance = model.coef_[0]
+    # Map feature numbers to names
+    feature_names = X_train.columns
+    feature_importance = pd.DataFrame({'Feature': feature_names, 'Importance': importance})
+
+    # Sort by absolute value of importance
+    feature_importance['abs_importance'] = feature_importance['Importance'].abs()
+    feature_importance = feature_importance.sort_values(by='abs_importance', ascending=False)
+    print(model_name, feature_importance[['Feature', 'Importance']])
+
+    # save feature_importance as a dictionary
+    model_stats[model_name] = {}
+    model_stats[model_name]['feature_importance'] = feature_importance.set_index('Feature')['Importance'].to_dict()
+
+    # Predict on the test data
+    y_pred = model.predict(X_test)
+
+    # Calculate metrics
+    accuracy = accuracy_score(Y_test, y_pred)
+    precision = precision_score(Y_test, y_pred)
+    recall = recall_score(Y_test, y_pred)
+    f1 = f1_score(Y_test, y_pred)
+    roc_auc = roc_auc_score(Y_test, y_pred)
+
+    # Save metrics
+    model_stats[model_name]['accuracy'] = accuracy
+    model_stats[model_name]['precision'] = precision
+    model_stats[model_name]['recall'] = recall
+    model_stats[model_name]['f1'] = f1
+    model_stats[model_name]['roc_auc'] = roc_auc
+    print(f"Model: {model_name}")
+    print(f"Accuracy: {accuracy}")
+    print(f"Precision: {precision}")
+    print(f"Recall: {recall}")
+    print(f"F1 Score: {f1}")
+    print(f"ROC AUC: {roc_auc}")
+
+    # Get the probability of positive class
+    y_score = model.predict_proba(X_test)[:,1]
+
+    # Add y_score into the retained copy as an additional column
+    prob_col = f'prob_{model_name}'
+    pred_col = f'pred_{model_name}'
+    X_test_all[prob_col] = y_score
+
+    # Apply model_decision function to get model predictions
+    X_test_all[pred_col] = X_test_all.apply(lambda row: model_decision(row['c'], row[prob_col]), axis=1)
+    # Save X_test_all and y_test to parquet files
 
 def do_model():
     # Read in the parquet file
@@ -119,52 +187,11 @@ def do_model():
     full_unneeded = get_unneeded(X, full_attack_columns)
     print(f"full_attack_columns: {full_attack_columns}")
     print(f"full_unneeded: {full_unneeded}")
-    quit()
 
-    unneeded_columns = ['cap', 'capt', 'tp', 'c', 'naive_pred', 'table']
-    # Standardize the features
-    scaler = StandardScaler()
-    # Scale the data
-    columns = X_train.drop(columns=unneeded_columns).columns
-    X_train_scaled = scaler.fit_transform(X_train.drop(columns=unneeded_columns))
-    X_train = pd.DataFrame(X_train_scaled, columns=columns)
-
-    columns = X_test.drop(columns=unneeded_columns).columns
-    X_test_scaled = scaler.transform(X_test.drop(columns=unneeded_columns))
-    X_test = pd.DataFrame(X_test_scaled, columns=columns)
-    print(f"X_train type is {type(X_train)}, y_train type is {type(y_train)}")
-
-    # Train the model
-    model = LogisticRegression()
-    model.fit(X_train, y_train)
-
-    # Get the feature importance
-    importance = model.coef_[0]
-    # Map feature numbers to names
-    feature_names = X_train.columns
-    feature_importance = pd.DataFrame({'Feature': feature_names, 'Importance': importance})
-
-    # Sort by absolute value of importance
-    feature_importance['abs_importance'] = feature_importance['Importance'].abs()
-    feature_importance = feature_importance.sort_values(by='abs_importance', ascending=False)
-    print(feature_importance[['Feature', 'Importance']])
-
-    # save feature_importance as a dictionary
-    model_stats['feature_importance'] = feature_importance.set_index('Feature')['Importance'].to_dict()
-
-    # Get the probability of positive class
-    y_score = model.predict_proba(X_test)[:,1]
-
-    # Add y_score into the retained copy as an additional column
-    X_test_all['prob_tp_model'] = y_score
-
-    # Apply model_decision function to get model predictions
-    X_test_all['model_pred'] = X_test_all.apply(lambda row: model_decision(row['c'], row['prob_tp_model']), axis=1)
-    # Save X_test_all, y_test, and y_score to parquet files
+    for unneeded_columns, model_name in [(baseline_unneeded, 'baseline'), (narrow_unneeded, 'narrow_attack'), (full_unneeded, 'full_attack')]:
+        build_and_add_model(X_train, X_test, y_train, y_test, X_test_all, model_stats, unneeded_columns, model_name)
+        pass
     X_test_all.to_parquet(os.path.join(attack_path, 'X_test.parquet'))
-    pd.DataFrame(y_score, columns=['prob_tp_model']).to_parquet(os.path.join(attack_path, 'y_score.parquet'))
-    pd.DataFrame(y_test).to_parquet(os.path.join(attack_path, 'y_test.parquet'))
-
     # write model_stats to json file
     with open(os.path.join(attack_path, 'model_stats.json'), 'w') as f:
         json.dump(model_stats, f, indent=4)
@@ -194,8 +221,6 @@ def make_bin_scatterplot(df_bin, color_by, label, filename, pi_floor):
 def do_plots():
     # Read in the parquet files
     X_test_all = pd.read_parquet(os.path.join(attack_path, 'X_test.parquet'))
-    y_test = pd.read_parquet(os.path.join(attack_path, 'y_test.parquet')).squeeze()
-    y_score = pd.read_parquet(os.path.join(attack_path, 'y_score.parquet')).squeeze()
 
     X_test_all['pi'] = (X_test_all['prob_tp_model'] - X_test_all['frac_tar']) / (1.000001 - X_test_all['frac_tar'])
 
@@ -271,21 +296,6 @@ def do_plots():
         ('prob_tp_model_avg', 'Model positive prediction probability', 'pi_cov_bins_prob_tp.png'),
         ]:
         make_bin_scatterplot(df_bin, color_by, label, filename, pi_floor)
-    # This is the basic precision/recall curve. We use it to validate that
-    # the model is working well, and we can therefore trust the postive prediction
-    # probabilities that we are using (prob_tp_model)
-    precision, recall, _ = precision_recall_curve(y_test, X_test_all['prob_tp_model'])
-    # Plot precision-recall curve
-    plt.figure()
-    plt.plot(recall, precision, color='darkorange', lw=2, label='PR curve')
-    plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
-    plt.xlabel('Recall')
-    plt.ylabel('Precision')
-    plt.title('Precision-Recall curve')
-    plt.legend(loc="lower right")
-    plot_path = os.path.join(attack_path, 'pr_curve.png')
-    plt.savefig(plot_path)
 
     # Sort the DataFrame by 'pi_fl' in descending order and reset the index
     X_test_all_sorted = X_test_all.sort_values(by='pi_fl', ascending=False).reset_index(drop=True)
