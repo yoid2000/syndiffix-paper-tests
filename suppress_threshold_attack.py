@@ -10,6 +10,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import precision_recall_curve, auc
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 import itertools
 import pprint
 
@@ -129,16 +130,21 @@ def do_model():
 
 def make_bin_scatterplot(df_bin, color_by, label, filename, pi_floor):
     plt.figure(figsize=(7, 3.5))
-    plt.scatter(df_bin['frac_perfect'], df_bin['pi_fl_mid'], c=df_bin[color_by], cmap='viridis', marker='o', label='Attack contitions\nhappen to exist')
-    plt.scatter(df_bin['frac_capt'], df_bin['pi_fl_mid'], c=df_bin[color_by], cmap='viridis', marker='x', label='Attack specific person\nand target')
-    plt.scatter(df_bin['frac_perfect'], df_bin['pi_fl_mid'], c=df_bin[color_by], cmap='viridis')
+    plt.scatter(df_bin['frac_perfect'], df_bin['pi_fl_mid'], c=df_bin[color_by], cmap='viridis', marker='o')
+    plt.scatter(df_bin['frac_capt'], df_bin['pi_fl_mid'], c=df_bin[color_by], cmap='viridis', marker='x')
+    #plt.scatter(df_bin['frac_perfect'], df_bin['pi_fl_mid'], c=df_bin[color_by], cmap='viridis')
     plt.colorbar(label=label)
     plt.xscale('log')
     plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--', linewidth=0.5)
     plt.vlines(0.001, 0.5, 1.0, colors='black', linestyles='--', linewidth=0.5)
     plt.xlabel('Coverage (log)')
     plt.ylabel(f'Precision Improvement\n(floored at {pi_floor})')
-    plt.legend(loc="lower left", prop={'size': 8})
+
+    # Create custom legend
+    legend_elements = [
+        Line2D([0], [0], marker='o', color='w', markerfacecolor='black', markersize=8, label='Attack conditions\nhappen to exist'),
+        Line2D([0], [0], marker='x', color='w', markerfacecolor='black', markersize=8, label='Attack specific person\nand target')]
+    plt.legend(handles=legend_elements, loc='lower left')
     plt.tight_layout()
     plot_path = os.path.join(attack_path, filename)
     plt.savefig(plot_path)
