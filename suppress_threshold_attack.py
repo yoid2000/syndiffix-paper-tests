@@ -34,7 +34,7 @@ else:
 syn_path = os.path.join(base_path, 'synDatasets')
 attack_path = os.path.join(base_path, 'suppress_attacks')
 os.makedirs(attack_path, exist_ok=True)
-max_attacks = 200000
+max_attacks = 100000
 
 def naive_decision(c, nkwt, nkwot):
     if c == 'positive' and nkwt > 0 and nkwot == 0:
@@ -222,7 +222,7 @@ def do_plots():
     # Read in the parquet files
     X_test_all = pd.read_parquet(os.path.join(attack_path, 'X_test.parquet'))
 
-    X_test_all['pi'] = (X_test_all['prob_tp_model'] - X_test_all['frac_tar']) / (1.000001 - X_test_all['frac_tar'])
+    X_test_all['pi'] = (X_test_all['prob_full_attack'] - X_test_all['prob_baseline']) / (1.000001 - X_test_all['prob_baseline'])
 
     # This makes up for the use of 1.000001 in the above line
     X_test_all.loc[X_test_all['pi'] >= 0.9999, 'pi'] = 1.0
@@ -264,7 +264,7 @@ def do_plots():
         if pd.api.types.is_numeric_dtype(df_temp[column]):
             df_bin[f'{column}_avg'] = df_temp.groupby('bin', observed=True)[column].mean().values
 
-    df_bin['guess_pos'] = df_temp[df_temp['prob_tp_model'] > 0.5].groupby('bin', observed=True)['prob_tp_model'].count().values
+    df_bin['guess_pos'] = df_temp[df_temp['prob_full_attack'] > 0.5].groupby('bin', observed=True)['prob_full_attack'].count().values
     df_bin['model_tp'] = df_temp[df_temp['model_pred'] == 'tp'].groupby('bin', observed=True)['model_pred'].count().values
     df_bin['model_fp'] = df_temp[df_temp['model_pred'] == 'fp'].groupby('bin', observed=True)['model_pred'].count().values
     df_bin['naive_tp'] = df_temp[df_temp['naive_pred'] == 'tp'].groupby('bin', observed=True)['naive_pred'].count().values
@@ -292,8 +292,8 @@ def do_plots():
 
     # Create a basic scatterplot from the bins
     for color_by, label, filename in [
-        ('frac_tar_avg', 'Fraction of rows with target value', 'pi_cov_bins_frac_tar.png'),
-        ('prob_tp_model_avg', 'Model positive prediction probability', 'pi_cov_bins_prob_tp.png'),
+        ('prob_baseline_avg', 'Fraction of rows with target value', 'pi_cov_bins_baseline.png'),
+        ('prob_full_attack_avg', 'Model positive prediction probability', 'pi_cov_bins_prob_full.png'),
         ]:
         make_bin_scatterplot(df_bin, color_by, label, filename, pi_floor)
 
@@ -493,10 +493,10 @@ def run_attacks(tm, file_path, job):
 
         # Filter the groups to only include those with exactly 3 rows
         known_val_combs = grouped[grouped == 3].index.tolist()
-        for col in list(tm.df_orig.columns):
+        for target_col in list(tm.df_orig.columns):
             # We loop through the columns first so that we only need to pull in the
-            # relevant df_syn once per col
-            if col in comb:
+            # relevant df_syn once per target_col
+            if target_col in comb:
                 continue
             df_syn = None
             for known_val_comb in known_val_combs:
@@ -504,7 +504,6 @@ def run_attacks(tm, file_path, job):
                 known_val_comb = to_list(known_val_comb)
                 mask = (tm.df_orig[comb] == known_val_comb).all(axis=1)
                 known_rows = tm.df_orig[mask]
-                target_col = col
                 target_val = None
                 if known_rows[col].nunique() == 1:
                     # set target_val to the mode of known_rows[col]
