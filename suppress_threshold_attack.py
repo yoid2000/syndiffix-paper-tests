@@ -127,6 +127,23 @@ def do_model():
     with open(os.path.join(attack_path, 'model_stats.json'), 'w') as f:
         json.dump(model_stats, f, indent=4)
 
+def make_bin_scatterplot(df_bin, color_by='frac_tar_avg', label=label, filename=filename):
+    plt.figure(figsize=(7, 3.5))
+    plt.scatter(df_bin['frac_perfect'], df_bin['pi_fl_mid'], c=df_bin[color_by], cmap='viridis', marker='o', label='Attack contitions\nhappen to exist')
+    plt.scatter(df_bin['frac_capt'], df_bin['pi_fl_mid'], c=df_bin[color_by], cmap='viridis', marker='x', label='Attack specific person\nand target')
+    plt.scatter(df_bin['frac_perfect'], df_bin['pi_fl_mid'], c=df_bin[color_by], cmap='viridis')
+    plt.colorbar(label=label)
+    plt.xscale('log')
+    plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--', linewidth=0.5)
+    plt.vlines(0.001, 0.5, 1.0, colors='black', linestyles='--', linewidth=0.5)
+    plt.xlabel('Coverage (log)')
+    plt.ylabel(f'Precision Improvement\n(floored at {pi_floor})')
+    plt.legend(loc="lower left", prop={'size': 8})
+    plt.tight_layout()
+    plot_path = os.path.join(attack_path, filename)
+    plt.savefig(plot_path)
+    plt.close()
+
 def do_plots():
     # Read in the parquet files
     X_test_all = pd.read_parquet(os.path.join(attack_path, 'X_test.parquet'))
@@ -202,22 +219,10 @@ def do_plots():
 
 
     # Create a basic scatterplot from the bins
-    plt.figure(figsize=(7, 3.5))
-    plt.scatter(df_bin['frac_perfect'], df_bin['pi_fl_mid'], c=df_bin['frac_tar_avg'], cmap='viridis', marker='o', label='Attack contitions\nhappen to exist')
-    plt.scatter(df_bin['frac_capt'], df_bin['pi_fl_mid'], c=df_bin['frac_tar_avg'], cmap='viridis', marker='x', label='Attack specific person\nand target')
-    plt.scatter(df_bin['frac_perfect'], df_bin['pi_fl_mid'], c=df_bin['frac_tar_avg'], cmap='viridis')
-    plt.colorbar(label='Fraction of rows with target value')
-    plt.xscale('log')
-    plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--', linewidth=0.5)
-    plt.vlines(0.001, 0.5, 1.0, colors='black', linestyles='--', linewidth=0.5)
-    plt.xlabel('Coverage (log)')
-    plt.ylabel(f'Precision Improvement\n(floored at {pi_floor})')
-    plt.legend(loc="lower left", prop={'size': 8})
-    plt.tight_layout()
-    plot_path = os.path.join(attack_path, 'pi_cov_bins.png')
-    plt.savefig(plot_path)
-    plt.close()
-
+    for color_by, label, vilename in [
+        ('frac_tar_avg', 'Fraction of rows with target value', 'pi_cov_bins_frac_tar.png'),
+        ]:
+        make_bin_scatterplot(df_bin, color_by=color_by, label=label, filename=filename)
     # This is the basic precision/recall curve. We use it to validate that
     # the model is working well, and we can therefore trust the postive prediction
     # probabilities that we are using (prob_tp_model)
