@@ -127,7 +127,7 @@ def do_model():
     with open(os.path.join(attack_path, 'model_stats.json'), 'w') as f:
         json.dump(model_stats, f, indent=4)
 
-def make_bin_scatterplot(df_bin, color_by, label, filename):
+def make_bin_scatterplot(df_bin, color_by, label, filename, pi_floor):
     plt.figure(figsize=(7, 3.5))
     plt.scatter(df_bin['frac_perfect'], df_bin['pi_fl_mid'], c=df_bin[color_by], cmap='viridis', marker='o', label='Attack contitions\nhappen to exist')
     plt.scatter(df_bin['frac_capt'], df_bin['pi_fl_mid'], c=df_bin[color_by], cmap='viridis', marker='x', label='Attack specific person\nand target')
@@ -223,7 +223,7 @@ def do_plots():
         ('frac_tar_avg', 'Fraction of rows with target value', 'pi_cov_bins_frac_tar.png'),
         #('frac_tar_avg', 'Fraction of rows with target value', 'pi_cov_bins_frac_tar.png'),
         ]:
-        make_bin_scatterplot(df_bin, color_by=color_by, label=label, filename=filename)
+        make_bin_scatterplot(df_bin, color_by, label, filename, pi_floor)
     # This is the basic precision/recall curve. We use it to validate that
     # the model is working well, and we can therefore trust the postive prediction
     # probabilities that we are using (prob_tp_model)
