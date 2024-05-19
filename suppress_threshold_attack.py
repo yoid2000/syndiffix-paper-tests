@@ -169,7 +169,6 @@ def do_model():
     # 'capt',      coverage assuming specific victim and target values
     # 'cap',       coverage assuming only victim values (any target)
     # 'frac_tar',  fraction of rows with target value
-    # 'naive_pred' naive prediction (tp/fp/fn/tn)
     # We are going to make three models. One model is for the purpose of establishing
     # a baseline. This model knows nrtv, ndtv, bs, nkc, and frac_tar.
     baseline_columns = ['nrtv', 'ndtv', 'bs', 'nkc', 'frac_tar']
@@ -265,10 +264,10 @@ def do_plots():
             df_bin[f'{column}_avg'] = df_temp.groupby('bin', observed=True)[column].mean().values
 
     df_bin['guess_pos'] = df_temp[df_temp['prob_full_attack'] > 0.5].groupby('bin', observed=True)['prob_full_attack'].count().values
-    df_bin['model_tp'] = df_temp[df_temp['model_pred'] == 'tp'].groupby('bin', observed=True)['model_pred'].count().values
-    df_bin['model_fp'] = df_temp[df_temp['model_pred'] == 'fp'].groupby('bin', observed=True)['model_pred'].count().values
-    df_bin['naive_tp'] = df_temp[df_temp['naive_pred'] == 'tp'].groupby('bin', observed=True)['naive_pred'].count().values
-    df_bin['naive_fp'] = df_temp[df_temp['naive_pred'] == 'fp'].groupby('bin', observed=True)['naive_pred'].count().values
+    df_bin['model_tp'] = df_temp[df_temp['pred_full_attack'] == 'tp'].groupby('bin', observed=True)['pred_full_attack'].count().values
+    df_bin['model_fp'] = df_temp[df_temp['pred_full_attack'] == 'fp'].groupby('bin', observed=True)['pred_full_attack'].count().values
+    df_bin['naive_tp'] = df_temp[df_temp['pred_narrow_attack'] == 'tp'].groupby('bin', observed=True)['pred_narrow_attack'].count().values
+    df_bin['naive_fp'] = df_temp[df_temp['pred_narrow_attack'] == 'fp'].groupby('bin', observed=True)['pred_narrow_attack'].count().values
     df_bin['frac_perfect'] = df_bin['guess_pos'] / X_test_all.shape[0]
 
     df_bin = df_bin.sort_values(by='pi_fl_mid', ascending=False).reset_index(drop=True)
@@ -346,7 +345,6 @@ def gather(instances_path):
                         entry['capt'] = capt
                         entry['cap'] = cap
                         entry['frac_tar'] = entry['nrtv'] / num_rows
-                        entry['naive_pred'] = naive_decision(entry['c'], entry['nkwt'], entry['nkwot'])
                         all_entries.append(entry)
                 except json.JSONDecodeError:
                     num_fail += 1
