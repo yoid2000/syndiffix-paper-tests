@@ -55,13 +55,19 @@ def model_decision(c, pos_prob):
     elif c == 0 and  pos_prob <= 0.5:
         return 'tn'
 
+def get_unneeded(X, needed_columns):
+    unneeded = []
+    for column in X.columns:
+        if column not in needed_columns:
+            unneeded.append(column)
+    return unneeded
+
 def do_model():
     # Read in the parquet file
     model_stats = {}
     res_path = os.path.join(attack_path, 'results.parquet')
     df = pd.read_parquet(res_path)
     print(f"Columns in df: {df.columns}")
-    quit()
 
     if sample_for_model is not None:
         df = df.sample(n=sample_for_model, random_state=42)
@@ -82,7 +88,35 @@ def do_model():
     # Retain a copy of X_test which includes all columns
     X_test_all = X_test.copy()
 
-    # We are going to make three models. One model uses 
+    # At this point, we have the following columns in X_train and X_test:
+    # 'nrtv',      number rows with target value
+    # 'ndtv',      number of distinct target values
+    # 'c',         correct prediction (positive/negative)
+    # 'nkwt',      number of synthetic rows with known values and target value
+    # 'nkwot',     number of synthetic rows with known values and not target value
+    # 'bs',        whether the synthetic table is the best one
+    # 'nkc',       number of known columns
+    # 'tp',        whether simple critieria yielded true positive
+    # 'table',     the name of the synthetic table
+    # 'capt',      coverage assuming specific victim and target values
+    # 'cap',       coverage assuming only victim values (any target)
+    # 'frac_tar',  fraction of rows with target value
+    # 'naive_pred' naive prediction (tp/fp/fn/tn)
+    # We are going to make three models. One model is for the purpose of establishing
+    # a baseline. This model knows nrtv, ndtv, bs, nkc, and frac_tar.
+    baseline_columns = ['nrtv', 'ndtv', 'bs', 'nkc', 'frac_tar']
+    baseline_unneeded = get_unneeded(X, baseline_columns)
+    print(f"baseline_unneeded: {baseline_unneeded}")
+    # A second model is for an attack that only considers the attack information
+    narrow_attack_columns = ['nkwt', 'nkwot']
+    narrow_unneeded = get_unneeded(X, narrow_attack_columns)
+    print(f"narrow_unneeded: {narrow_unneeded}")
+    # A third model is for an attack that takes into account all relevant columns.
+    # This includes the baseline columns plus nkwt and nkwot (the attack results).
+    full_attack_columns = baseline_columns + narrow_attack_columns
+    full_unneeded = get_unneeded(X, full_attack_columns)
+    print(f"full_unneeded: {full_unneeded}")
+    quit()
 
     unneeded_columns = ['cap', 'capt', 'tp', 'c', 'naive_pred', 'table']
     # Standardize the features
@@ -512,7 +546,7 @@ def run_attacks(tm, file_path, job):
                     'ndtv': num_distinct_values,
                     # What a correct prediction would be
                     'c': correct_pred,
-                    # number of synthetic rows with knwon values and target value
+                    # number of synthetic rows with known values and target value
                     'nkwt': num_with_target,
                     # number of synthetic rows with known values and not target value
                     'nkwot': num_without_target,
