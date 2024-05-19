@@ -99,11 +99,11 @@ def build_and_add_model(X_train, X_test, y_train, y_test, X_test_all, model_stat
     y_pred = model.predict(X_test)
 
     # Calculate metrics
-    accuracy = accuracy_score(Y_test, y_pred)
-    precision = precision_score(Y_test, y_pred)
-    recall = recall_score(Y_test, y_pred)
-    f1 = f1_score(Y_test, y_pred)
-    roc_auc = roc_auc_score(Y_test, y_pred)
+    accuracy = accuracy_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    f1 = f1_score(y_test, y_pred)
+    roc_auc = roc_auc_score(y_test, y_pred)
 
     # Save metrics
     model_stats[model_name]['accuracy'] = accuracy
