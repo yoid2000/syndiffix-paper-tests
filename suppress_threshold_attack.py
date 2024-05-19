@@ -221,7 +221,7 @@ def do_plots():
     # Create a basic scatterplot from the bins
     for color_by, label, filename in [
         ('frac_tar_avg', 'Fraction of rows with target value', 'pi_cov_bins_frac_tar.png'),
-        #('frac_tar_avg', 'Fraction of rows with target value', 'pi_cov_bins_frac_tar.png'),
+        ('prob_tp_model_ave', 'Model TP probability', 'pi_cov_bins_prob_tp.png'),
         ]:
         make_bin_scatterplot(df_bin, color_by, label, filename, pi_floor)
     # This is the basic precision/recall curve. We use it to validate that
