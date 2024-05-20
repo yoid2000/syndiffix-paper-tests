@@ -323,11 +323,13 @@ def do_plots():
 def gather(instances_path):
     all_entries = []
     
+    datasets = set()
     gather_stats = {'num_possible_combs_targets': 0,
                     'num_possible_combs': 0,
-                    'datasets': set(),
                     'num_datasets': 0,
                     'num_attacks': 0,
+                    'num_positive': 0,
+                    'num_negative': 0,
                     }
     num_fail = 0
     # Step 1: Read in all of the json files in the directory at instances_path
@@ -349,13 +351,17 @@ def gather(instances_path):
                     cap = res['summary']['coverage_all_combs']
                     gather_stats['num_possible_combs'] += cap
                     gather_stats['num_attacks'] += res['summary']['num_attacks']
-                    gather_stats['datasets'].add(res['summary']['job']['dir_name'])
+                    datasets.add(res['summary']['job']['dir_name'])
                     num_rows = res['summary']['num_rows']
                     for entry in res['attack_results']:
                         entry['table'] = res['summary']['job']['dir_name']
                         entry['capt'] = capt
                         entry['cap'] = cap
                         entry['frac_tar'] = entry['nrtv'] / num_rows
+                        if entry['c'] == 'positive':
+                            gather_stats['num_positive'] += 1
+                        else:
+                            gather_stats['num_negative'] += 1
                         all_entries.append(entry)
                 except json.JSONDecodeError:
                     num_fail += 1
@@ -375,7 +381,7 @@ def gather(instances_path):
     df.to_parquet(file_path)
     print(f"{num_fail} files were corrupted and deleted")
 
-    gather_stats['num_datasets'] = len(gather_stats['datasets'])
+    gather_stats['num_datasets'] = len(datasets)
     with open(os.path.join(attack_path, 'gather_stats.json'), 'w') as f:
         json.dump(gather_stats, f, indent=4)
 
