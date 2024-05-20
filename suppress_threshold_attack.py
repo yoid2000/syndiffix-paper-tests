@@ -209,8 +209,8 @@ def make_bin_scatterplot(df_bin, color_by, label, filename, pi_floor):
 
     # Create custom legend
     legend_elements = [
-        Line2D([0], [0], marker='o', color='black', markerfacecolor='black', markersize=8, label='Attack conditions\nhappen to exist', linestyle=None),
-        Line2D([0], [0], marker='x', color='black', markerfacecolor='black', markersize=8, label='Attack specific person\nand target', linestyle=None)]
+        Line2D([0], [0], marker='o', color='black', markerfacecolor='black', markersize=8, label='Attack conditions\nhappen to exist', linestyle='None'),
+        Line2D([0], [0], marker='x', color='black', markerfacecolor='black', markersize=8, label='Attack specific person\nand target', linestyle='None')]
     plt.legend(handles=legend_elements, loc='lower left', fontsize=7)
     plt.tight_layout()
     plot_path = os.path.join(attack_path, filename)
