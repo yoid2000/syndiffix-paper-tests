@@ -323,6 +323,12 @@ def do_plots():
 def gather(instances_path):
     all_entries = []
     
+    gather_stats = {'num_possible_combs_targets': 0,
+                    'num_possible_combs': 0,
+                    'datasets': set(),
+                    'num_datasets': 0,
+                    'num_attacks': 0,
+                    }
     num_fail = 0
     # Step 1: Read in all of the json files in the directory at instances_path
     all_files = list(os.listdir(instances_path))
@@ -339,7 +345,11 @@ def gather(instances_path):
                 try:
                     res = json.load(f)
                     capt = res['summary']['coverage_all_combs_targets']
+                    gather_stats['num_possible_combs_targets'] += capt
                     cap = res['summary']['coverage_all_combs']
+                    gather_stats['num_possible_combs'] += cap
+                    gather_stats['num_attacks'] += res['summary']['num_attacks']
+                    gather_stats['datasets'].add(res['summary']['job']['dir_name'])
                     num_rows = res['summary']['num_rows']
                     for entry in res['attack_results']:
                         entry['table'] = res['summary']['job']['dir_name']
@@ -364,6 +374,10 @@ def gather(instances_path):
     file_path = os.path.join(attack_path, 'results.parquet')
     df.to_parquet(file_path)
     print(f"{num_fail} files were corrupted and deleted")
+
+    gather_stats['num_datasets'] = len(gather_stats['datasets'])
+    with open(os.path.join(attack_path, 'gather_stats.json'), 'w') as f:
+        json.dump(gather_stats, f, indent=4)
 
 def make_config():
     # Initialize attack_jobs
