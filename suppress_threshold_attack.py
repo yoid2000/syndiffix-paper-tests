@@ -171,7 +171,7 @@ def do_model():
     # 'frac_tar',  fraction of rows with target value
     # We are going to make three models. One model is for the purpose of establishing
     # a baseline. This model knows nrtv, ndtv, bs, nkc, and frac_tar.
-    baseline_columns = ['nrtv', 'ndtv', 'bs', 'nkc', 'frac_tar']
+    baseline_columns = ['ndtv', 'bs', 'nkc', 'frac_tar']
     baseline_unneeded = get_unneeded(X, baseline_columns)
     print(f"baseline_columns: {baseline_columns}")
     print(f"baseline_unneeded: {baseline_unneeded}")
