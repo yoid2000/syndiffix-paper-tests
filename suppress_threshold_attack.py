@@ -291,7 +291,8 @@ def do_plots():
 
     # Create a basic scatterplot from the bins
     for color_by, label, filename in [
-        ('prob_baseline_avg', 'Fraction of rows with target value', 'pi_cov_bins_baseline.png'),
+        ('frac_tar', 'Fraction of rows with target value', 'pi_cov_bins_frac_tar.png'),
+        ('prob_baseline_avg', 'Baseline positive prediction probability', 'pi_cov_bins_baseline.png'),
         ('prob_full_attack_avg', 'Model positive prediction probability', 'pi_cov_bins_prob_full.png'),
         ]:
         make_bin_scatterplot(df_bin, color_by, label, filename, pi_floor)
