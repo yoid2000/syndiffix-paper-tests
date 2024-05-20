@@ -349,9 +349,9 @@ def gather(instances_path):
                 try:
                     res = json.load(f)
                     capt = res['summary']['coverage_all_combs_targets']
-                    gather_stats['num_possible_combs_targets'] += capt
+                    gather_stats['num_possible_combs_targets'] += res['summary']['num_possible_combs_targets']
+                    gather_stats['num_possible_combs'] += res['summary']['num_possible_combs']
                     cap = res['summary']['coverage_all_combs']
-                    gather_stats['num_possible_combs'] += cap
                     gather_stats['num_attacks'] += res['summary']['num_attacks']
                     datasets.add(res['summary']['job']['dir_name'])
                     num_rows = res['summary']['num_rows']
@@ -386,7 +386,19 @@ def gather(instances_path):
     df.to_parquet(file_path)
     print(f"{num_fail} files were corrupted and deleted")
 
+    gather_stats = {'num_possible_combs_targets': 0,
+                    'num_possible_combs': 0,
+                    'num_datasets': 0,
+                    'num_attacks': 0,
+                    'num_positive': 0,
+                    'num_negative': 0,
+                    'num_best_syn': 0,
+                    'num_known_columns': [0,0,0,0,0,0]
+                    }
     gather_stats['num_datasets'] = len(datasets)
+    gather_stats['percent_positive'] = round(100 * (gather_stats['num_positive'] / gather_stats['num_attacks']),2)
+    gather_stats['percent_best_syn'] = round(100 * (gather_stats['num_best_syn'] / gather_stats['num_attacks']),2)
+    gather_stats['percent_known_columns'] = [round(100 * (x / gather_stats['num_attacks']),2) for x in gather_stats['num_known_columns']]
     with open(os.path.join(attack_path, 'gather_stats.json'), 'w') as f:
         json.dump(gather_stats, f, indent=4)
 
