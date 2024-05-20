@@ -330,6 +330,8 @@ def gather(instances_path):
                     'num_attacks': 0,
                     'num_positive': 0,
                     'num_negative': 0,
+                    'num_best_syn': 0,
+                    'num_known_columns': [0,0,0,0,0,0]
                     }
     num_fail = 0
     # Step 1: Read in all of the json files in the directory at instances_path
@@ -362,6 +364,9 @@ def gather(instances_path):
                             gather_stats['num_positive'] += 1
                         else:
                             gather_stats['num_negative'] += 1
+                        if entry['bs'] is True:
+                            gather_stats['num_best_syn'] += 1
+                        gather_stats['num_known_columns'][entry['nkc']] += 1
                         all_entries.append(entry)
                 except json.JSONDecodeError:
                     num_fail += 1
