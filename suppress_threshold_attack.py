@@ -386,15 +386,6 @@ def gather(instances_path):
     df.to_parquet(file_path)
     print(f"{num_fail} files were corrupted and deleted")
 
-    gather_stats = {'num_possible_combs_targets': 0,
-                    'num_possible_combs': 0,
-                    'num_datasets': 0,
-                    'num_attacks': 0,
-                    'num_positive': 0,
-                    'num_negative': 0,
-                    'num_best_syn': 0,
-                    'num_known_columns': [0,0,0,0,0,0]
-                    }
     gather_stats['num_datasets'] = len(datasets)
     gather_stats['percent_positive'] = round(100 * (gather_stats['num_positive'] / gather_stats['num_attacks']),2)
     gather_stats['percent_best_syn'] = round(100 * (gather_stats['num_best_syn'] / gather_stats['num_attacks']),2)
