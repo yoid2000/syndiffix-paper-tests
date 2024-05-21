@@ -171,7 +171,7 @@ def do_model():
     # 'frac_tar',  fraction of rows with target value
     # We are going to make three models. One model is for the purpose of establishing
     # a baseline. This model knows nrtv, ndtv, bs, nkc, and frac_tar.
-    baseline_columns = ['ndtv', 'bs', 'nkc', 'frac_tar']
+    baseline_columns = ['ndtv', 'nkc', 'frac_tar', 'table']
     baseline_unneeded = get_unneeded(X, baseline_columns)
     print(f"baseline_columns: {baseline_columns}")
     print(f"baseline_unneeded: {baseline_unneeded}")
@@ -182,7 +182,7 @@ def do_model():
     print(f"narrow_unneeded: {narrow_unneeded}")
     # A third model is for an attack that takes into account all relevant columns.
     # This includes the baseline columns plus nkwt and nkwot (the attack results).
-    full_attack_columns = baseline_columns + narrow_attack_columns
+    full_attack_columns = baseline_columns + narrow_attack_columns + ['bs']
     full_unneeded = get_unneeded(X, full_attack_columns)
     print(f"full_attack_columns: {full_attack_columns}")
     print(f"full_unneeded: {full_unneeded}")
