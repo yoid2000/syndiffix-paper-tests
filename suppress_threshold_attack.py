@@ -247,6 +247,7 @@ def make_bin_scatterplot(df_bin, color_by, label, filename, pi_floor):
         Line2D([0], [0], marker='x', color='black', markerfacecolor='black', markersize=8, label='Attack specific person\nand target', linestyle='None')]
     plt.legend(handles=legend_elements, loc='lower left', fontsize=7)
     plt.tight_layout()
+    filename += f"_{num_bins}.png"
     plot_path = os.path.join(attack_path, filename)
     plt.savefig(plot_path)
     plt.close()
@@ -287,7 +288,7 @@ def do_plots():
     print(f"Count of rows where pi_fl == 1: {count_pi_fl_1}")
 
     # Make a scatterplot of pi_fl vs coverage
-    num_bins = 40
+    num_bins = 80
     df_temp = X_test_all.copy()
     df_temp['bin'] = pd.cut(df_temp['pi_fl'], bins=num_bins)
     df_bin = df_temp.groupby('bin', observed=True).size().reset_index(name='count')
@@ -326,10 +327,10 @@ def do_plots():
 
     # Create a basic scatterplot from the bins
     for color_by, label, filename in [
-        ('bs_avg', 'Fraction best match syn table', 'pi_cov_bins_frac_bs.png'),
-        ('frac_tar_avg', 'Fraction of rows with target value', 'pi_cov_bins_frac_tar.png'),
-        ('prob_baseline_avg', 'Baseline positive prediction probability', 'pi_cov_bins_baseline.png'),
-        ('prob_full_attack_avg', 'Model positive prediction probability', 'pi_cov_bins_prob_full.png'),
+        ('bs_avg', 'Fraction best match syn table', 'pi_cov_bins_frac_bs'),
+        ('frac_tar_avg', 'Fraction of rows with target value', 'pi_cov_bins_frac_tar'),
+        ('prob_baseline_avg', 'Baseline positive prediction probability', 'pi_cov_bins_baseline'),
+        ('prob_full_attack_avg', 'Model positive prediction probability', 'pi_cov_bins_prob_full'),
         ]:
         make_bin_scatterplot(df_bin, color_by, label, filename, pi_floor)
 
