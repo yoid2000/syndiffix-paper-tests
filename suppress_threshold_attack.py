@@ -197,7 +197,7 @@ def do_model():
     # Let's get basic stats for the naive model though
     model_stats['naive'] = {}
     X_test_all['pred_naive'] = X_test_all.apply(lambda row: naive_decision(row['c'], row['nkwt'], row['nkwot']), axis=1)
-    accuracy, precision, recall, f1 = compute_metrics(X_test_all, column)
+    accuracy, precision, recall, f1 = compute_metrics(X_test_all, 'pred_naive')
     print(attack_type)
     print(f"Accuracy: {accuracy}, Precision: {precision}, Recall: {recall}, F1: {f1}")
     model_stats['naive']['compute_metrics'] = {'accuracy': accuracy, 'precision': precision, 'recall': recall, 'f1': f1}
