@@ -199,7 +199,7 @@ def do_model():
         json.dump(model_stats, f, indent=4)
 
 def make_bin_scatterplot(df_bin, color_by, label, filename, pi_floor):
-    plt.figure(figsize=(7, 3.5))
+    plt.figure(figsize=(8, 4))
     plt.scatter(df_bin['frac_perfect'], df_bin['pi_fl_mid'], c=df_bin[color_by], cmap='viridis', marker='o')
     plt.scatter(df_bin['frac_capt'], df_bin['pi_fl_mid'], c=df_bin[color_by], cmap='viridis', marker='x')
     #plt.scatter(df_bin['frac_perfect'], df_bin['pi_fl_mid'], c=df_bin[color_by], cmap='viridis')
