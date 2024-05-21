@@ -287,7 +287,7 @@ def do_plots():
     print(f"Count of rows where pi_fl == 1: {count_pi_fl_1}")
 
     # Make a scatterplot of pi_fl vs coverage
-    num_bins = 80
+    num_bins = 40
     df_temp = X_test_all.copy()
     df_temp['bin'] = pd.cut(df_temp['pi_fl'], bins=num_bins)
     df_bin = df_temp.groupby('bin', observed=True).size().reset_index(name='count')
