@@ -19,8 +19,8 @@ import pprint
 pp = pprint.PrettyPrinter(indent=4)
 
 remove_bad_files = False
-sample_for_model = 200000
-#sample_for_model = None
+#sample_for_model = 200000
+sample_for_model = None
 do_comb_3_and_4 = False
 
 if 'SDX_TEST_DIR' in os.environ:
