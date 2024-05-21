@@ -53,6 +53,10 @@ def compute_metrics(df, column_name):
     # Predicted values are 1 for 'tp' and 'fp', 0 otherwise
     y_pred = df[column_name].isin(['tp', 'fp']).astype(int)
 
+    # count the number of rows assigned to each value in y_pred
+    counts = y_pred.value_counts()
+    print(f"Pred counts for {column_name}: {counts}")
+
     # Compute metrics
     accuracy = accuracy_score(y_true, y_pred)
     precision = precision_score(y_true, y_pred)
