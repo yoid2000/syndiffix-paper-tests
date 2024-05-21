@@ -199,7 +199,7 @@ def do_model():
         json.dump(model_stats, f, indent=4)
 
 def make_bin_scatterplot(df_bin, color_by, label, filename, pi_floor):
-    plt.figure(figsize=(6, 3))
+    plt.figure(figsize=(7, 3.5))
     plt.scatter(df_bin['frac_perfect'], df_bin['pi_fl_mid'], c=df_bin[color_by], cmap='viridis', marker='o')
     plt.scatter(df_bin['frac_capt'], df_bin['pi_fl_mid'], c=df_bin[color_by], cmap='viridis', marker='x')
     #plt.scatter(df_bin['frac_perfect'], df_bin['pi_fl_mid'], c=df_bin[color_by], cmap='viridis')
@@ -207,8 +207,8 @@ def make_bin_scatterplot(df_bin, color_by, label, filename, pi_floor):
     plt.xscale('log')
     plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--', linewidth=0.5)
     plt.vlines(0.001, 0.5, 1.0, colors='black', linestyles='--', linewidth=0.5)
-    plt.xlabel('Coverage (log)')
-    plt.ylabel(f'Precision Improvement\n(floored at {pi_floor})')
+    plt.xlabel('Coverage (log)', fontsize=13, labelpad=10)
+    plt.ylabel(f'Precision Improvement\n(floored at {pi_floor})', fontsize=13, labelpad=10)
 
     # Create custom legend
     legend_elements = [
@@ -295,7 +295,7 @@ def do_plots():
     # Create a basic scatterplot from the bins
     for color_by, label, filename in [
         ('bs_avg', 'Fraction best match syn table', 'pi_cov_bins_frac_bs.png'),
-        ('frac_tar_avg', 'Fraction of rows with target value', 'pi_cov_bins_frac_tar.png'),
+        ('frac_tar_avg', 'Fraction of rows\nwith target value', 'pi_cov_bins_frac_tar.png'),
         ('prob_baseline_avg', 'Baseline positive prediction probability', 'pi_cov_bins_baseline.png'),
         ('prob_full_attack_avg', 'Model positive prediction probability', 'pi_cov_bins_prob_full.png'),
         ]:
