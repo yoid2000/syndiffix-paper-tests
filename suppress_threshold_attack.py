@@ -19,8 +19,8 @@ import pprint
 pp = pprint.PrettyPrinter(indent=4)
 
 remove_bad_files = False
-#sample_for_model = 200000
-sample_for_model = None
+sample_for_model = 200000
+#sample_for_model = None
 do_comb_3_and_4 = False
 
 if 'SDX_TEST_DIR' in os.environ:
@@ -54,13 +54,13 @@ def compute_metrics(df, column_name):
     return accuracy, precision, recall, f1
 
 def naive_decision(c, nkwt, nkwot):
-    if c == 'positive' and nkwt > 0 and nkwot == 0:
+    if c == 1 and nkwt > 0 and nkwot == 0:
         return 'tp'
-    elif c == 'negative' and nkwt > 0 and nkwot == 0:
+    elif c == 0 and nkwt > 0 and nkwot == 0:
         return 'fp'
-    elif c == 'positive' and (nkwt == 0 or nkwot > 0):
+    elif c == 1 and (nkwt == 0 or nkwot > 0):
         return 'fn'
-    elif c == 'negative' and (nkwt == 0 or nkwot > 0):
+    elif c == 0 and (nkwt == 0 or nkwot > 0):
         return 'tn'
 
 def model_decision(c, pos_prob):
@@ -148,6 +148,11 @@ def build_and_add_model(X_train, X_test, y_train, y_test, X_test_all, model_stat
     # Apply model_decision function to get model predictions
     X_test_all[pred_col] = X_test_all.apply(lambda row: model_decision(row['c'], row[prob_col]), axis=1)
 
+    accuracy, precision, recall, f1 = compute_metrics(X_test_all, pred_col)
+    print(pred_col)
+    print(f"Accuracy: {accuracy}, Precision: {precision}, Recall: {recall}, F1: {f1}")
+    model_stats[model_name]['compute_metrics'] = {'accuracy': accuracy, 'precision': precision, 'recall': recall, 'f1': f1}
+
 def do_model():
     # Read in the parquet file
     model_stats = {}
@@ -189,6 +194,14 @@ def do_model():
     # 'cap',       coverage assuming only victim values (any target)
     # 'frac_tar',  fraction of rows with target value
 
+    # Let's get basic stats for the naive model though
+    model_stats['naive'] = {}
+    X_test_all['pred_naive'] = X_test_all.apply(lambda row: naive_decision(row['c'], row['nkwt'], row['nkwot']), axis=1)
+    accuracy, precision, recall, f1 = compute_metrics(X_test_all, column)
+    print(attack_type)
+    print(f"Accuracy: {accuracy}, Precision: {precision}, Recall: {recall}, F1: {f1}")
+    model_stats['naive']['compute_metrics'] = {'accuracy': accuracy, 'precision': precision, 'recall': recall, 'f1': f1}
+
     # We are going to make three models. One model is for the purpose of establishing
     # a baseline. This model knows nrtv, ndtv, bs, nkc, and frac_tar.
     baseline_columns = ['ndtv', 'nkc', 'frac_tar', 'table']
@@ -210,16 +223,6 @@ def do_model():
     for unneeded_columns, model_name in [(baseline_unneeded, 'baseline'), (narrow_unneeded, 'narrow_attack'), (full_unneeded, 'full_attack')]:
         build_and_add_model(X_train, X_test, y_train, y_test, X_test_all, model_stats, unneeded_columns, model_name)
         pass
-    # Apply naive_decision function to get naive predictions
-    X_test_all['pred_naive'] = X_test_all.apply(lambda row: naive_decision(row['c'], row['nkwt'], row['nkwot']), axis=1)
-
-    model_stats['naive'] = {}
-    for attack_type in ['baseline', 'narrow_attack', 'full_attack', 'naive']:
-        column = f'pred_{attack_type}'
-        accuracy, precision, recall, f1 = compute_metrics(X_test_all, column)
-        print(attack_type)
-        print(f"Accuracy: {accuracy}, Precision: {precision}, Recall: {recall}, F1: {f1}")
-        model_stats[attack_type]['compute_metrics'] = {'accuracy': accuracy, 'precision': precision, 'recall': recall, 'f1': f1}
 
     X_test_all.to_parquet(os.path.join(attack_path, 'X_test.parquet'))
     # write model_stats to json file
