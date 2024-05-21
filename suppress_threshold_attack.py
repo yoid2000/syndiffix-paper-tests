@@ -38,24 +38,12 @@ os.makedirs(attack_path, exist_ok=True)
 max_attacks = 100000
 
 def compute_metrics(df, column_name):
-
-    # count the number of rows assigned to each value in column_name
-    counts = df[column_name].value_counts()
-    print(f"Original counts for {column_name}: {counts}")
-    # Map the labels to binary value
-    mapping = {'tp': 1, 'tn': 0, 'fp': 1, 'fn': 0}
-    y_true = df[column_name].map(mapping)
-
-    # count the number of rows assigned to each value in y_true
-    counts = y_true.value_counts()
-    print(f"Binary counts for {column_name}: {counts}")
-
-    # Predicted values are 1 for 'tp' and 'fp', 0 otherwise
-    y_pred = df[column_name].isin(['tp', 'fp']).astype(int)
-
-    # count the number of rows assigned to each value in y_pred
-    counts = y_pred.value_counts()
-    print(f"Pred counts for {column_name}: {counts}")
+    # Map the labels to binary values
+    mapping_true = {'tp': 1, 'tn': 0, 'fp': 0, 'fn': 1}  # 'tp' and 'fn' are positive class (1), 'tn' and 'fp' are negative class (0)
+    mapping_pred = {'tp': 1, 'tn': 0, 'fp': 1, 'fn': 0}  # 'tp' and 'fp' are predicted as positive class (1), 'tn' and 'fn' are predicted as negative class (0)
+    
+    y_true = df[column_name].map(mapping_true)
+    y_pred = df[column_name].map(mapping_pred)
 
     # Compute metrics
     accuracy = accuracy_score(y_true, y_pred)
