@@ -37,6 +37,22 @@ attack_path = os.path.join(base_path, 'suppress_attacks')
 os.makedirs(attack_path, exist_ok=True)
 max_attacks = 100000
 
+def compute_metrics(df, column_name):
+    # Map the labels to binary values
+    mapping = {'tp': 1, 'tn': 0, 'fp': 1, 'fn': 0}
+    y_true = df[column_name].map(mapping)
+
+    # Predicted values are 1 for 'tp' and 'fp', 0 otherwise
+    y_pred = df[column_name].isin(['tp', 'fp']).astype(int)
+
+    # Compute metrics
+    accuracy = accuracy_score(y_true, y_pred)
+    precision = precision_score(y_true, y_pred)
+    recall = recall_score(y_true, y_pred)
+    f1 = f1_score(y_true, y_pred)
+
+    return accuracy, precision, recall, f1
+
 def naive_decision(c, nkwt, nkwot):
     if c == 'positive' and nkwt > 0 and nkwot == 0:
         return 'tp'
@@ -131,7 +147,6 @@ def build_and_add_model(X_train, X_test, y_train, y_test, X_test_all, model_stat
 
     # Apply model_decision function to get model predictions
     X_test_all[pred_col] = X_test_all.apply(lambda row: model_decision(row['c'], row[prob_col]), axis=1)
-    # Save X_test_all and y_test to parquet files
 
 def do_model():
     # Read in the parquet file
@@ -139,6 +154,7 @@ def do_model():
     res_path = os.path.join(attack_path, 'results.parquet')
     df = pd.read_parquet(res_path)
     print(f"Columns in df: {df.columns}")
+    model_stats['attack_columns'] = list(df.columns)
 
     if sample_for_model is not None:
         df = df.sample(n=sample_for_model, random_state=42)
@@ -172,6 +188,7 @@ def do_model():
     # 'capt',      coverage assuming specific victim and target values
     # 'cap',       coverage assuming only victim values (any target)
     # 'frac_tar',  fraction of rows with target value
+
     # We are going to make three models. One model is for the purpose of establishing
     # a baseline. This model knows nrtv, ndtv, bs, nkc, and frac_tar.
     baseline_columns = ['ndtv', 'nkc', 'frac_tar', 'table']
@@ -193,6 +210,17 @@ def do_model():
     for unneeded_columns, model_name in [(baseline_unneeded, 'baseline'), (narrow_unneeded, 'narrow_attack'), (full_unneeded, 'full_attack')]:
         build_and_add_model(X_train, X_test, y_train, y_test, X_test_all, model_stats, unneeded_columns, model_name)
         pass
+    # Apply naive_decision function to get naive predictions
+    X_test_all['pred_naive'] = X_test_all.apply(lambda row: naive_decision(row['c'], row['nkwt'], row['nkwot']), axis=1)
+
+    model_stats['naive'] = {}
+    for attack_type in ['baseline', 'narrow_attack', 'full_attack', 'naive']:
+        col = f'pred_{attack_type}'
+        accuracy, precision, recall, f1 = compute_metrics(X_test_all, column)
+        print(attack_type)
+        print(f"Accuracy: {accuracy}, Precision: {precision}, Recall: {recall}, F1: {f1}")
+        model_stats[attack_type]['compute_metrics'] = {'accuracy': accuracy, 'precision': precision, 'recall': recall, 'f1': f1}
+
     X_test_all.to_parquet(os.path.join(attack_path, 'X_test.parquet'))
     # write model_stats to json file
     with open(os.path.join(attack_path, 'model_stats.json'), 'w') as f:
@@ -249,6 +277,7 @@ def do_plots():
     print("X_test:")
     print(X_test_all.head())
     print(f"Total rows: {X_test_all.shape[0]}")
+    print(X_test_all.columns)
 
     # Count the number of rows where pi_fl == 1
     count_pi_fl_1 = X_test_all[X_test_all['pi_fl'] == 1].shape[0]
