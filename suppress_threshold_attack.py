@@ -22,6 +22,7 @@ remove_bad_files = False
 #sample_for_model = 200000
 sample_for_model = None
 do_comb_3_and_4 = False
+num_bins = 80
 
 if 'SDX_TEST_DIR' in os.environ:
     base_path = os.getenv('SDX_TEST_DIR')
@@ -288,7 +289,6 @@ def do_plots():
     print(f"Count of rows where pi_fl == 1: {count_pi_fl_1}")
 
     # Make a scatterplot of pi_fl vs coverage
-    num_bins = 80
     df_temp = X_test_all.copy()
     df_temp['bin'] = pd.cut(df_temp['pi_fl'], bins=num_bins)
     df_bin = df_temp.groupby('bin', observed=True).size().reset_index(name='count')
