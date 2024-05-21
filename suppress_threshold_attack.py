@@ -215,7 +215,7 @@ def do_model():
 
     model_stats['naive'] = {}
     for attack_type in ['baseline', 'narrow_attack', 'full_attack', 'naive']:
-        col = f'pred_{attack_type}'
+        column = f'pred_{attack_type}'
         accuracy, precision, recall, f1 = compute_metrics(X_test_all, column)
         print(attack_type)
         print(f"Accuracy: {accuracy}, Precision: {precision}, Recall: {recall}, F1: {f1}")
