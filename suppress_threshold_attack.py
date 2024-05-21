@@ -205,9 +205,9 @@ def make_bin_scatterplot(df_bin, color_by, label, filename, pi_floor):
     #plt.scatter(df_bin['frac_perfect'], df_bin['pi_fl_mid'], c=df_bin[color_by], cmap='viridis')
     plt.colorbar(label=label)
     plt.xscale('log')
-    plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--', linewidth=0.5)
-    plt.vlines(0.001, 0.5, 1.0, colors='black', linestyles='--', linewidth=0.5)
-    plt.xlabel('Coverage (log)', fontsize=13, labelpad=10)
+    plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--')
+    plt.vlines(0.001, 0.5, 1.0, colors='black', linestyles='--')
+    plt.xlabel('Coverage (log scale)', fontsize=13, labelpad=10)
     plt.ylabel(f'Precision Improvement\n(floored at {pi_floor})', fontsize=13, labelpad=10)
 
     # Create custom legend
