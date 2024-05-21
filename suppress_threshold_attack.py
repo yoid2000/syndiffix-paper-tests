@@ -7,6 +7,7 @@ import random
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import OneHotEncoder
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import precision_recall_curve, auc, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 from sklearn.metrics import confusion_matrix
@@ -65,15 +66,17 @@ def get_unneeded(X, needed_columns):
 
 
 def build_and_add_model(X_train, X_test, y_train, y_test, X_test_all, model_stats, unneeded_columns, model_name):
-    # Standardize the features
+    encoder = OneHotEncoder()
     scaler = StandardScaler()
-    # Scale the data
-    columns = X_train.drop(columns=unneeded_columns).columns
-    X_train_scaled = scaler.fit_transform(X_train.drop(columns=unneeded_columns))
+
+    X_train_encoded = pd.get_dummies(X_train.drop(columns=unneeded_columns))
+    columns = X_train_encoded.columns
+    X_train_scaled = scaler.fit_transform(X_train_encoded)
     X_train = pd.DataFrame(X_train_scaled, columns=columns)
 
-    columns = X_test.drop(columns=unneeded_columns).columns
-    X_test_scaled = scaler.transform(X_test.drop(columns=unneeded_columns))
+    X_test_encoded = pd.get_dummies(X_test.drop(columns=unneeded_columns))
+    columns = X_test_encoded.columns
+    X_test_scaled = scaler.fit_transform(X_test_encoded)
     X_test = pd.DataFrame(X_test_scaled, columns=columns)
 
     # Train the model
