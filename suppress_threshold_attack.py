@@ -295,7 +295,7 @@ def do_plots():
     # Create a basic scatterplot from the bins
     for color_by, label, filename in [
         ('bs_avg', 'Fraction best match syn table', 'pi_cov_bins_frac_bs.png'),
-        ('frac_tar_avg', 'Fraction of rows\nwith target value', 'pi_cov_bins_frac_tar.png'),
+        ('frac_tar_avg', 'Fraction of rows with target value', 'pi_cov_bins_frac_tar.png'),
         ('prob_baseline_avg', 'Baseline positive prediction probability', 'pi_cov_bins_baseline.png'),
         ('prob_full_attack_avg', 'Model positive prediction probability', 'pi_cov_bins_prob_full.png'),
         ]:
