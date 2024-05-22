@@ -279,7 +279,7 @@ def plot_move_avg(df):
     plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--')
     plt.vlines(0.001, 0.5, 1.0, colors='black', linestyles='--')
     plt.text(0.03, 0.35, "Attack conditions\nhappen to exist", fontsize=8, bbox=dict(facecolor='white', alpha=0.5, edgecolor='none'))
-    plt.text(0.000003, 0.05, "Attacker has specific\nvictim and target", fontsize=8, bbox=dict(facecolor='white', alpha=0.5, edgecolor='none'))
+    plt.text(0.000002, 0.05, "Attacker has specific\nvictim and target", fontsize=8, bbox=dict(facecolor='white', alpha=0.5, edgecolor='none'))
     cbar = plt.colorbar(scatter1)
     cbar.set_label('Target Value Fraction', rotation=270, labelpad=15)
     plt.xscale('log')
