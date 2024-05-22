@@ -86,9 +86,6 @@ def build_and_add_model(X_train, X_test, y_train, y_test, X_test_all, model_stat
     encoder = OneHotEncoder()
     scaler = StandardScaler()
 
-    print(model_name)
-    print(X_test_all.head(10))
-
     X_train_encoded = pd.get_dummies(X_train.drop(columns=unneeded_columns))
     columns = X_train_encoded.columns
     X_train_scaled = scaler.fit_transform(X_train_encoded)
@@ -151,6 +148,9 @@ def build_and_add_model(X_train, X_test, y_train, y_test, X_test_all, model_stat
 
     # Apply model_decision function to get model predictions
     X_test_all[pred_col] = X_test_all.apply(lambda row: model_decision(row['c'], row[prob_col]), axis=1)
+
+    print(model_name)
+    print(X_test_all.head(10))
 
     accuracy, precision, recall, f1 = compute_metrics(X_test_all, pred_col)
     print(pred_col)
