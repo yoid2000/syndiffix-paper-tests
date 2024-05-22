@@ -272,19 +272,22 @@ def plot_move_avg(df):
 
     # Plot the pi_fl moving average against the CDF
     plt.figure(figsize=(6, 3))
-    plt.scatter(df_sorted['cdf'], df_sorted['moving_avg_pi_fl'], c=df_sorted['moving_avg_frac_tar'], label="Attack conditions\nhappen to exist")
-    plt.scatter(df_sorted['cdf_to_capt'], df_sorted['moving_avg_pi_fl'], c=df_sorted['moving_avg_frac_tar'], label="Attacker has specific\nvictim and target")
+    scatter1 = plt.scatter(df_sorted['cdf'], df_sorted['moving_avg_pi_fl'], c=df_sorted['moving_avg_frac_tar'], label="Attack conditions\nhappen to exist", s=3)
+    scatter2 = plt.scatter(df_sorted['cdf_to_capt'], df_sorted['moving_avg_pi_fl'], c=df_sorted['moving_avg_frac_tar'], label="Attacker has specific\nvictim and target", s=3)
     #plt.plot(df_sorted['cdf'], df_sorted['moving_avg_pi_fl'], label="Attack conditions\nhappen to exist")
     #plt.plot(df_sorted['cdf_to_capt'], df_sorted['moving_avg_pi_fl'], label="Attacker has specific\nvictim and target")
     plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--')
     plt.vlines(0.001, 0.5, 1.0, colors='black', linestyles='--')
     plt.legend(loc="lower left", prop={'size': 8})
+    cbar = plt.colorbar(scatter1)
+    cbar.set_label('Target Value Fraction', rotation=270, labelpad=15)
     plt.xscale('log')
     plt.xlabel('Coverage as Cumulative Probability', fontsize=13, labelpad=10)
     plt.ylabel(f'Precision Improvement\n(rolling window={win})', fontsize=13, labelpad=10)
     plt.tight_layout()
     plt.savefig(os.path.join(attack_path, 'pi_fl_mv_avg.png'))
     plt.close()
+    print("done with pi_fl_mv_avg.png")
 
     # Plot the frac_tar moving average against the CDF
     plt.figure(figsize=(10, 6))
