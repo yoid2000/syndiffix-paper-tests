@@ -254,6 +254,27 @@ def make_bin_scatterplot(df_bin, color_by, label, filename, pi_floor):
     plt.savefig(plot_path)
     plt.close()
 
+def plot_move_avg(df):
+    # Sort the DataFrame by the 'pi_fl' column in descending order
+    df_sorted = df.sort_values('pi_fl', ascending=False)
+
+    # Compute the moving average
+    df_sorted['moving_avg'] = df_sorted['pi_fl'].rolling(window=500).mean()
+
+    # Compute the CDF
+    df_sorted['cdf'] = (df_sorted.index + 1) / len(df_sorted)
+
+    # Plot the moving average against the CDF
+    plt.figure(figsize=(10, 6))
+    plt.plot(df_sorted['cdf'], df_sorted['moving_avg'])
+    plt.xlabel('Probability of having the given value of the moving average or higher')
+    plt.ylabel('Moving average of pi_fl')
+    plt.title('Moving average of pi_fl vs. CDF')
+
+    # Save the plot
+    plt.savefig(os.path.join(attack_path, 'pi_fl_mv_avg.png'))
+    plt.close()
+
 def do_plots():
     # Read in the parquet files
     X_test_all = pd.read_parquet(os.path.join(attack_path, 'X_test.parquet'))
@@ -306,8 +327,11 @@ def do_plots():
     print(X_test_all[['nrtv', 'prob_full_attack', 'prob_baseline', 'pi', 'pi_fl']].head(10))
     print("df_sorted")
     print(df_sorted[['nrtv', 'prob_full_attack', 'prob_baseline', 'pi', 'pi_fl']].head(10))
-    # Make a scatterplot of pi_fl vs coverage
     df_temp = X_test_all.copy()
+
+
+
+    # Make a scatterplot of pi_fl vs coverage
     df_temp['bin'] = pd.cut(df_temp['pi_fl'], bins=num_bins)
     df_bin = df_temp.groupby('bin', observed=True).size().reset_index(name='count')
 
