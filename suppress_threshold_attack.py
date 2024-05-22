@@ -19,8 +19,8 @@ import pprint
 pp = pprint.PrettyPrinter(indent=4)
 
 remove_bad_files = False
-#sample_for_model = 200000
-sample_for_model = None
+sample_for_model = 200000
+#sample_for_model = None
 do_comb_3_and_4 = False
 num_bins = 40
 
@@ -222,7 +222,7 @@ def do_model():
     print(f"full_unneeded: {full_unneeded}")
 
     for unneeded_columns, model_name in [(baseline_unneeded, 'baseline'), (narrow_unneeded, 'narrow_attack'), (full_unneeded, 'full_attack')]:
-        build_and_add_model(X_train, X_test, y_train, y_test, X_test_all, model_stats, unneeded_columns, model_name)
+        build_and_add_model(X_train.copy(), X_test.copy(), y_train.copy(), y_test.copy(), X_test_all, model_stats, unneeded_columns, model_name)
         pass
 
     X_test_all.to_parquet(os.path.join(attack_path, 'X_test.parquet'))
