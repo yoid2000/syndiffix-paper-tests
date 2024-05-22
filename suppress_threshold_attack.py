@@ -288,6 +288,8 @@ def do_plots():
     count_pi_fl_1 = X_test_all[X_test_all['pi_fl'] == 1].shape[0]
     print(f"Count of rows where pi_fl == 1: {count_pi_fl_1}")
 
+
+
     # Make a scatterplot of pi_fl vs coverage
     df_temp = X_test_all.copy()
     df_temp['bin'] = pd.cut(df_temp['pi_fl'], bins=num_bins)
@@ -306,7 +308,7 @@ def do_plots():
     df_bin['model_fp'] = df_temp[df_temp['pred_full_attack'] == 'fp'].groupby('bin', observed=True)['pred_full_attack'].count().values
     df_bin['naive_tp'] = df_temp[df_temp['pred_narrow_attack'] == 'tp'].groupby('bin', observed=True)['pred_narrow_attack'].count().values
     df_bin['naive_fp'] = df_temp[df_temp['pred_narrow_attack'] == 'fp'].groupby('bin', observed=True)['pred_narrow_attack'].count().values
-    df_bin['frac_perfect'] = df_bin['num_pos_pred'] / df_bin['num_all_poss_pred']
+    df_bin['frac_perfect'] = df_bin['num_pos_pred'] / df_bin['count']
 
     df_bin = df_bin.sort_values(by='pi_fl_mid', ascending=False).reset_index(drop=True)
     df_bin['frac_capt'] = df_bin['frac_perfect'] * df_bin['capt_avg']
@@ -329,9 +331,9 @@ def do_plots():
 
     # Create a basic scatterplot from the bins
     for color_by, label, filename in [
-        ('bs_avg', 'Fraction best match syn table', 'pi_cov_bins_frac_bs'),
+        #('bs_avg', 'Fraction best match syn table', 'pi_cov_bins_frac_bs'),
         ('frac_tar_avg', 'Fraction of rows with target value', 'pi_cov_bins_frac_tar'),
-        ('prob_baseline_avg', 'Baseline positive prediction probability', 'pi_cov_bins_baseline'),
+        #('prob_baseline_avg', 'Baseline positive prediction probability', 'pi_cov_bins_baseline'),
         ('prob_full_attack_avg', 'Model positive prediction probability', 'pi_cov_bins_prob_full'),
         ]:
         make_bin_scatterplot(df_bin, color_by, label, filename, pi_floor)
