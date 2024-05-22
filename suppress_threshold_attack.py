@@ -256,10 +256,10 @@ def make_bin_scatterplot(df_bin, color_by, label, filename, pi_floor):
 
 def plot_move_avg(df):
     # Sort the DataFrame by the 'pi_fl' column in descending order
-    df_sorted = df.sort_values('pi_fl', ascending=False)
+    df_sorted = df.sort_values('pi_fl', ascending=False).reset_index(drop=True)
 
     # Compute the moving average
-    df_sorted['moving_avg'] = df_sorted['pi_fl'].rolling(window=500).mean()
+    df_sorted['moving_avg'] = df_sorted['pi_fl'].rolling(window=50).mean()
 
     # Compute the CDF
     df_sorted['cdf'] = (df_sorted.index + 1) / len(df_sorted)
