@@ -287,8 +287,14 @@ def do_plots():
     # Count the number of rows where pi_fl == 1
     count_pi_fl_1 = X_test_all[X_test_all['pi_fl'] == 1].shape[0]
     print(f"Count of rows where pi_fl == 1: {count_pi_fl_1}")
-
-
+    
+    df_sorted = X_test_all.copy().sort_values(by='pi_fl', ascending=False)
+    plt.plot(df_sorted['pi_fl'], label='pi_fl')
+    plt.plot(df_sorted['prob_full_attack'], label='prob_full_attack')
+    plt.plot(df_sorted['prob_baseline'], label='prob_baseline')
+    plt.legend()
+    plt.savefig(os.path.join(attack_path, 'lines3.png'))
+    plt.close()
 
     # Make a scatterplot of pi_fl vs coverage
     df_temp = X_test_all.copy()
