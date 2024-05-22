@@ -257,31 +257,39 @@ def make_bin_scatterplot(df_bin, color_by, label, filename, pi_floor):
 def plot_move_avg(df):
     # Sort the DataFrame by the 'pi_fl' column in descending order
     df_sorted = df.sort_values('pi_fl', ascending=False).reset_index(drop=True)
-    win = 500
+    win = 50
 
     df_sorted['moving_avg_pi_fl'] = df_sorted['pi_fl'].rolling(window=win).mean()
     df_sorted['moving_avg_capt'] = df_sorted['capt'].rolling(window=win).mean()
+    df_sorted['moving_avg_frac_tar'] = df_sorted['frac_tar'].rolling(window=win).mean()
 
     # Drop rows with NaN values in 'moving_avg' columns
-    df_sorted = df_sorted.dropna(subset=['moving_avg_pi_fl', 'moving_avg_capt'])
+    df_sorted = df_sorted.dropna(subset=['moving_avg_pi_fl', 'moving_avg_capt', 'moving_avg_frac_tar'])
 
     # Compute the CDF
     df_sorted['cdf'] = (df_sorted.index + 1) / len(df_sorted)
     df_sorted['cdf_to_capt'] = df_sorted['cdf'] * df_sorted['moving_avg_capt']
 
-    # Plot the moving average against the CDF
+    # Plot the pi_fl moving average against the CDF
     plt.figure(figsize=(10, 6))
     plt.plot(df_sorted['cdf'], df_sorted['moving_avg_pi_fl'], label="Attack conditions\nhappen to exist")
     plt.plot(df_sorted['cdf_to_capt'], df_sorted['moving_avg_pi_fl'], label="Attacker has specific\nvictim and target")
     plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--')
     plt.vlines(0.001, 0.5, 1.0, colors='black', linestyles='--')
-    plt.legend(title='Window size', loc='lower left')
+    plt.legend(loc='lower left')
     plt.xscale('log')
     plt.xlabel('Coverage')
     plt.ylabel(f'Moving Average Precision Improvement\n(floored at 0, window={win})')
-
-    # Save the plot
     plt.savefig(os.path.join(attack_path, 'pi_fl_mv_avg.png'))
+    plt.close()
+
+    # Plot the frac_tar moving average against the CDF
+    plt.figure(figsize=(10, 6))
+    plt.plot(df_sorted['cdf'], df_sorted['moving_avg_frac_tar'])
+    plt.xscale('log')
+    plt.xlabel('Coverage')
+    plt.ylabel(f'Moving Average Precision Improvement\n(floored at 0, window={win})')
+    plt.savefig(os.path.join(attack_path, 'frac_tar_mv_avg.png'))
     plt.close()
 
 def do_plots():
