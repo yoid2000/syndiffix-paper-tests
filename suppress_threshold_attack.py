@@ -257,21 +257,21 @@ def make_bin_scatterplot(df_bin, color_by, label, filename, pi_floor):
 def plot_move_avg(df):
     # Sort the DataFrame by the 'pi_fl' column in descending order
     df_sorted = df.sort_values('pi_fl', ascending=False).reset_index(drop=True)
-    win = 50
+    win = 10
 
     # Compute the moving average
     df_sorted['moving_avg'] = df_sorted['pi_fl'].rolling(window=win).mean()
     df_sorted['moving_avg5'] = df_sorted['pi_fl'].rolling(window=5).mean()
-    df_sorted['moving_avg200'] = df_sorted['pi_fl'].rolling(window=200).mean()
+    df_sorted['moving_avg20'] = df_sorted['pi_fl'].rolling(window=20).mean()
 
     # Compute the CDF
     df_sorted['cdf'] = (df_sorted.index + 1) / len(df_sorted)
 
     # Plot the moving average against the CDF
     plt.figure(figsize=(10, 6))
-    plt.plot(df_sorted['cdf'], df_sorted['moving_avg'], label=50)
+    plt.plot(df_sorted['cdf'], df_sorted['moving_avg'], label=10)
     plt.plot(df_sorted['cdf'], df_sorted['moving_avg5'], label=5)
-    plt.plot(df_sorted['cdf'], df_sorted['moving_avg200'], label=200)
+    plt.plot(df_sorted['cdf'], df_sorted['moving_avg20'], label=20)
     plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--')
     plt.vlines(0.001, 0.5, 1.0, colors='black', linestyles='--')
     plt.legend(title='Window size', loc='lower left')
