@@ -257,7 +257,7 @@ def make_bin_scatterplot(df_bin, color_by, label, filename, pi_floor):
 def plot_move_avg(df):
     # Sort the DataFrame by the 'pi_fl' column in descending order
     df_sorted = df.sort_values('pi_fl', ascending=False).reset_index(drop=True)
-    win = 10
+    win = 500
 
     df_sorted['moving_avg_pi_fl'] = df_sorted['pi_fl'].rolling(window=win).mean()
     df_sorted['moving_avg_capt'] = df_sorted['capt'].rolling(window=win).mean()
