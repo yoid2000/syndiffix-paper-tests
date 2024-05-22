@@ -19,10 +19,11 @@ import pprint
 pp = pprint.PrettyPrinter(indent=4)
 
 remove_bad_files = False
-sample_for_model = 200000
-#sample_for_model = None
+#sample_for_model = 200000
+sample_for_model = None
 do_comb_3_and_4 = False
 num_bins = 40
+win = 2000
 
 if 'SDX_TEST_DIR' in os.environ:
     base_path = os.getenv('SDX_TEST_DIR')
@@ -257,7 +258,6 @@ def make_bin_scatterplot(df_bin, color_by, label, filename, pi_floor):
 def plot_move_avg(df):
     # Sort the DataFrame by the 'pi_fl' column in descending order
     df_sorted = df.sort_values('pi_fl', ascending=False).reset_index(drop=True)
-    win = 50
 
     df_sorted['moving_avg_pi_fl'] = df_sorted['pi_fl'].rolling(window=win).mean()
     df_sorted['moving_avg_capt'] = df_sorted['capt'].rolling(window=win).mean()
