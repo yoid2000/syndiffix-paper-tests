@@ -268,6 +268,8 @@ def plot_move_avg(df):
     # Plot the moving average against the CDF
     plt.figure(figsize=(10, 6))
     plt.plot(df_sorted['cdf'], df_sorted['moving_avg'])
+    plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--', linewidth=0.5)
+    plt.vlines(0.001, 0.5, 1.0, colors='black', linestyles='--', linewidth=0.5)
     plt.xscale('log')
     plt.xlabel('Coverage')
     plt.ylabel(f'Moving Average Precision Improvement\n(floored at 0, window={win})')
