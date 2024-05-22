@@ -272,8 +272,8 @@ def plot_move_avg(df):
 
     # Plot the pi_fl moving average against the CDF
     plt.figure(figsize=(6, 3.5))
-    scatter1 = plt.scatter(df_sorted['cdf'], df_sorted['moving_avg_pi_fl'], c=df_sorted['moving_avg_frac_tar'], label="Attack conditions\nhappen to exist", s=1)
-    scatter2 = plt.scatter(df_sorted['cdf_to_capt'], df_sorted['moving_avg_pi_fl'], c=df_sorted['moving_avg_frac_tar'], label="Attacker has specific\nvictim and target", s=1)
+    scatter1 = plt.scatter(df_sorted['cdf'], df_sorted['moving_avg_pi_fl'], c=df_sorted['moving_avg_frac_tar'], label="Attack conditions\nhappen to exist", s=2)
+    scatter2 = plt.scatter(df_sorted['cdf_to_capt'], df_sorted['moving_avg_pi_fl'], c=df_sorted['moving_avg_frac_tar'], label="Attacker has specific\nvictim and target", s=2)
     #plt.plot(df_sorted['cdf'], df_sorted['moving_avg_pi_fl'], label="Attack conditions\nhappen to exist")
     #plt.plot(df_sorted['cdf_to_capt'], df_sorted['moving_avg_pi_fl'], label="Attacker has specific\nvictim and target")
     plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--')
