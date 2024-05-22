@@ -261,15 +261,20 @@ def plot_move_avg(df):
 
     # Compute the moving average
     df_sorted['moving_avg'] = df_sorted['pi_fl'].rolling(window=win).mean()
+    df_sorted['moving_avg5'] = df_sorted['pi_fl'].rolling(window=5).mean()
+    df_sorted['moving_avg200'] = df_sorted['pi_fl'].rolling(window=200).mean()
 
     # Compute the CDF
     df_sorted['cdf'] = (df_sorted.index + 1) / len(df_sorted)
 
     # Plot the moving average against the CDF
     plt.figure(figsize=(10, 6))
-    plt.plot(df_sorted['cdf'], df_sorted['moving_avg'])
-    plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--', linewidth=0.5)
-    plt.vlines(0.001, 0.5, 1.0, colors='black', linestyles='--', linewidth=0.5)
+    plt.plot(df_sorted['cdf'], df_sorted['moving_avg'], label=50)
+    plt.plot(df_sorted['cdf'], df_sorted['moving_avg5'], label=5)
+    plt.plot(df_sorted['cdf'], df_sorted['moving_avg200'], label=200)
+    plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--')
+    plt.vlines(0.001, 0.5, 1.0, colors='black', linestyles='--')
+    plt.legend(title='Window size', loc='lower left')
     plt.xscale('log')
     plt.xlabel('Coverage')
     plt.ylabel(f'Moving Average Precision Improvement\n(floored at 0, window={win})')
