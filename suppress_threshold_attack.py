@@ -262,7 +262,7 @@ def plot_move_avg(df):
     df_sorted['moving_avg'] = df_sorted['pi_fl'].rolling(window=50).mean()
 
     # Compute the CDF
-    df_sorted['cdf'] = (df_sorted.index + 1) / len(df_sorted)
+    df_sorted['cdf'] = np.arange(len(df_sorted), 0, -1) / len(df_sorted)
 
     # Plot the moving average against the CDF
     plt.figure(figsize=(10, 6))
