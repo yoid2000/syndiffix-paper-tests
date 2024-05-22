@@ -260,6 +260,8 @@ def do_plots():
     # Read in the parquet files
     X_test_all = pd.read_parquet(os.path.join(attack_path, 'X_test.parquet'))
 
+    print(X_test_all.head(10))
+
     X_test_all['pi'] = (X_test_all['prob_full_attack'] - X_test_all['prob_baseline']) / (1.000001 - X_test_all['prob_baseline'])
 
     # This makes up for the use of 1.000001 in the above line
