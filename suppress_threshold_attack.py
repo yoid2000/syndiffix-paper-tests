@@ -289,6 +289,7 @@ def do_plots():
     print(f"Count of rows where pi_fl == 1: {count_pi_fl_1}")
     
     df_sorted = X_test_all.copy().sort_values(by='pi_fl', ascending=False)
+    df_sorted = df_sorted.head(10000)
     plt.figure(figsize=(6, 3))
     plt.plot(df_sorted['pi_fl'], label='pi_fl')
     plt.plot(df_sorted['prob_full_attack'], label='prob_full_attack')
