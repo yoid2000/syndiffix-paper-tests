@@ -87,7 +87,7 @@ def build_and_add_model(X_train, X_test, y_train, y_test, X_test_all, model_stat
     scaler = StandardScaler()
 
     print(model_name)
-    print(X_test.head(10))
+    print(X_test_all.head(10))
 
     X_train_encoded = pd.get_dummies(X_train.drop(columns=unneeded_columns))
     columns = X_train_encoded.columns
