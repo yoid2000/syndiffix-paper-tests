@@ -149,9 +149,6 @@ def build_and_add_model(X_train, X_test, y_train, y_test, X_test_all, model_stat
     # Apply model_decision function to get model predictions
     X_test_all[pred_col] = X_test_all.apply(lambda row: model_decision(row['c'], row[prob_col]), axis=1)
 
-    print(model_name)
-    print(X_test_all.head(10))
-
     accuracy, precision, recall, f1 = compute_metrics(X_test_all, pred_col)
     print(pred_col)
     print(f"Accuracy: {accuracy}, Precision: {precision}, Recall: {recall}, F1: {f1}")
@@ -228,6 +225,7 @@ def do_model():
         build_and_add_model(X_train.copy(), X_test.copy(), y_train.copy(), y_test.copy(), X_test_all, model_stats, unneeded_columns, model_name)
         pass
 
+    print(X_test_all[['nrtv', 'prob_full_attack', 'prob_baseline']].head(10))
     X_test_all.to_parquet(os.path.join(attack_path, 'X_test.parquet'))
     # write model_stats to json file
     with open(os.path.join(attack_path, 'model_stats.json'), 'w') as f:
@@ -260,9 +258,9 @@ def do_plots():
     # Read in the parquet files
     X_test_all = pd.read_parquet(os.path.join(attack_path, 'X_test.parquet'))
 
-    print(X_test_all.head(10))
-
     X_test_all['pi'] = (X_test_all['prob_full_attack'] - X_test_all['prob_baseline']) / (1.000001 - X_test_all['prob_baseline'])
+    
+    print(X_test_all[['nrtv', 'prob_full_attack', 'prob_baseline', 'pi']].head(10))
 
     # This makes up for the use of 1.000001 in the above line
     X_test_all.loc[X_test_all['pi'] >= 0.9999, 'pi'] = 1.0
