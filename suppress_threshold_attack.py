@@ -23,7 +23,7 @@ remove_bad_files = False
 sample_for_model = None
 do_comb_3_and_4 = False
 num_bins = 40
-win = 500
+win = 5000
 
 if 'SDX_TEST_DIR' in os.environ:
     base_path = os.getenv('SDX_TEST_DIR')
