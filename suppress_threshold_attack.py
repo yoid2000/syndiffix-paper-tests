@@ -259,19 +259,20 @@ def plot_move_avg(df):
     df_sorted = df.sort_values('pi_fl', ascending=False).reset_index(drop=True)
     win = 10
 
-    # Compute the moving average
-    df_sorted['moving_avg'] = df_sorted['pi_fl'].rolling(window=win).mean()
-    df_sorted['moving_avg5'] = df_sorted['pi_fl'].rolling(window=5).mean()
-    df_sorted['moving_avg20'] = df_sorted['pi_fl'].rolling(window=20).mean()
+    df_sorted['moving_avg_pi_fl'] = df_sorted['pi_fl'].rolling(window=win).mean()
+    df_sorted['moving_avg_capt'] = df_sorted['capt'].rolling(window=win).mean()
+
+    # Drop rows with NaN values in 'moving_avg' columns
+    df_sorted = df_sorted.dropna(subset=['moving_avg_pi_fl', 'moving_avg_capt'])
 
     # Compute the CDF
     df_sorted['cdf'] = (df_sorted.index + 1) / len(df_sorted)
+    df_sorted['cdf_to_capt'] = df_sorted['cdf'] / df_sorted['moving_avg_capt']
 
     # Plot the moving average against the CDF
     plt.figure(figsize=(10, 6))
-    plt.plot(df_sorted['cdf'], df_sorted['moving_avg'], label=10)
-    plt.plot(df_sorted['cdf'], df_sorted['moving_avg5'], label=5)
-    plt.plot(df_sorted['cdf'], df_sorted['moving_avg20'], label=20)
+    plt.plot(df_sorted['cdf'], df_sorted['moving_avg_pi_fl'], label="Attack conditions\nhappen to exist")
+    plt.plot(df_sorted['cdf_to_capt'], df_sorted['moving_avg_pi_fl'], label="Attacker has specific\nvictim and target")
     plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--')
     plt.vlines(0.001, 0.5, 1.0, colors='black', linestyles='--')
     plt.legend(title='Window size', loc='lower left')
@@ -331,10 +332,6 @@ def do_plots():
     plt.savefig(os.path.join(attack_path, 'lines3.png'))
     plt.close()
 
-    print("after sort thingy, X_test:")
-    print(X_test_all[['nrtv', 'prob_full_attack', 'prob_baseline', 'pi', 'pi_fl']].head(10))
-    print("df_sorted")
-    print(df_sorted[['nrtv', 'prob_full_attack', 'prob_baseline', 'pi', 'pi_fl']].head(10))
     df_temp = X_test_all.copy()
     plot_move_avg(X_test_all.copy())
 
