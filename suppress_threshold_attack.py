@@ -271,14 +271,15 @@ def plot_move_avg(df):
     df_sorted['cdf_to_capt'] = df_sorted['cdf'] * df_sorted['moving_avg_capt']
 
     # Plot the pi_fl moving average against the CDF
-    plt.figure(figsize=(6, 3))
-    scatter1 = plt.scatter(df_sorted['cdf'], df_sorted['moving_avg_pi_fl'], c=df_sorted['moving_avg_frac_tar'], label="Attack conditions\nhappen to exist", s=3)
-    scatter2 = plt.scatter(df_sorted['cdf_to_capt'], df_sorted['moving_avg_pi_fl'], c=df_sorted['moving_avg_frac_tar'], label="Attacker has specific\nvictim and target", s=3)
+    plt.figure(figsize=(6, 3.5))
+    scatter1 = plt.scatter(df_sorted['cdf'], df_sorted['moving_avg_pi_fl'], c=df_sorted['moving_avg_frac_tar'], label="Attack conditions\nhappen to exist", s=1)
+    scatter2 = plt.scatter(df_sorted['cdf_to_capt'], df_sorted['moving_avg_pi_fl'], c=df_sorted['moving_avg_frac_tar'], label="Attacker has specific\nvictim and target", s=1)
     #plt.plot(df_sorted['cdf'], df_sorted['moving_avg_pi_fl'], label="Attack conditions\nhappen to exist")
     #plt.plot(df_sorted['cdf_to_capt'], df_sorted['moving_avg_pi_fl'], label="Attacker has specific\nvictim and target")
     plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--')
     plt.vlines(0.001, 0.5, 1.0, colors='black', linestyles='--')
-    plt.legend(loc="lower left", prop={'size': 8})
+    plt.text(0.7, 0.7, "Attack conditions\nhappen to exist", fontsize=8, bbox=dict(facecolor='white', alpha=0.5))
+    plt.text(0.6, 0.1, "Attacker has specific\nvictim and target", fontsize=8, bbox=dict(facecolor='white', alpha=0.5))
     cbar = plt.colorbar(scatter1)
     cbar.set_label('Target Value Fraction', rotation=270, labelpad=15)
     plt.xscale('log')
