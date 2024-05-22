@@ -22,7 +22,7 @@ remove_bad_files = False
 #sample_for_model = 200000
 sample_for_model = None
 do_comb_3_and_4 = False
-num_bins = 80
+num_bins = 40
 
 if 'SDX_TEST_DIR' in os.environ:
     base_path = os.getenv('SDX_TEST_DIR')
@@ -299,12 +299,14 @@ def do_plots():
         if pd.api.types.is_numeric_dtype(df_temp[column]):
             df_bin[f'{column}_avg'] = df_temp.groupby('bin', observed=True)[column].mean().values
 
-    df_bin['guess_pos'] = df_temp[df_temp['prob_full_attack'] > 0.5].groupby('bin', observed=True)['prob_full_attack'].count().values
+    df_bin['num_pos_pred'] = df_temp[df_temp['prob_full_attack'] > 0.5].groupby('bin', observed=True)['prob_full_attack'].count().values
+    # Count the total number of rows per bin
+    df_bin['num_all_poss_pred'] = df_temp.groupby('bin', observed=True)['prob_full_attack'].count().values
     df_bin['model_tp'] = df_temp[df_temp['pred_full_attack'] == 'tp'].groupby('bin', observed=True)['pred_full_attack'].count().values
     df_bin['model_fp'] = df_temp[df_temp['pred_full_attack'] == 'fp'].groupby('bin', observed=True)['pred_full_attack'].count().values
     df_bin['naive_tp'] = df_temp[df_temp['pred_narrow_attack'] == 'tp'].groupby('bin', observed=True)['pred_narrow_attack'].count().values
     df_bin['naive_fp'] = df_temp[df_temp['pred_narrow_attack'] == 'fp'].groupby('bin', observed=True)['pred_narrow_attack'].count().values
-    df_bin['frac_perfect'] = df_bin['guess_pos'] / X_test_all.shape[0]
+    df_bin['frac_perfect'] = df_bin['num_pos_pred'] / df_bin['num_all_poss_pred']
 
     df_bin = df_bin.sort_values(by='pi_fl_mid', ascending=False).reset_index(drop=True)
     df_bin['frac_capt'] = df_bin['frac_perfect'] * df_bin['capt_avg']
