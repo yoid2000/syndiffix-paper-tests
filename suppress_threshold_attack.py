@@ -86,6 +86,9 @@ def build_and_add_model(X_train, X_test, y_train, y_test, X_test_all, model_stat
     encoder = OneHotEncoder()
     scaler = StandardScaler()
 
+    print(model_name)
+    print(X_test.head(10))
+
     X_train_encoded = pd.get_dummies(X_train.drop(columns=unneeded_columns))
     columns = X_train_encoded.columns
     X_train_scaled = scaler.fit_transform(X_train_encoded)
