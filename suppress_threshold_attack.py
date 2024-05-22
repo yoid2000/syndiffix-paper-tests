@@ -302,6 +302,10 @@ def do_plots():
     plt.savefig(os.path.join(attack_path, 'lines3.png'))
     plt.close()
 
+    print("after sort thingy, X_test:")
+    print(X_test_all[['nrtv', 'prob_full_attack', 'prob_baseline', 'pi', 'pi_fl']].head(10))
+    print("df_sorted")
+    print(df_sorted[['nrtv', 'prob_full_attack', 'prob_baseline', 'pi', 'pi_fl']].head(10))
     # Make a scatterplot of pi_fl vs coverage
     df_temp = X_test_all.copy()
     df_temp['bin'] = pd.cut(df_temp['pi_fl'], bins=num_bins)
@@ -339,7 +343,6 @@ def do_plots():
     # Save df_bin.to_string() to file bin.txt
     with open(os.path.join(attack_path, 'bins.txt'), 'w') as f:
         f.write(df_bin.to_string())
-
 
     # Create a basic scatterplot from the bins
     for color_by, label, filename in [
