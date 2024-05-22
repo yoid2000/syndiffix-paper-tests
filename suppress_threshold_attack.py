@@ -328,8 +328,7 @@ def do_plots():
     print("df_sorted")
     print(df_sorted[['nrtv', 'prob_full_attack', 'prob_baseline', 'pi', 'pi_fl']].head(10))
     df_temp = X_test_all.copy()
-
-
+    plot_move_avg(X_test_all.copy())
 
     # Make a scatterplot of pi_fl vs coverage
     df_temp['bin'] = pd.cut(df_temp['pi_fl'], bins=num_bins)
