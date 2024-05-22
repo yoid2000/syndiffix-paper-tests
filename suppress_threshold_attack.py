@@ -271,15 +271,16 @@ def plot_move_avg(df):
     df_sorted['cdf_to_capt'] = df_sorted['cdf'] * df_sorted['moving_avg_capt']
 
     # Plot the pi_fl moving average against the CDF
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(6, 3))
     plt.plot(df_sorted['cdf'], df_sorted['moving_avg_pi_fl'], label="Attack conditions\nhappen to exist")
     plt.plot(df_sorted['cdf_to_capt'], df_sorted['moving_avg_pi_fl'], label="Attacker has specific\nvictim and target")
     plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--')
     plt.vlines(0.001, 0.5, 1.0, colors='black', linestyles='--')
-    plt.legend(loc='lower left')
+    plt.legend(loc="lower left", prop={'size': 8})
     plt.xscale('log')
-    plt.xlabel('Coverage')
-    plt.ylabel(f'Moving Average Precision Improvement\n(floored at 0, window={win})')
+    plt.xlabel('Coverage as Cumulative Probability', fontsize=13, labelpad=10)
+    plt.ylabel(f'Moving Average Precision Improvement\n(floored at 0, window={win})', fontsize=13, labelpad=10)
+    plt.tight_layout()
     plt.savefig(os.path.join(attack_path, 'pi_fl_mv_avg.png'))
     plt.close()
 
@@ -288,7 +289,8 @@ def plot_move_avg(df):
     plt.plot(df_sorted['cdf'], df_sorted['moving_avg_frac_tar'])
     plt.xscale('log')
     plt.xlabel('Coverage')
-    plt.ylabel(f'Moving Average Precision Improvement\n(floored at 0, window={win})')
+    plt.ylabel(f'Moving Average Fraction Target Rows\n(floored at 0, window={win})')
+    plt.tight_layout()
     plt.savefig(os.path.join(attack_path, 'frac_tar_mv_avg.png'))
     plt.close()
 
@@ -340,54 +342,54 @@ def do_plots():
     plt.savefig(os.path.join(attack_path, 'lines3.png'))
     plt.close()
 
-    df_temp = X_test_all.copy()
     plot_move_avg(X_test_all.copy())
-
-    # Make a scatterplot of pi_fl vs coverage
-    df_temp['bin'] = pd.cut(df_temp['pi_fl'], bins=num_bins)
-    df_bin = df_temp.groupby('bin', observed=True).size().reset_index(name='count')
-
-    df_bin['pi_fl_mid'] = df_bin['bin'].apply(lambda x: (x.right + x.left) / 2)
-    for column in df_temp.columns:
-        # If the dtype is numeric, compute the mean for each bin
-        if pd.api.types.is_numeric_dtype(df_temp[column]):
-            df_bin[f'{column}_avg'] = df_temp.groupby('bin', observed=True)[column].mean().values
-
-    df_bin['num_pos_pred'] = df_temp[df_temp['prob_full_attack'] > 0.5].groupby('bin', observed=True)['prob_full_attack'].count().values
-    # Count the total number of rows per bin
-    df_bin['num_all_poss_pred'] = df_temp.groupby('bin', observed=True)['prob_full_attack'].count().values
-    df_bin['model_tp'] = df_temp[df_temp['pred_full_attack'] == 'tp'].groupby('bin', observed=True)['pred_full_attack'].count().reindex(df_bin.index).fillna(0).values
-    df_bin['model_fp'] = df_temp[df_temp['pred_full_attack'] == 'fp'].groupby('bin', observed=True)['pred_full_attack'].count().reindex(df_bin.index).fillna(0).values
-    df_bin['naive_tp'] = df_temp[df_temp['pred_narrow_attack'] == 'tp'].groupby('bin', observed=True)['pred_narrow_attack'].count().reindex(df_bin.index).fillna(0).values
-    df_bin['naive_fp'] = df_temp[df_temp['pred_narrow_attack'] == 'fp'].groupby('bin', observed=True)['pred_narrow_attack'].count().reindex(df_bin.index).fillna(0).values
-    df_bin['frac_perfect'] = df_bin['num_pos_pred'] / df_bin['count']
-
-    df_bin = df_bin.sort_values(by='pi_fl_mid', ascending=False).reset_index(drop=True)
-    df_bin['frac_capt'] = df_bin['frac_perfect'] * df_bin['capt_avg']
-    df_bin['frac_cap'] = df_bin['frac_perfect'] * df_bin['cap_avg']
-    df_bin['model_prec'] = df_bin['model_tp'] / (df_bin['model_tp'] + df_bin['model_fp'])
-    df_bin['naive_prec'] = df_bin['naive_tp'] / (df_bin['naive_tp'] + df_bin['naive_fp'])
-    #print(df_bin.to_string())
-    bin_dict = {}
-    for index, row in df_bin.iterrows():
-        key = str(row['bin'])
-        bin_dict[key] = row.drop('bin').to_dict()
-        bin_dict[key]['table_counts'] = df_temp[df_temp['bin'] == row['bin']]['table'].value_counts().to_dict()
-    with open(os.path.join(attack_path, 'bins.json'), 'w') as f:
-        json.dump(bin_dict, f, indent=4) 
-
-    # Save df_bin.to_string() to file bin.txt
-    with open(os.path.join(attack_path, 'bins.txt'), 'w') as f:
-        f.write(df_bin.to_string())
-
-    # Create a basic scatterplot from the bins
-    for color_by, label, filename in [
-        #('bs_avg', 'Fraction best match syn table', 'pi_cov_bins_frac_bs'),
-        ('frac_tar_avg', 'Fraction of rows with target value', 'pi_cov_bins_frac_tar'),
-        #('prob_baseline_avg', 'Baseline positive prediction probability', 'pi_cov_bins_baseline'),
-        ('prob_full_attack_avg', 'Model positive prediction probability', 'pi_cov_bins_prob_full'),
-        ]:
-        make_bin_scatterplot(df_bin, color_by, label, filename, pi_floor)
+#    df_temp = X_test_all.copy()
+#
+#    # Make a scatterplot of pi_fl vs coverage
+#    df_temp['bin'] = pd.cut(df_temp['pi_fl'], bins=num_bins)
+#    df_bin = df_temp.groupby('bin', observed=True).size().reset_index(name='count')
+#
+#    df_bin['pi_fl_mid'] = df_bin['bin'].apply(lambda x: (x.right + x.left) / 2)
+#    for column in df_temp.columns:
+#        # If the dtype is numeric, compute the mean for each bin
+#        if pd.api.types.is_numeric_dtype(df_temp[column]):
+#            df_bin[f'{column}_avg'] = df_temp.groupby('bin', observed=True)[column].mean().values
+#
+#    df_bin['num_pos_pred'] = df_temp[df_temp['prob_full_attack'] > 0.5].groupby('bin', observed=True)['prob_full_attack'].count().values
+#    # Count the total number of rows per bin
+#    df_bin['num_all_poss_pred'] = df_temp.groupby('bin', observed=True)['prob_full_attack'].count().values
+#    df_bin['model_tp'] = df_temp[df_temp['pred_full_attack'] == 'tp'].groupby('bin', observed=True)['pred_full_attack'].count().reindex(df_bin.index).fillna(0).values
+#    df_bin['model_fp'] = df_temp[df_temp['pred_full_attack'] == 'fp'].groupby('bin', observed=True)['pred_full_attack'].count().reindex(df_bin.index).fillna(0).values
+#    df_bin['naive_tp'] = df_temp[df_temp['pred_narrow_attack'] == 'tp'].groupby('bin', observed=True)['pred_narrow_attack'].count().reindex(df_bin.index).fillna(0).values
+#    df_bin['naive_fp'] = df_temp[df_temp['pred_narrow_attack'] == 'fp'].groupby('bin', observed=True)['pred_narrow_attack'].count().reindex(df_bin.index).fillna(0).values
+#    df_bin['frac_perfect'] = df_bin['num_pos_pred'] / df_bin['count']
+#
+#    df_bin = df_bin.sort_values(by='pi_fl_mid', ascending=False).reset_index(drop=True)
+#    df_bin['frac_capt'] = df_bin['frac_perfect'] * df_bin['capt_avg']
+#    df_bin['frac_cap'] = df_bin['frac_perfect'] * df_bin['cap_avg']
+#    df_bin['model_prec'] = df_bin['model_tp'] / (df_bin['model_tp'] + df_bin['model_fp'])
+#    df_bin['naive_prec'] = df_bin['naive_tp'] / (df_bin['naive_tp'] + df_bin['naive_fp'])
+#    #print(df_bin.to_string())
+#    bin_dict = {}
+#    for index, row in df_bin.iterrows():
+#        key = str(row['bin'])
+#        bin_dict[key] = row.drop('bin').to_dict()
+#        bin_dict[key]['table_counts'] = df_temp[df_temp['bin'] == row['bin']]['table'].value_counts().to_dict()
+#    with open(os.path.join(attack_path, 'bins.json'), 'w') as f:
+#        json.dump(bin_dict, f, indent=4) 
+#
+#    # Save df_bin.to_string() to file bin.txt
+#    with open(os.path.join(attack_path, 'bins.txt'), 'w') as f:
+#        f.write(df_bin.to_string())
+#
+#    # Create a basic scatterplot from the bins
+#    for color_by, label, filename in [
+#        #('bs_avg', 'Fraction best match syn table', 'pi_cov_bins_frac_bs'),
+#        ('frac_tar_avg', 'Fraction of rows with target value', 'pi_cov_bins_frac_tar'),
+#        #('prob_baseline_avg', 'Baseline positive prediction probability', 'pi_cov_bins_baseline'),
+#        ('prob_full_attack_avg', 'Model positive prediction probability', 'pi_cov_bins_prob_full'),
+#        ]:
+#        make_bin_scatterplot(df_bin, color_by, label, filename, pi_floor)
 
     # Sort the DataFrame by 'pi_fl' in descending order and reset the index
     X_test_all_sorted = X_test_all.sort_values(by='pi_fl', ascending=False).reset_index(drop=True)
