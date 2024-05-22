@@ -257,19 +257,20 @@ def make_bin_scatterplot(df_bin, color_by, label, filename, pi_floor):
 def plot_move_avg(df):
     # Sort the DataFrame by the 'pi_fl' column in descending order
     df_sorted = df.sort_values('pi_fl', ascending=False).reset_index(drop=True)
+    win = 50
 
     # Compute the moving average
-    df_sorted['moving_avg'] = df_sorted['pi_fl'].rolling(window=50).mean()
+    df_sorted['moving_avg'] = df_sorted['pi_fl'].rolling(window=win).mean()
 
     # Compute the CDF
-    df_sorted['cdf'] = np.arange(len(df_sorted), 0, -1) / len(df_sorted)
+    df_sorted['cdf'] = (df_sorted.index + 1) / len(df_sorted)
 
     # Plot the moving average against the CDF
     plt.figure(figsize=(10, 6))
     plt.plot(df_sorted['cdf'], df_sorted['moving_avg'])
-    plt.xlabel('Probability of having the given value of the moving average or higher')
-    plt.ylabel('Moving average of pi_fl')
-    plt.title('Moving average of pi_fl vs. CDF')
+    plt.xscale('log')
+    plt.xlabel('Coverage')
+    plt.ylabel(f'Moving Average Precision Improvement\n(floored at 0, window={win})')
 
     # Save the plot
     plt.savefig(os.path.join(attack_path, 'pi_fl_mv_avg.png'))
