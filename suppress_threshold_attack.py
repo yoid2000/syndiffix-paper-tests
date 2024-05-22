@@ -267,7 +267,7 @@ def plot_move_avg(df):
 
     # Compute the CDF
     df_sorted['cdf'] = (df_sorted.index + 1) / len(df_sorted)
-    df_sorted['cdf_to_capt'] = df_sorted['cdf'] / df_sorted['moving_avg_capt']
+    df_sorted['cdf_to_capt'] = df_sorted['cdf'] * df_sorted['moving_avg_capt']
 
     # Plot the moving average against the CDF
     plt.figure(figsize=(10, 6))
