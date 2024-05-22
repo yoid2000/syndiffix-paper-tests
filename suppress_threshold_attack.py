@@ -260,13 +260,12 @@ def do_plots():
 
     X_test_all['pi'] = (X_test_all['prob_full_attack'] - X_test_all['prob_baseline']) / (1.000001 - X_test_all['prob_baseline'])
     
-    print(X_test_all[['nrtv', 'prob_full_attack', 'prob_baseline', 'pi']].head(10))
-
     # This makes up for the use of 1.000001 in the above line
     X_test_all.loc[X_test_all['pi'] >= 0.9999, 'pi'] = 1.0
 
     pi_floor = 0
     X_test_all['pi_fl'] = X_test_all['pi'].clip(lower=pi_floor)
+    print(X_test_all[['nrtv', 'prob_full_attack', 'prob_baseline', 'pi', 'pi_fl']].head(10))
 
     # print distributions
     print("Distribution of capt:")
@@ -328,7 +327,7 @@ def do_plots():
     df_bin['frac_cap'] = df_bin['frac_perfect'] * df_bin['cap_avg']
     df_bin['model_prec'] = df_bin['model_tp'] / (df_bin['model_tp'] + df_bin['model_fp'])
     df_bin['naive_prec'] = df_bin['naive_tp'] / (df_bin['naive_tp'] + df_bin['naive_fp'])
-    print(df_bin.to_string())
+    #print(df_bin.to_string())
     bin_dict = {}
     for index, row in df_bin.iterrows():
         key = str(row['bin'])
