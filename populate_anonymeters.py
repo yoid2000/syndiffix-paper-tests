@@ -29,4 +29,4 @@ for dir in os.listdir(synDataPath):
         print(f"Skipping because time series data in {dir}")
         continue
     tm_to = TablesManager(dir_path=anonPath)
-    tm_to.put_df_orig(df, baseName)
+    tm_to.put_df_orig(df_orig, baseName)
