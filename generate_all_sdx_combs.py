@@ -13,11 +13,15 @@ from pathlib import Path
 Go through all of the original datasets and define all possible combinations of columns with maxComb or fewer columns.
 Also include synthetic dataset with all columns.
 Put the results in allSynCombs.json and create the appropriate slurm scripts.
+
+Originally this was used for the original datasets, but now updated to also generate
+the combs for the anonymeter datasets.
 '''
 
-DO_LOW_COMBS = False
+DO_ANONYMETER = True
+DO_LOW_COMBS = True
 DO_RANDOM_FOUR_COMBS = False
-DO_TARGETED_FOUR_COMBS = True
+DO_TARGETED_FOUR_COMBS = False
 
 maxComb = 3
 numFourCombs = 30000
@@ -42,6 +46,13 @@ def updateAllCombs(allCombs, tm, cols):
 allCombs = []
 for dir in os.listdir(synDataPath):
     thisDataPath = Path(synDataPath, dir)
+    if DO_ANONYMETER:
+        anonPath = os.path.join(thisDataPath, 'anonymeter')
+        if not os.path.exists(anonPath):
+            print(f"anonymeter path {anonPath} does not exist. skip.")
+            continue
+        thisDataPath = Path(anonPath)
+
     tm = TablesManager(dir_path=thisDataPath)
     columns = list(tm.df_orig.columns)
     pid_cols = tm.get_pid_cols()
