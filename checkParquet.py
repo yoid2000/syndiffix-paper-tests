@@ -17,6 +17,10 @@ for dir in os.listdir(synDataPath):
     controlFile = os.path.join(thisDataPath, 'anonymeter', f'control.parquet')
     trainingFile = os.path.join(thisDataPath, 'anonymeter', f'training.parquet')
 
+    if not os.path.exists(controlFile):
+        print(f"baseFile {baseFile} does not exist")
+        continue
+
     # read baseFile into dataframe
     df_base = pd.read_parquet(baseFile)
     df_control = pd.read_parquet(controlFile)
