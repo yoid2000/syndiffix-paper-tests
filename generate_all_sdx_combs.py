@@ -16,6 +16,8 @@ Put the results in allSynCombs.json and create the appropriate slurm scripts.
 
 Originally this was used for the original datasets, but now updated to also generate
 the combs for the anonymeter datasets.
+
+Note that the way to use this tool is to start with small slurmMem (10G), and then increase it with each additional run until all tables are built. 
 '''
 
 DO_ANONYMETER = True
