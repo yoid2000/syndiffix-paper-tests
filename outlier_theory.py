@@ -17,7 +17,7 @@ All outlier tests are based on detecting whether there are:
 Value outlier tests:
     Detect presence:
         We know the presence of the outlier will raise the average value
-        of the column with the outlier value.
+        of the column with the outlier value. But, we need to know what the expected value without the outlier should be...
     Infer value of another column:
 '''
 
