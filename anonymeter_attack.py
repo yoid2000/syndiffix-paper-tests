@@ -48,7 +48,6 @@ def make_config():
             continue
         for secret in columns:
             attack_jobs.append({
-                'index': len(attack_jobs),
                 'dir_name': dir_name,
                 'secret': secret,
             })
@@ -58,6 +57,8 @@ def make_config():
     random.shuffle(attack_jobs)
     # remove any extra attack_jobs
     attack_jobs = attack_jobs[:num_attacks]
+    for job, index in enumerate(attack_jobs):
+        job['index'] = index
 
     # Write attack_jobs into a JSON file
     with open(os.path.join(attack_path, 'attack_jobs.json'), 'w') as f:
