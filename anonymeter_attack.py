@@ -47,7 +47,7 @@ def make_config():
             attack_jobs.append({
                 'index': len(attack_jobs),
                 'dir_name': dir_name,
-                'secret': col1,
+                'secret': secret,
             })
     while len(attack_jobs < num_attacks):
         attack_jobs.extend(attack_jobs)
