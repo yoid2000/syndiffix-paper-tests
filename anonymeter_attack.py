@@ -73,20 +73,20 @@ def make_config():
     slurm_out = os.path.join(slurm_dir, 'out.%a.out')
     num_jobs = len(attack_jobs) - 1
     # Define the slurm template
-        slurm_template = f'''#!/bin/bash
-    #SBATCH --job-name=suppress_attack
-    #SBATCH --output={slurm_out}
-    #SBATCH --time=7-0
-    #SBATCH --mem=16G
-    #SBATCH --cpus-per-task=1
-    #SBATCH --array=0-{num_jobs}
-    arrayNum="${{SLURM_ARRAY_TASK_ID}}"
-    source {venv_path}
-    python {exe_path} $arrayNum
-    '''
-        # write the slurm template to a file attack.slurm
-        with open(os.path.join(attack_path, 'attack.slurm'), 'w', encoding='utf-8') as f:
-            f.write(slurm_template)
+    slurm_template = f'''#!/bin/bash
+#SBATCH --job-name=suppress_attack
+#SBATCH --output={slurm_out}
+#SBATCH --time=7-0
+#SBATCH --mem=16G
+#SBATCH --cpus-per-task=1
+#SBATCH --array=0-{num_jobs}
+arrayNum="${{SLURM_ARRAY_TASK_ID}}"
+source {venv_path}
+python {exe_path} $arrayNum
+'''
+    # write the slurm template to a file attack.slurm
+    with open(os.path.join(attack_path, 'attack.slurm'), 'w', encoding='utf-8') as f:
+        f.write(slurm_template)
 
 def do_inference_attack(secret, aux_cols, regression, df_original, df_control, df_syn):
     ''' df_original and df_control have all columns.
