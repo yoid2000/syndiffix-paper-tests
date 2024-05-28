@@ -56,7 +56,6 @@ def make_config():
     random.shuffle(attack_jobs)
     for index, job in enumerate(attack_jobs):
         job['index'] = index
-        print(index, job)
     # remove any extra attack_jobs
     attack_jobs = attack_jobs[:num_attacks]
     for index, job in enumerate(attack_jobs):
@@ -74,22 +73,85 @@ def make_config():
     slurm_out = os.path.join(slurm_dir, 'out.%a.out')
     num_jobs = len(attack_jobs) - 1
     # Define the slurm template
-    slurm_template = f'''#!/bin/bash
-#SBATCH --job-name=suppress_attack
-#SBATCH --output={slurm_out}
-#SBATCH --time=7-0
-#SBATCH --mem=16G
-#SBATCH --cpus-per-task=1
-#SBATCH --array=0-{num_jobs}
-arrayNum="${{SLURM_ARRAY_TASK_ID}}"
-source {venv_path}
-python {exe_path} $arrayNum
-'''
-    # write the slurm template to a file attack.slurm
-    with open(os.path.join(attack_path, 'attack.slurm'), 'w') as f:
-        f.write(slurm_template)
+        slurm_template = f'''#!/bin/bash
+    #SBATCH --job-name=suppress_attack
+    #SBATCH --output={slurm_out}
+    #SBATCH --time=7-0
+    #SBATCH --mem=16G
+    #SBATCH --cpus-per-task=1
+    #SBATCH --array=0-{num_jobs}
+    arrayNum="${{SLURM_ARRAY_TASK_ID}}"
+    source {venv_path}
+    python {exe_path} $arrayNum
+    '''
+        # write the slurm template to a file attack.slurm
+        with open(os.path.join(attack_path, 'attack.slurm'), 'w', encoding='utf-8') as f:
+            f.write(slurm_template)
+
+def do_inference_attack(secret, aux_cols, regression, df_original, df_control, df_syn):
+    ''' df_original and df_control have all columns.
+        df_syn has only the columns in aux_cols and secret.
+    '''
+    attack_cols = aux_cols + [secret]
+    # Call the evaluator with only the attack_cols, because I'm not sure if it will
+    # work if different dataframes have different columns
+    evaluator = InferenceEvaluator(ori=df_original[attack_cols],
+                                    syn=df_syn[attack_cols],
+                                    control=df_control[attack_cols],
+                                    aux_cols=aux_cols,
+                                    secret=secret,
+                                    regression=regression,
+                                    n_attacks=1)
+    evaluator.evaluate(n_jobs=-2)
+    return evaluator
 
 def run_attack(job_num):
+    with open(os.path.join(attack_path, 'attack_jobs.json'), 'r') as f:
+        jobs = json.load(f)
+
+    # Make sure job_num is within the range of jobs, and if not, print an error message and exit
+    if job_num < 0 or job_num >= len(jobs):
+        print(f"Invalid job number: {job_num}")
+        return
+
+    # Get the job
+    job = jobs[job_num]
+
+    # Create 'instances' directory in attack_path if it isn't already there
+    instances_path = os.path.join(attack_path, 'instances')
+    os.makedirs(instances_path, exist_ok=True)
+
+    # Make a file_name and file_path
+    # make a string that contains the column names in job['columns'] separated by '_'
+    column_str = '_'.join(job['columns'])
+    file_name = f"{job['dir_name']}.{column_str}.{job_num}.json"
+    file_path = os.path.join(instances_path, file_name)
+
+    if os.path.exists(file_path):
+        print(f"File already exists: {file_path}")
+        return
+    dataset_path = os.path.join(syn_path, job['dir_name'], 'anonymeter')
+    control_path = os.path.join(dataset_path, 'control.parquet')
+    # read the control file into a DataFrame
+    df_control = pd.read_parquet(control_path)
+    # Make a TablesManager object
+    tm = TablesManager(dir_path=dataset_path)
+    # First, run the attack on the full synthetic dataset
+    df_syn = tm.get_syn_df()
+    # set aux_cols to all columns except the secret column
+    aux_cols = [col for col in df_syn.columns if col not in job['secret']]
+    if tm.orig_meta_data['column_classes'][job['secret']] == 'continuous':
+        regression = True
+    else:
+        regression = False
+    evaluator = do_inference_attack(job['secret'], aux_cols, regression, tm.df_orig, df_control, df_syn)
+    evalRes = evaluator.results()
+    print("Successs rate of main attack:", evalRes.attack_rate)
+    print("Successs rate of baseline attack:", evalRes.baseline_rate)
+    print("Successs rate of control attack:", evalRes.control_rate)
+    privRisk = evalRes.risk()
+    print(privRisk)
+    print("Queries:", evaluator.queries())
     pass
 
 def gather(instances_path):
