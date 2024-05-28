@@ -35,27 +35,28 @@ def make_config():
     attack_jobs = []
 
     # Loop over each directory name in syn_path
-    for dir_name in os.listdir(syn_path):
-        dataset_path = os.path.join(syn_path, dir_name, 'anonymeter')
-        # Check if dataset_path exists
-        if not os.path.exists(dataset_path):
-            continue
-        tm = TablesManager(dir_path=dataset_path)
-        columns = list(tm.df_orig.columns)
-        pid_cols = tm.get_pid_cols()
-        if len(pid_cols) > 0:
-            # We can't really run the attack on time-series data
-            continue
-        for secret in columns:
-            attack_jobs.append({
-                'dir_name': dir_name,
-                'secret': secret,
-            })
     while len(attack_jobs) < num_attacks:
-        # extent attack_jobs with a copy of attack_jobs
-        attack_jobs += attack_jobs.copy()
+        for dir_name in os.listdir(syn_path):
+            dataset_path = os.path.join(syn_path, dir_name, 'anonymeter')
+            # Check if dataset_path exists
+            if not os.path.exists(dataset_path):
+                continue
+            tm = TablesManager(dir_path=dataset_path)
+            columns = list(tm.df_orig.columns)
+            pid_cols = tm.get_pid_cols()
+            if len(pid_cols) > 0:
+                # We can't really run the attack on time-series data
+                continue
+            for secret in columns:
+                attack_jobs.append({
+                    'dir_name': dir_name,
+                    'secret': secret,
+                })
     # randomize the order in which the attack_jobs are run
     random.shuffle(attack_jobs)
+    for index, job in enumerate(attack_jobs):
+        job['index'] = index
+        print(index, job)
     # remove any extra attack_jobs
     attack_jobs = attack_jobs[:num_attacks]
     for index, job in enumerate(attack_jobs):
