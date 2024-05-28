@@ -22,7 +22,7 @@ Note that the way to use this tool is to start with small slurmMem (10G), and th
 
 DO_ANONYMETER = True
 DO_LOW_COMBS = True
-DO_RANDOM_FOUR_COMBS = False
+DO_RANDOM_FOUR_COMBS = True
 DO_TARGETED_FOUR_COMBS = False
 
 maxComb = 3
