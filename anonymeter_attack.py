@@ -52,7 +52,8 @@ def make_config():
                 'secret': secret,
             })
     while len(attack_jobs) < num_attacks:
-        attack_jobs.extend(attack_jobs)
+        # extent attack_jobs with a copy of attack_jobs
+        attack_jobs += attack_jobs.copy()
     # randomize the order in which the attack_jobs are run
     random.shuffle(attack_jobs)
     # remove any extra attack_jobs
