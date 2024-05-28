@@ -58,6 +58,7 @@ def make_config():
     # remove any extra attack_jobs
     attack_jobs = attack_jobs[:num_attacks]
     for index, job in enumerate(attack_jobs):
+        print(index, job)
         job['index'] = index
 
     # Write attack_jobs into a JSON file
