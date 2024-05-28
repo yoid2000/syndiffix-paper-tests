@@ -123,8 +123,7 @@ def run_attack(job_num):
 
     # Make a file_name and file_path
     # make a string that contains the column names in job['columns'] separated by '_'
-    column_str = '_'.join(job['columns'])
-    file_name = f"{job['dir_name']}.{column_str}.{job_num}.json"
+    file_name = f"{job['dir_name']}.{job['secret']}.{job_num}.json"
     file_path = os.path.join(instances_path, file_name)
 
     if os.path.exists(file_path):
