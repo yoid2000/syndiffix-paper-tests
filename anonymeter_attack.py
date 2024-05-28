@@ -57,7 +57,7 @@ def make_config():
     random.shuffle(attack_jobs)
     # remove any extra attack_jobs
     attack_jobs = attack_jobs[:num_attacks]
-    for job, index in enumerate(attack_jobs):
+    for index, job in enumerate(attack_jobs):
         job['index'] = index
 
     # Write attack_jobs into a JSON file
