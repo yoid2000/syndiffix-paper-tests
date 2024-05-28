@@ -36,8 +36,11 @@ def make_config():
 
     # Loop over each directory name in syn_path
     for dir_name in os.listdir(syn_path):
-        # Create a TablesManager object with the directory path
-        tm = TablesManager(dir_path=os.path.join(syn_path, dir_name, 'anonymeter'))
+        dataset_path = os.path.join(syn_path, dir_name, 'anonymeter')
+        # Check if dataset_path exists
+        if not os.path.exists(dataset_path):
+            continue
+        tm = TablesManager(dir_path=dataset_path)
         columns = list(tm.df_orig.columns)
         pid_cols = tm.get_pid_cols()
         if len(pid_cols) > 0:
