@@ -52,7 +52,7 @@ def make_config():
                 'dir_name': dir_name,
                 'secret': secret,
             })
-    while len(attack_jobs < num_attacks):
+    while len(attack_jobs) < num_attacks:
         attack_jobs.extend(attack_jobs)
     # randomize the order in which the attack_jobs are run
     random.shuffle(attack_jobs)
