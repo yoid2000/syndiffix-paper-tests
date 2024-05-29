@@ -119,6 +119,7 @@ def do_inference_attacks(model, secret, aux_cols, regression, df_original, df_co
         df_control is disjoint from df_original
     '''
     attack_cols = aux_cols + [secret]
+    print(f"do_inerence_attacks, num_runs = {num_runs}")
 
     for _ in range(num_runs):
         targets = df_original[attack_cols].sample(1)
