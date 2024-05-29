@@ -95,15 +95,13 @@ def do_inference_attack(secret, aux_cols, regression, df_original, df_control, d
     attack_cols = aux_cols + [secret]
     # Call the evaluator with only the attack_cols, because I'm not sure if it will
     # work if different dataframes have different columns
-    evaluator = anonymeter_mods.InferenceEvaluator(ori=df_original[attack_cols],
+    something = anonymeter_mods.run_attack(
+                                    target=df_original[attack_cols],
                                     syn=df_syn[attack_cols],
-                                    control=df_control[attack_cols],
                                     aux_cols=aux_cols,
                                     secret=secret,
-                                    regression=regression,
-                                    n_attacks=1)
-    evaluator.evaluate(n_jobs=-2)
-    return evaluator
+                                    regression=regression)
+    print(f"Type of something: {type(something)}")
 
 def run_attack(job_num):
     with open(os.path.join(attack_path, 'attack_jobs.json'), 'r') as f:
@@ -143,13 +141,7 @@ def run_attack(job_num):
         regression = True
     else:
         regression = False
-    evaluator = do_inference_attack(job['secret'], aux_cols, regression, tm.df_orig, df_control, df_syn)
-    evalRes = evaluator.results()
-    print("Successs rate of main attack:", evalRes.attack_rate)
-    print("Successs rate of baseline attack:", evalRes.baseline_rate)
-    print("Successs rate of control attack:", evalRes.control_rate)
-    privRisk = evalRes.risk()
-    print(privRisk)
+    do_inference_attack(job['secret'], aux_cols, regression, tm.df_orig, df_control, df_syn)
     pass
 
 def gather(instances_path):

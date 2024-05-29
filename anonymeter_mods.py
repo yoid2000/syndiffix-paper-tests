@@ -2,7 +2,54 @@ from typing import List, Optional, Union, Tuple, Dict
 
 import numpy as np
 import pandas as pd
+from sklearn.preprocessing import LabelEncoder
 from joblib import Parallel, delayed
+from numba import float64, int64, jit
+
+
+@jit(nopython=True, nogil=True)
+def _nearest_neighbors(queries, candidates, cat_cols_index, n_neighbors):
+    r"""For every element of ``queries``, find its nearest neighbors in ``candidates``.
+
+    Parameters
+    ----------
+    queries : np.ndarray
+        Input array of shape (Nx, D).
+    candidates : np.ndarray
+        Input array of shape (Ny, D).
+    n_neighbors : int
+        Determines the number of closest neighbors per entry to be returned.
+    cat_cols_idx : int
+        Index delimiting the categorical columns in X/Y, if present.
+
+    Returns
+    -------
+    idx : np.ndarray[int]
+        Array of shape (Nx, n_neighbors). For each element in ``queries``,
+        this array contains the indices of the closest neighbors in
+        ``candidates``. That is, ``candidates[idx[i]]`` are the elements of
+        ``candidates`` that are closer to ``queries[i]``.
+    lps : np.ndarray[float]
+        Array of shape (Nx, n_neighbors). This array containing the distances
+        between the record pairs identified by idx.
+
+    """
+    idx = np.zeros((queries.shape[0], n_neighbors), dtype=int64)
+    dists = np.zeros((queries.shape[0], n_neighbors), dtype=float64)
+
+    for ix in range(queries.shape[0]):
+
+        dist_ix = np.zeros((candidates.shape[0]), dtype=float64)
+
+        for iy in range(candidates.shape[0]):
+
+            dist_ix[iy] = gower_distance(r0=queries[ix], r1=candidates[iy], cat_cols_index=cat_cols_index)
+
+        close_match_idx = dist_ix.argsort()[:n_neighbors]
+        idx[ix] = close_match_idx
+        dists[ix] = dist_ix[close_match_idx]
+
+    return idx, dists
 
 
 def _encode_categorical(
@@ -29,10 +76,6 @@ def _scale_numerical(df1: pd.DataFrame, df2: pd.DataFrame) -> Tuple[pd.DataFrame
 
     if any(ranges == 0):
         cnames = ", ".join(ranges[ranges == 0].index.values)
-        logger.debug(
-            f"Numerical column(s) {cnames} have a null-range: all elements "
-            "have the same value. These column(s) won't be scaled."
-        )
         ranges[ranges == 0] = 1
 
     df1_scaled = df1.apply(lambda x: x / ranges[x.name])
@@ -142,17 +185,17 @@ def detect_consistent_col_types(df1: pd.DataFrame, df2: pd.DataFrame):
 
     return ctypes1
 
-def _run_attack(
+def run_attack(
     # PF: the target df is either the original (used for syn) or control (not used for syn) df. The victims are taken from the target df.
     target: pd.DataFrame,
     syn: pd.DataFrame,
-    n_attacks: int,
     aux_cols: List[str],
     secret: str,
-    n_jobs: int,
-    naive: bool,
     regression: Optional[bool],
 ) -> int:
+    n_attacks = 1
+    n_jobs = -2
+    naive = False
     if regression is None:
         regression = pd.api.types.is_numeric_dtype(target[secret])
 
