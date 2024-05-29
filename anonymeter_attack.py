@@ -1,4 +1,4 @@
-from anonymeter.evaluators import InferenceEvaluator
+import anonymeter_mods
 import argparse
 import os
 import pandas as pd
@@ -95,7 +95,7 @@ def do_inference_attack(secret, aux_cols, regression, df_original, df_control, d
     attack_cols = aux_cols + [secret]
     # Call the evaluator with only the attack_cols, because I'm not sure if it will
     # work if different dataframes have different columns
-    evaluator = InferenceEvaluator(ori=df_original[attack_cols],
+    evaluator = anonymeter_mods.InferenceEvaluator(ori=df_original[attack_cols],
                                     syn=df_syn[attack_cols],
                                     control=df_control[attack_cols],
                                     aux_cols=aux_cols,
