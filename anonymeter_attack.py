@@ -119,31 +119,52 @@ def do_inference_attacks(secret_col, secret_col_type, aux_cols, regression, df_o
         df_control is disjoint from df_original
     '''
     attack_cols = aux_cols + [secret_col]
-    model = build_and_train_model(df_control[attack_cols], secret_col, secret_col_type)
+    # model_base is the baseline built from an ML model
+    model_base = build_and_train_model(df_control[attack_cols], secret_col, secret_col_type)
+    # model_attack is used to generate a groundhog day type attack
+    model_attack = build_and_train_model(df_control[attack_cols], secret_col, secret_col_type)
 
-    num_model_correct = 0
+    num_model_base_correct = 0
+    num_model_attack_correct = 0
     num_syn_correct = 0
-    num_base_correct = 0
+    num_meter_base_correct = 0
     for i in range(num_runs):
         # There is a chance of replicas here, but small enough that we ignore it
         targets = df_original[attack_cols].sample(1)
         # Get the value of the secret column in the first row of targets
         secret_value = targets[secret_col].iloc[0]
+
+        # Now get the model baseline prediction
         try:
-            model_pred_value = model.predict(targets.drop(secret_col, axis=1))
+            model_base_pred_value = model_base.predict(targets.drop(secret_col, axis=1))
         except Exception as e:
             print(f"A model.predict() error occurred: {e}")
             quit()
-        # convert model_pred_value to a series
-        model_pred_value_series = pd.Series(model_pred_value, index=targets.index)
-        model_answer = anonymeter_mods.evaluate_inference_guesses(guesses=model_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
-        if model_answer not in [0,1]:
-            print(f"Error: unexpected answer {model_answer}")
+        # convert model_base_pred_value to a series
+        model_base_pred_value_series = pd.Series(model_base_pred_value, index=targets.index)
+        model_base_answer = anonymeter_mods.evaluate_inference_guesses(guesses=model_base_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
+        if model_base_answer not in [0,1]:
+            print(f"Error: unexpected answer {model_base_answer}")
             sys.exit(1)
-        print(f"secret_value: {secret_value}, model_pred_value: {model_pred_value}, model_answer: {model_answer}")
-        num_model_correct += model_answer
+        print(f"secret_value: {secret_value}, model_base_pred_value: {model_base_pred_value}, model_base_answer: {model_base_answer}")
+        num_model_base_correct += model_base_answer
 
-        # Run the attack on the synthetic data
+        # Now run the model attack
+        try:
+            model_attack_pred_value = model_attack.predict(targets.drop(secret_col, axis=1))
+        except Exception as e:
+            print(f"A model.predict() error occurred: {e}")
+            quit()
+        # convert model_attack_pred_value to a series
+        model_attack_pred_value_series = pd.Series(model_attack_pred_value, index=targets.index)
+        model_attack_answer = anonymeter_mods.evaluate_inference_guesses(guesses=model_attack_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
+        if model_attack_answer not in [0,1]:
+            print(f"Error: unexpected answer {model_attack_answer}")
+            sys.exit(1)
+        print(f"secret_value: {secret_value}, model_attack_pred_value: {model_attack_pred_value}, model_attack_answer: {model_attack_answer}")
+        num_model_attack_correct += model_attack_answer
+
+        # Run the anonymeter-style attack on the synthetic data
         syn_anonymeter_answer = anonymeter_mods.run_anonymeter_attack(
                                         targets=targets,
                                         basis=df_syn[attack_cols],
@@ -156,19 +177,19 @@ def do_inference_attacks(secret_col, secret_col_type, aux_cols, regression, df_o
         print(f"syn_anonymeter_answer: {syn_anonymeter_answer}")
         num_syn_correct += syn_anonymeter_answer
 
-        # Run the attack on the control data for the baseline
-        base_anonymeter_answer = anonymeter_mods.run_anonymeter_attack(
+        # Run the anonymeter-style attack on the control data for the baseline
+        base_meter_answer = anonymeter_mods.run_anonymeter_attack(
                                         targets=targets,
                                         basis=df_control[attack_cols],
                                         aux_cols=aux_cols,
                                         secret=secret_col,
                                         regression=regression)
-        if base_anonymeter_answer not in [0,1]:
-            print(f"Error: unexpected answer {base_anonymeter_answer}")
+        if base_meter_answer not in [0,1]:
+            print(f"Error: unexpected answer {base_meter_answer}")
             sys.exit(1)
-        print(f"base_anonymeter_answer: {base_anonymeter_answer}")
-        num_base_correct += base_anonymeter_answer
-    print(f"num_model_correct: {num_model_correct}\nnum_syn_correct: {num_syn_correct}\nnum_base_correct: {num_base_correct}")
+        print(f"base_meter_answer: {base_meter_answer}")
+        num_meter_base_correct += base_meter_answer
+    print(f"num_model_base_correct: {num_model_base_correct}\nnum_syn_correct: {num_syn_correct}\nnum_meter_base_correct: {num_meter_base_correct}\nnum_model_attack_correct: {num_model_attack_correct}")
 
 
 def run_attack(job_num):
