@@ -47,8 +47,6 @@ def build_and_train_model(df, target_col, target_type):
     else:
         raise ValueError("target_type must be 'categorical' or 'continuous'")
 
-    feature_cols = [col for col in X.columns if col != target_col]
-    print(f"feature_cols: {feature_cols}")
     model.fit(X, y)
     return model
 
@@ -122,20 +120,15 @@ def do_inference_attacks(secret_col, secret_col_type, aux_cols, regression, df_o
     '''
     attack_cols = aux_cols + [secret_col]
     model = build_and_train_model(df_control[attack_cols], secret_col, secret_col_type)
-    print(f"do_inerence_attacks, num_runs = {num_runs}")
 
     for i in range(num_runs):
-        print(f"run {i}")
         targets = df_original[attack_cols].sample(1)
         # Get the value of the secret column in the first row of targets
-        print(f"target columns: {targets.columns}")
-        print(targets.head())
         secret_value = targets[secret_col].iloc[0]
-        print(f"secret_value: {secret_value}")
         try:
             model_pred_value = model.predict(targets.drop(secret_col, axis=1))
         except Exception as e:
-            print(f"An error occurred: {e}")
+            print(f"A model.predict() error occurred: {e}")
             quit()
         print(f"secret_value: {secret_value}, model_pred_value: {model_pred_value}")
 
