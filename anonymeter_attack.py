@@ -47,6 +47,8 @@ def build_and_train_model(df, target_col, target_type):
     else:
         raise ValueError("target_type must be 'categorical' or 'continuous'")
 
+    feature_cols = [col for col in X.columns if col != target_col]
+    print(f"feature_cols: {feature_cols}")
     model.fit(X, y)
     return model
 
@@ -125,6 +127,7 @@ def do_inference_attacks(model, secret_col, aux_cols, regression, df_original, d
         print(f"run {i}")
         targets = df_original[attack_cols].sample(1)
         # Get the value of the secret column in the first row of targets
+        print(f"target columns: {targets.columns}")
         print(targets.head())
         secret_value = targets[secret_col].iloc[0]
         print(f"secret_value: {secret_value}")
