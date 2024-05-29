@@ -1,4 +1,4 @@
-import anonymeter_mods
+import .anonymeter_mods
 import argparse
 import os
 import pandas as pd
