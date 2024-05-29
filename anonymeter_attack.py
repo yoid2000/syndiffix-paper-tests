@@ -61,6 +61,7 @@ def make_config():
     # Loop over each directory name in syn_path
     attacks_so_far = 0
     while attacks_so_far < num_attacks:
+        print(f"Loop: attacks_so_far: {attacks_so_far}, num_attacks: {len(attack_jobs)}")
         for dir_name in os.listdir(syn_path):
             dataset_path = os.path.join(syn_path, dir_name, 'anonymeter')
             # Check if dataset_path exists
