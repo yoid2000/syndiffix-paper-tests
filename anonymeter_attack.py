@@ -121,7 +121,8 @@ def do_inference_attacks(model, secret, aux_cols, regression, df_original, df_co
     attack_cols = aux_cols + [secret]
     print(f"do_inerence_attacks, num_runs = {num_runs}")
 
-    for _ in range(num_runs):
+    for i in range(num_runs):
+        print(f"run {i}")
         targets = df_original[attack_cols].sample(1)
         # Get the value of the secret column in the first row of targets
         secret_value = targets[secret].iloc[0]
@@ -185,7 +186,6 @@ def run_attack(job_num):
     # This model can be used to establish the baseline
     print("build model")
     model = build_and_train_model(df_control, job['secret'], target_type)
-    print("do_inference_attacks")
     do_inference_attacks(model, job['secret'], aux_cols, regression, tm.df_orig, df_control, df_syn, job['num_runs'])
     pass
 
