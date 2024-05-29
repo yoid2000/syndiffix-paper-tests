@@ -95,11 +95,14 @@ def do_inference_attacks(secret, aux_cols, regression, df_original, df_control, 
         df_control is disjoint from df_original
     '''
     attack_cols = aux_cols + [secret]
-    # Select a random subset of 20 rows from df_original. These are the targets.
-    targets = df_original.sample(20)
+    # Select a random subset of 20 rows from df_original. These represent the
+    # persons that we are targeting for attack.
+    targets = df_original.sample(num_runs)
 
-
-
+    for target in targets.iterrows():
+        print(f"target type: {type(target)}")
+        print(f"target: {target}")
+    quit()
     # Call the evaluator with only the attack_cols, because I'm not sure if it will
     # work if different dataframes have different columns
     something = anonymeter_mods.run_anonymeter_attack(
