@@ -102,6 +102,7 @@ def do_inference_attack(secret, aux_cols, regression, df_original, df_control, d
                                     secret=secret,
                                     regression=regression)
     print(f"Type of something: {type(something)}")
+    print(f"something: {something}")
 
 def run_attack(job_num):
     with open(os.path.join(attack_path, 'attack_jobs.json'), 'r') as f:
