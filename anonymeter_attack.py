@@ -79,11 +79,9 @@ def make_config():
                     'secret': secret,
                     'num_runs': num_runs_per_attack,
                 })
-            attacks_so_far += num_runs_per_attack
+                attacks_so_far += num_runs_per_attack
     # randomize the order in which the attack_jobs are run
     random.shuffle(attack_jobs)
-    # remove any extra attack_jobs
-    attack_jobs = attack_jobs[:num_attacks]
     for index, job in enumerate(attack_jobs):
         job['index'] = index
 
