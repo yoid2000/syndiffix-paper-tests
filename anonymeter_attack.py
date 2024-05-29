@@ -118,11 +118,15 @@ def do_inference_attacks(model, secret, aux_cols, regression, df_original, df_co
         df_syn is the synthetic data generated from df_original.
         df_control is disjoint from df_original
     '''
-    return
     attack_cols = aux_cols + [secret]
 
     for _ in range(num_runs):
         targets = df_original[attack_cols].sample(1)
+        # Get the value of the secret column in the first row of targets
+        secret_value = targets[secret].iloc[0]
+        model_pred_value = model.predict(targets.drop(secret, axis=1))
+        print(f"secret_value: {secret_value}, model_pred_value: {model_pred_value}")
+
         # Call the evaluator with only the attack_cols, because I'm not sure if it will
         # work if different dataframes have different columns
         answer = anonymeter_mods.run_anonymeter_attack(
@@ -134,7 +138,6 @@ def do_inference_attacks(model, secret, aux_cols, regression, df_original, df_co
                                         regression=regression)
         if answer not in [0,1]:
             print(f"Error: unexpected answer {answer}")
-        print(f"Type of answer: {type(answer)}")
         print(f"answer: {answer}")
 
 
