@@ -122,7 +122,7 @@ def do_inference_attacks(secret_col, secret_col_type, aux_cols, regression, df_o
     # model_base is the baseline built from an ML model
     model_base = build_and_train_model(df_control[attack_cols], secret_col, secret_col_type)
     # model_attack is used to generate a groundhog day type attack
-    model_attack = build_and_train_model(df_control[attack_cols], secret_col, secret_col_type)
+    model_attack = build_and_train_model(df_syn[attack_cols], secret_col, secret_col_type)
 
     num_model_base_correct = 0
     num_model_attack_correct = 0
