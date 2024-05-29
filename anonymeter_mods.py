@@ -7,6 +7,10 @@ from joblib import Parallel, delayed
 from numba import float64, int64, jit
 from math import fabs, isnan
 
+'''
+The code in here was all cut-n-paste from the github repo anonymeter.
+'''
+
 
 @jit(nopython=True, nogil=True)
 def gower_distance(r0: np.ndarray, r1: np.ndarray, cat_cols_index: np.ndarray) -> float64:
@@ -238,7 +242,7 @@ def detect_consistent_col_types(df1: pd.DataFrame, df2: pd.DataFrame):
 
     return ctypes1
 
-def run_attack(
+def run_anonymeter_attack(
     # PF: the target df is either the original (used for syn) or control (not used for syn) df. The victims are taken from the target df.
     target: pd.DataFrame,
     syn: pd.DataFrame,

@@ -24,7 +24,7 @@ else:
 syn_path = os.path.join(base_path, 'synDatasets')
 attack_path = os.path.join(base_path, 'anonymeter_attacks')
 os.makedirs(attack_path, exist_ok=True)
-num_attacks = 20000
+num_runs = 20
 
 def make_config():
     ''' I want to generate num_attacks attacks. Each attack will be on a given secret
@@ -34,33 +34,30 @@ def make_config():
     # Initialize attack_jobs
     attack_jobs = []
 
-    # Loop over each directory name in syn_path
-    while len(attack_jobs) < num_attacks:
-        for dir_name in os.listdir(syn_path):
-            dataset_path = os.path.join(syn_path, dir_name, 'anonymeter')
-            # Check if dataset_path exists
-            if not os.path.exists(dataset_path):
-                continue
-            tm = TablesManager(dir_path=dataset_path)
-            columns = list(tm.df_orig.columns)
-            pid_cols = tm.get_pid_cols()
-            if len(pid_cols) > 0:
-                # We can't really run the attack on time-series data
-                continue
-            for secret in columns:
-                attack_jobs.append({
-                    'dir_name': dir_name,
-                    'secret': secret,
-                })
+    # Loop over each directory name in syn_path. We make a separate attack
+    # run for each column in each dataset (where the column is the secret).
+    for dir_name in os.listdir(syn_path):
+        dataset_path = os.path.join(syn_path, dir_name, 'anonymeter')
+        # Check if dataset_path exists
+        if not os.path.exists(dataset_path):
+            continue
+        tm = TablesManager(dir_path=dataset_path)
+        columns = list(tm.df_orig.columns)
+        pid_cols = tm.get_pid_cols()
+        if len(pid_cols) > 0:
+            # We can't really run the attack on time-series data
+            continue
+        for secret in columns:
+            attack_jobs.append({
+                'dir_name': dir_name,
+                'secret': secret,
+                'num_runs': num_runs,
+            })
     # randomize the order in which the attack_jobs are run
     random.shuffle(attack_jobs)
+    # and reset the indexes
     for index, job in enumerate(attack_jobs):
         job['index'] = index
-    # remove any extra attack_jobs
-    attack_jobs = attack_jobs[:num_attacks]
-    for index, job in enumerate(attack_jobs):
-        job['index'] = index
-        print(index, job)
 
     # Write attack_jobs into a JSON file
     with open(os.path.join(attack_path, 'attack_jobs.json'), 'w') as f:
@@ -88,14 +85,22 @@ python {exe_path} $arrayNum
     with open(os.path.join(attack_path, 'attack.slurm'), 'w', encoding='utf-8') as f:
         f.write(slurm_template)
 
-def do_inference_attack(secret, aux_cols, regression, df_original, df_control, df_syn):
+def do_inference_attacks(secret, aux_cols, regression, df_original, df_control, df_syn, num_runs):
     ''' df_original and df_control have all columns.
         df_syn has only the columns in aux_cols and secret.
+
+        df_syn is the synthetic data generated from df_original.
+        df_control is disjoint from df_original
     '''
     attack_cols = aux_cols + [secret]
+    # Select a random subset of 20 rows from df_original. These are the targets.
+    targets = df_original.sample(20)
+
+
+
     # Call the evaluator with only the attack_cols, because I'm not sure if it will
     # work if different dataframes have different columns
-    something = anonymeter_mods.run_attack(
+    something = anonymeter_mods.run_anonymeter_attack(
                                     target=df_original[attack_cols],
                                     syn=df_syn[attack_cols],
                                     aux_cols=aux_cols,
@@ -142,7 +147,7 @@ def run_attack(job_num):
         regression = True
     else:
         regression = False
-    do_inference_attack(job['secret'], aux_cols, regression, tm.df_orig, df_control, df_syn)
+    do_inference_attacks(job['secret'], aux_cols, regression, tm.df_orig, df_control, df_syn, job['num_runs'])
     pass
 
 def gather(instances_path):
