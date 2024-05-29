@@ -24,6 +24,7 @@ else:
 syn_path = os.path.join(base_path, 'synDatasets')
 attack_path = os.path.join(base_path, 'anonymeter_attacks')
 os.makedirs(attack_path, exist_ok=True)
+num_attacks = 10000
 num_runs = 20
 
 def make_config():
@@ -34,28 +35,29 @@ def make_config():
     # Initialize attack_jobs
     attack_jobs = []
 
-    # Loop over each directory name in syn_path. We make a separate attack
-    # run for each column in each dataset (where the column is the secret).
-    for dir_name in os.listdir(syn_path):
-        dataset_path = os.path.join(syn_path, dir_name, 'anonymeter')
-        # Check if dataset_path exists
-        if not os.path.exists(dataset_path):
-            continue
-        tm = TablesManager(dir_path=dataset_path)
-        columns = list(tm.df_orig.columns)
-        pid_cols = tm.get_pid_cols()
-        if len(pid_cols) > 0:
-            # We can't really run the attack on time-series data
-            continue
-        for secret in columns:
-            attack_jobs.append({
-                'dir_name': dir_name,
-                'secret': secret,
-                'num_runs': num_runs,
-            })
+    # Loop over each directory name in syn_path
+    while len(attack_jobs) < num_attacks:
+        for dir_name in os.listdir(syn_path):
+            dataset_path = os.path.join(syn_path, dir_name, 'anonymeter')
+            # Check if dataset_path exists
+            if not os.path.exists(dataset_path):
+                continue
+            tm = TablesManager(dir_path=dataset_path)
+            columns = list(tm.df_orig.columns)
+            pid_cols = tm.get_pid_cols()
+            if len(pid_cols) > 0:
+                # We can't really run the attack on time-series data
+                continue
+            for secret in columns:
+                attack_jobs.append({
+                    'dir_name': dir_name,
+                    'secret': secret,
+                    'num_runs': num_runs,
+                })
     # randomize the order in which the attack_jobs are run
     random.shuffle(attack_jobs)
-    # and reset the indexes
+    # remove any extra attack_jobs
+    attack_jobs = attack_jobs[:num_attacks]
     for index, job in enumerate(attack_jobs):
         job['index'] = index
 
