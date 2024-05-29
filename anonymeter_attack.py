@@ -125,7 +125,9 @@ def do_inference_attacks(model, secret, aux_cols, regression, df_original, df_co
         print(f"run {i}")
         targets = df_original[attack_cols].sample(1)
         # Get the value of the secret column in the first row of targets
+        print(targets.head())
         secret_value = targets[secret].iloc[0]
+        print(f"secret_value: {secret_value}")
         model_pred_value = model.predict(targets.drop(secret, axis=1))
         print(f"secret_value: {secret_value}, model_pred_value: {model_pred_value}")
 
