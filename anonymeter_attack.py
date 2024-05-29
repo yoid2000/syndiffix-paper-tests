@@ -27,7 +27,7 @@ else:
 syn_path = os.path.join(base_path, 'synDatasets')
 attack_path = os.path.join(base_path, 'anonymeter_attacks')
 os.makedirs(attack_path, exist_ok=True)
-num_attacks = 40000
+num_attacks = 35000
 num_runs_per_attack = 100
 
 def build_and_train_model(df, target_col, target_type):
