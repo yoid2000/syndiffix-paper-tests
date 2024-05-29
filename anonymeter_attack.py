@@ -8,6 +8,9 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
 import pprint
 
 pp = pprint.PrettyPrinter(indent=4)
@@ -24,8 +27,28 @@ else:
 syn_path = os.path.join(base_path, 'synDatasets')
 attack_path = os.path.join(base_path, 'anonymeter_attacks')
 os.makedirs(attack_path, exist_ok=True)
-num_attacks = 10000
-num_runs = 20
+num_attacks = 40000
+num_runs_per_attack = 100
+
+def build_and_train_model(df, target_col, target_type):
+    X = df.drop(target_col, axis=1)
+    y = df[target_col]
+
+    # If the target is categorical, encode it to integers
+    if target_type == 'categorical':
+        le = LabelEncoder()
+        y = le.fit_transform(y)
+
+    # Build and train the model
+    if target_type == 'categorical':
+        model = RandomForestClassifier(random_state=42)
+    elif target_type == 'continuous':
+        model = RandomForestRegressor(random_state=42)
+    else:
+        raise ValueError("target_type must be 'categorical' or 'continuous'")
+
+    model.fit(X, y)
+    return model
 
 def make_config():
     ''' I want to generate num_attacks attacks. Each attack will be on a given secret
@@ -36,7 +59,8 @@ def make_config():
     attack_jobs = []
 
     # Loop over each directory name in syn_path
-    while len(attack_jobs) < num_attacks:
+    attacks_so_far = 0
+    while attacks_so_far < num_attacks:
         for dir_name in os.listdir(syn_path):
             dataset_path = os.path.join(syn_path, dir_name, 'anonymeter')
             # Check if dataset_path exists
@@ -52,8 +76,9 @@ def make_config():
                 attack_jobs.append({
                     'dir_name': dir_name,
                     'secret': secret,
-                    'num_runs': num_runs,
+                    'num_runs': num_runs_per_attack,
                 })
+            attacks_so_far += num_runs_per_attack
     # randomize the order in which the attack_jobs are run
     random.shuffle(attack_jobs)
     # remove any extra attack_jobs
@@ -87,30 +112,32 @@ python {exe_path} $arrayNum
     with open(os.path.join(attack_path, 'attack.slurm'), 'w', encoding='utf-8') as f:
         f.write(slurm_template)
 
-def do_inference_attacks(secret, aux_cols, regression, df_original, df_control, df_syn, num_runs):
+def do_inference_attacks(model, secret, aux_cols, regression, df_original, df_control, df_syn, num_runs):
     ''' df_original and df_control have all columns.
         df_syn has only the columns in aux_cols and secret.
 
         df_syn is the synthetic data generated from df_original.
         df_control is disjoint from df_original
     '''
+    return
     attack_cols = aux_cols + [secret]
 
     for _ in range(num_runs):
         targets = df_original[attack_cols].sample(1)
-        print(f"type of targets {type(targets)}")
-        print(f"targets: {targets}")
         # Call the evaluator with only the attack_cols, because I'm not sure if it will
         # work if different dataframes have different columns
-        something = anonymeter_mods.run_anonymeter_attack(
+        answer = anonymeter_mods.run_anonymeter_attack(
                                         targets=targets,
                                         target=df_original[attack_cols],
                                         syn=df_syn[attack_cols],
                                         aux_cols=aux_cols,
                                         secret=secret,
                                         regression=regression)
-        print(f"Type of something: {type(something)}")
-        print(f"something: {something}")
+        if answer not in [0,1]:
+            print(f"Error: unexpected answer {answer}")
+        print(f"Type of answer: {type(answer)}")
+        print(f"answer: {answer}")
+
 
 def run_attack(job_num):
     with open(os.path.join(attack_path, 'attack_jobs.json'), 'r') as f:
@@ -148,9 +175,13 @@ def run_attack(job_num):
     aux_cols = [col for col in df_syn.columns if col not in job['secret']]
     if tm.orig_meta_data['column_classes'][job['secret']] == 'continuous':
         regression = True
+        target_type = 'continuous'
     else:
         regression = False
-    do_inference_attacks(job['secret'], aux_cols, regression, tm.df_orig, df_control, df_syn, job['num_runs'])
+        target_type = 'categorical'
+    # This model can be used to establish the baseline
+    model = build_and_train_model(df_control, job['secret'], target_type)
+    do_inference_attacks(model, job['secret'], aux_cols, regression, tm.df_orig, df_control, df_syn, job['num_runs'])
     pass
 
 def gather(instances_path):
