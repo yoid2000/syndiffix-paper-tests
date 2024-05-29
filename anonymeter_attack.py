@@ -113,7 +113,7 @@ python {exe_path} $arrayNum
     with open(os.path.join(attack_path, 'attack.slurm'), 'w', encoding='utf-8') as f:
         f.write(slurm_template)
 
-def do_inference_attacks(model, secret_col, aux_cols, regression, df_original, df_control, df_syn, num_runs):
+def do_inference_attacks(secret_col, secret_col_type, aux_cols, regression, df_original, df_control, df_syn, num_runs):
     ''' df_original and df_control have all columns.
         df_syn has only the columns in aux_cols and secret_col.
 
@@ -121,6 +121,7 @@ def do_inference_attacks(model, secret_col, aux_cols, regression, df_original, d
         df_control is disjoint from df_original
     '''
     attack_cols = aux_cols + [secret_col]
+    model = build_and_train_model(df_control[attack_cols], secret_col, secret_col_type)
     print(f"do_inerence_attacks, num_runs = {num_runs}")
 
     for i in range(num_runs):
@@ -194,8 +195,7 @@ def run_attack(job_num):
         target_type = 'categorical'
     # This model can be used to establish the baseline
     print("build model")
-    model = build_and_train_model(df_control, job['secret'], target_type)
-    do_inference_attacks(model, job['secret'], aux_cols, regression, tm.df_orig, df_control, df_syn, job['num_runs'])
+    do_inference_attacks(job['secret'], target_type, aux_cols, regression, tm.df_orig, df_control, df_syn, job['num_runs'])
     pass
 
 def gather(instances_path):
