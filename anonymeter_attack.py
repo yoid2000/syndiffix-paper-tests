@@ -130,20 +130,23 @@ def do_inference_attacks(secret_col, secret_col_type, aux_cols, regression, df_o
         except Exception as e:
             print(f"A model.predict() error occurred: {e}")
             quit()
-        print(f"secret_value: {secret_value}, model_pred_value: {model_pred_value}")
+        # convert model_pred_value to a series
+        model_pred_value_series = pd.Series(model_pred_value, index=targets.index)
+        model_answer = anonymeter_mods.evaluate_inference_guesses(guesses=model_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
+        print(f"secret_value: {secret_value}, model_pred_value: {model_pred_value}, model_answer: {model_answer}")
 
         # Call the evaluator with only the attack_cols, because I'm not sure if it will
         # work if different dataframes have different columns
-        answer = anonymeter_mods.run_anonymeter_attack(
+        anonymeter_answer = anonymeter_mods.run_anonymeter_attack(
                                         targets=targets,
                                         target=df_original[attack_cols],
                                         syn=df_syn[attack_cols],
                                         aux_cols=aux_cols,
                                         secret=secret_col,
                                         regression=regression)
-        if answer not in [0,1]:
-            print(f"Error: unexpected answer {answer}")
-        print(f"answer: {answer}")
+        if anonymeter_answer not in [0,1]:
+            print(f"Error: unexpected answer {anonymeter_answer}")
+        print(f"answer: {anonymeter_answer}")
 
 
 def run_attack(job_num):
