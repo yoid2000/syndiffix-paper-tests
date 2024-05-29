@@ -5,7 +5,60 @@ import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 from joblib import Parallel, delayed
 from numba import float64, int64, jit
+from math import fabs, isnan
 
+
+@jit(nopython=True, nogil=True)
+def gower_distance(r0: np.ndarray, r1: np.ndarray, cat_cols_index: np.ndarray) -> float64:
+    r"""Distance between two records inspired by the Gower distance [1].
+
+    To handle mixed type data, the distance is specialized for numerical (continuous)
+    and categorical data. For numerical records, we use the L1 norm,
+    computed after the columns have been normalized so that :math:`d(a_i, b_i)\leq 1`
+    for every :math:`a_i`, :math:`b_i`. For categorical, :math:`d(a_i, b_i)` is 1,
+    if the entries :math:`a_i`, :math:`b_i` differ, else, it is 0.
+
+    Notes
+    -----
+    To keep the balance between numerical and categorical values, the input records
+    have to be properly normalized. Their numerical part need to be scaled so that
+    the difference between any two values of a column (from both dataset) is *at most* 1.
+
+    References
+    ----------
+    [1]. `Gower (1971) "A general coefficient of similarity and some of its properties.
+    <https://www.jstor.org/stable/2528823?seq=1>`_
+
+    Parameters
+    ----------
+    r0 : np.array
+        Input array of shape (D,).
+    r1 : np.array
+        Input array of shape (D,).
+    cat_cols_index : int
+        Index delimiting the categorical columns in r0/r1 if present. For example,
+        ``r0[:cat_cols_index]`` are the numerical columns, and ``r0[cat_cols_index:]`` are
+        the categorical ones. For a fully numerical dataset, use ``cat_cols_index =
+        len(r0)``. For a fully categorical one, set ``cat_cols_index`` to 0.
+
+    Returns
+    -------
+    float
+        distance between the records.
+
+    """
+    dist = 0.0
+
+    for i in range(len(r0)):
+        if isnan(r0[i]) and isnan(r1[i]):
+            dist += 1
+        else:
+            if i < cat_cols_index:
+                dist += fabs(r0[i] - r1[i])
+            else:
+                if r0[i] != r1[i]:
+                    dist += 1
+    return dist
 
 @jit(nopython=True, nogil=True)
 def _nearest_neighbors(queries, candidates, cat_cols_index, n_neighbors):
