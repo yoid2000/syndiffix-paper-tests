@@ -111,14 +111,14 @@ python {exe_path} $arrayNum
     with open(os.path.join(attack_path, 'attack.slurm'), 'w', encoding='utf-8') as f:
         f.write(slurm_template)
 
-def do_inference_attacks(model, secret, aux_cols, regression, df_original, df_control, df_syn, num_runs):
+def do_inference_attacks(model, secret_col, aux_cols, regression, df_original, df_control, df_syn, num_runs):
     ''' df_original and df_control have all columns.
-        df_syn has only the columns in aux_cols and secret.
+        df_syn has only the columns in aux_cols and secret_col.
 
         df_syn is the synthetic data generated from df_original.
         df_control is disjoint from df_original
     '''
-    attack_cols = aux_cols + [secret]
+    attack_cols = aux_cols + [secret_col]
     print(f"do_inerence_attacks, num_runs = {num_runs}")
 
     for i in range(num_runs):
@@ -126,9 +126,13 @@ def do_inference_attacks(model, secret, aux_cols, regression, df_original, df_co
         targets = df_original[attack_cols].sample(1)
         # Get the value of the secret column in the first row of targets
         print(targets.head())
-        secret_value = targets[secret].iloc[0]
+        secret_value = targets[secret_col].iloc[0]
         print(f"secret_value: {secret_value}")
-        model_pred_value = model.predict(targets.drop(secret, axis=1))
+        try:
+            model_pred_value = model.predict(targets.drop(secret_col, axis=1))
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            quit()
         print(f"secret_value: {secret_value}, model_pred_value: {model_pred_value}")
 
         # Call the evaluator with only the attack_cols, because I'm not sure if it will
@@ -138,7 +142,7 @@ def do_inference_attacks(model, secret, aux_cols, regression, df_original, df_co
                                         target=df_original[attack_cols],
                                         syn=df_syn[attack_cols],
                                         aux_cols=aux_cols,
-                                        secret=secret,
+                                        secret=secret_col,
                                         regression=regression)
         if answer not in [0,1]:
             print(f"Error: unexpected answer {answer}")
