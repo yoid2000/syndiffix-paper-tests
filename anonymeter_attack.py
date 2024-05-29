@@ -122,6 +122,7 @@ def do_inference_attacks(secret_col, secret_col_type, aux_cols, regression, df_o
     model = build_and_train_model(df_control[attack_cols], secret_col, secret_col_type)
 
     for i in range(num_runs):
+        # There is a chance of replicas here, but small enough that we ignore it
         targets = df_original[attack_cols].sample(1)
         # Get the value of the secret column in the first row of targets
         secret_value = targets[secret_col].iloc[0]
@@ -135,18 +136,27 @@ def do_inference_attacks(secret_col, secret_col_type, aux_cols, regression, df_o
         model_answer = anonymeter_mods.evaluate_inference_guesses(guesses=model_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
         print(f"secret_value: {secret_value}, model_pred_value: {model_pred_value}, model_answer: {model_answer}")
 
-        # Call the evaluator with only the attack_cols, because I'm not sure if it will
-        # work if different dataframes have different columns
-        anonymeter_answer = anonymeter_mods.run_anonymeter_attack(
+        # Run the attack on the synthetic data
+        syn_anonymeter_answer = anonymeter_mods.run_anonymeter_attack(
                                         targets=targets,
-                                        target=df_original[attack_cols],
-                                        syn=df_syn[attack_cols],
+                                        basis=df_syn[attack_cols],
                                         aux_cols=aux_cols,
                                         secret=secret_col,
                                         regression=regression)
-        if anonymeter_answer not in [0,1]:
-            print(f"Error: unexpected answer {anonymeter_answer}")
-        print(f"answer: {anonymeter_answer}")
+        if syn_anonymeter_answer not in [0,1]:
+            print(f"Error: unexpected answer {syn_anonymeter_answer}")
+        print(f"syn_anonymeter_answer: {syn_anonymeter_answer}")
+
+        # Run the attack on the control data for the baseline
+        base_anonymeter_answer = anonymeter_mods.run_anonymeter_attack(
+                                        targets=targets,
+                                        basis=df_control[attack_cols],
+                                        aux_cols=aux_cols,
+                                        secret=secret_col,
+                                        regression=regression)
+        if base_anonymeter_answer not in [0,1]:
+            print(f"Error: unexpected answer {base_anonymeter_answer}")
+        print(f"base_anonymeter_answer: {base_anonymeter_answer}")
 
 
 def run_attack(job_num):

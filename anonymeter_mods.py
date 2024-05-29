@@ -243,21 +243,22 @@ def detect_consistent_col_types(df1: pd.DataFrame, df2: pd.DataFrame):
     return ctypes1
 
 def run_anonymeter_attack(
-    targets: pd.DataFrame,
-    target: pd.DataFrame,
-    syn: pd.DataFrame,
+    targets: pd.DataFrame,    # This is the victim information
+    basis: pd.DataFrame,      # This is control or synthetic data, depending
     aux_cols: List[str],
     secret: str,
     regression: Optional[bool],
 ) -> int:
     n_jobs = -2
     if regression is None:
-        regression = pd.api.types.is_numeric_dtype(target[secret])
+        #regression = pd.api.types.is_numeric_dtype(target[secret])
+        print(f"Not expecting regression is None")
+        exit(1)
 
-    nn = MixedTypeKNeighbors(n_jobs=n_jobs, n_neighbors=1).fit(candidates=syn[aux_cols])
+    nn = MixedTypeKNeighbors(n_jobs=n_jobs, n_neighbors=1).fit(candidates=basis[aux_cols])
 
     guesses_idx = nn.kneighbors(queries=targets[aux_cols])
-    guesses = syn.iloc[guesses_idx.flatten()][secret]
+    guesses = basis.iloc[guesses_idx.flatten()][secret]
 
     return evaluate_inference_guesses(guesses=guesses, secrets=targets[secret], regression=regression).sum()
 
