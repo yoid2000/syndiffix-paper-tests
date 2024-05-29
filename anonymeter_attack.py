@@ -182,7 +182,9 @@ def run_attack(job_num):
         regression = False
         target_type = 'categorical'
     # This model can be used to establish the baseline
+    print("build model")
     model = build_and_train_model(df_control, job['secret'], target_type)
+    print("do_inference_attacks")
     do_inference_attacks(model, job['secret'], aux_cols, regression, tm.df_orig, df_control, df_syn, job['num_runs'])
     pass
 
