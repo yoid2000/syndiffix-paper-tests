@@ -100,17 +100,17 @@ def do_inference_attacks(secret, aux_cols, regression, df_original, df_control, 
         targets = df_original[attack_cols].sample(1)
         print(f"type of targets {type(targets)}")
         print(f"targets: {targets}")
-    quit()
-    # Call the evaluator with only the attack_cols, because I'm not sure if it will
-    # work if different dataframes have different columns
-    something = anonymeter_mods.run_anonymeter_attack(
-                                    target=df_original[attack_cols],
-                                    syn=df_syn[attack_cols],
-                                    aux_cols=aux_cols,
-                                    secret=secret,
-                                    regression=regression)
-    print(f"Type of something: {type(something)}")
-    print(f"something: {something}")
+        # Call the evaluator with only the attack_cols, because I'm not sure if it will
+        # work if different dataframes have different columns
+        something = anonymeter_mods.run_anonymeter_attack(
+                                        targets=targets,
+                                        target=df_original[attack_cols],
+                                        syn=df_syn[attack_cols],
+                                        aux_cols=aux_cols,
+                                        secret=secret,
+                                        regression=regression)
+        print(f"Type of something: {type(something)}")
+        print(f"something: {something}")
 
 def run_attack(job_num):
     with open(os.path.join(attack_path, 'attack_jobs.json'), 'r') as f:
