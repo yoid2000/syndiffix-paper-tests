@@ -121,6 +121,9 @@ def do_inference_attacks(secret_col, secret_col_type, aux_cols, regression, df_o
     attack_cols = aux_cols + [secret_col]
     model = build_and_train_model(df_control[attack_cols], secret_col, secret_col_type)
 
+    num_model_correct = 0
+    num_syn_correct = 0
+    num_base_correct = 0
     for i in range(num_runs):
         # There is a chance of replicas here, but small enough that we ignore it
         targets = df_original[attack_cols].sample(1)
@@ -134,7 +137,11 @@ def do_inference_attacks(secret_col, secret_col_type, aux_cols, regression, df_o
         # convert model_pred_value to a series
         model_pred_value_series = pd.Series(model_pred_value, index=targets.index)
         model_answer = anonymeter_mods.evaluate_inference_guesses(guesses=model_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
+        if model_answer not in [0,1]:
+            print(f"Error: unexpected answer {model_answer}")
+            sys.exit(1)
         print(f"secret_value: {secret_value}, model_pred_value: {model_pred_value}, model_answer: {model_answer}")
+        num_model_correct += model_answer
 
         # Run the attack on the synthetic data
         syn_anonymeter_answer = anonymeter_mods.run_anonymeter_attack(
@@ -145,7 +152,9 @@ def do_inference_attacks(secret_col, secret_col_type, aux_cols, regression, df_o
                                         regression=regression)
         if syn_anonymeter_answer not in [0,1]:
             print(f"Error: unexpected answer {syn_anonymeter_answer}")
+            sys.exit(1)
         print(f"syn_anonymeter_answer: {syn_anonymeter_answer}")
+        num_syn_correct += syn_anonymeter_answer
 
         # Run the attack on the control data for the baseline
         base_anonymeter_answer = anonymeter_mods.run_anonymeter_attack(
@@ -156,7 +165,10 @@ def do_inference_attacks(secret_col, secret_col_type, aux_cols, regression, df_o
                                         regression=regression)
         if base_anonymeter_answer not in [0,1]:
             print(f"Error: unexpected answer {base_anonymeter_answer}")
+            sys.exit(1)
         print(f"base_anonymeter_answer: {base_anonymeter_answer}")
+        num_base_correct += base_anonymeter_answer
+    print(f"num_model_correct: {num_model_correct}\nnum_syn_correct: {num_syn_correct}\nnum_base_correct: {num_base_correct}")
 
 
 def run_attack(job_num):
