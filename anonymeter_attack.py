@@ -150,7 +150,6 @@ def run_attack(job_num):
     print("Successs rate of control attack:", evalRes.control_rate)
     privRisk = evalRes.risk()
     print(privRisk)
-    print("Queries:", evaluator.queries())
     pass
 
 def gather(instances_path):
