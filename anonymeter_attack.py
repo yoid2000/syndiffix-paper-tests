@@ -221,6 +221,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         num_subset_combs = 0
         num_subset_correct = 0
         col_combs = get_valid_combs(tm, secret_col)
+        print(f"Running with total {len(col_combs)} column combinations")
         for col_comb in col_combs:
             df_syn_subset = tm.get_syn_df(col_comb)
             print(f"run anonymeter attack on {col_comb}")
