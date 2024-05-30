@@ -62,6 +62,7 @@ def build_and_train_model(df, target_col, target_type):
         print(f"building RandomForestClassifier with shape {X.shape}")
         try:
             model = RandomForestClassifier(random_state=42)
+            print("finished building RandomForestClassifier")
         except Exception as e:
             print(f"A RandomForestClassifier error occurred: {e}")
             sys.exit(1)
@@ -69,6 +70,7 @@ def build_and_train_model(df, target_col, target_type):
         print(f"building RandomForestRegressor with shape {X.shape}")
         try:
             model = RandomForestRegressor(random_state=42)
+            print("finished building RandomForestRegressor")
         except Exception as e:
             print(f"A RandomForestRegressor error occurred: {e}")
             sys.exit(1)
