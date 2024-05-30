@@ -110,6 +110,17 @@ python {exe_path} $arrayNum
     with open(os.path.join(attack_path, 'attack.slurm'), 'w', encoding='utf-8') as f:
         f.write(slurm_template)
 
+def get_valid_combs(tm, secret_col):
+    # We want the column combinations that containt secret_col and have at least
+    # one other column
+    if tm.catalog is None:
+        tm.build_catalog()
+    valid_combs = []
+    for catalog_entry in tm.catalog:
+        if secret_col in catalog_entry['columns'] and len(catalog_entry['columns']) > 1:
+            valid_combs.append(catalog_entry['columns'])
+    return valid_combs
+
 def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, df_original, df_control, df_syn, num_runs):
     ''' df_original and df_control have all columns.
         df_syn has only the columns in aux_cols and secret_col.
@@ -193,6 +204,25 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         # Now, we want to run the anonymeter-style attack on every valid
         # synthetic dataset. We will use this additional information to decide
         # if the anonymeter-style attack on the full dataset is correct or not.
+        num_subset_combs = 0
+        num_subset_correct = 0
+        col_combs = get_valid_combs(tm, secret_col)
+        for col_comb in col_combs:
+            df_syn_subset = tm.get_syn_df(col_comb)
+            subset_meter_pred_value_series = anonymeter_mods.run_anonymeter_attack(
+                                            targets=targets,
+                                            basis=df_syn_subset[col_comb],
+                                            aux_cols=aux_cols,
+                                            secret=secret_col,
+                                            regression=regression)
+            subset_meter_pred_value = subset_meter_pred_value_series.iloc[0]
+            subset_meter_answer = anonymeter_mods.evaluate_inference_guesses(guesses=subset_meter_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
+            if subset_meter_answer not in [0,1]:
+                print(f"Error: unexpected answer {base_meter_answer}")
+                sys.exit(1)
+            num_subset_combs += 1
+            num_subset_correct += subset_meter_answer
+            pass
 
         attacks.append({
             'secret_value': secret_value,
@@ -202,9 +232,12 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             'model_attack_answer': model_attack_answer,
             'syn_meter_pred_value': syn_meter_pred_value,
             'syn_meter_answer': syn_meter_answer,
+            'num_subset_combs': num_subset_combs,
+            'num_subset_correct': num_subset_correct,
             'base_meter_pred_value': base_meter_pred_value,
             'base_meter_answer': base_meter_answer,
         })
+        print('---------------------------------------------------')
         pp.pprint(attacks[-1])
     print(f"num_model_base_correct: {num_model_base_correct}\nnum_syn_correct: {num_syn_correct}\nnum_meter_base_correct: {num_meter_base_correct}\nnum_model_attack_correct: {num_model_attack_correct}")
 
