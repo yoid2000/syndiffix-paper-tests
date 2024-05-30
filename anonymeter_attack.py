@@ -30,8 +30,8 @@ else:
 syn_path = os.path.join(base_path, 'synDatasets')
 attack_path = os.path.join(base_path, 'anonymeter_attacks')
 os.makedirs(attack_path, exist_ok=True)
-num_attacks = 35000
-num_runs_per_attack = 100
+num_attacks = 100000
+num_attacks_per_job = 50
 max_subsets = 200
 
 from sklearn.preprocessing import LabelEncoder
@@ -91,23 +91,20 @@ def build_and_train_model(df, target_col, target_type):
 
     # Build and train the model
     if target_type == 'categorical':
-        print(f"building RandomForestClassifier with shape {X.shape}")
-        #print(f"building DecisionTreeClassifier with shape {X.shape}")
+        #print(f"building RandomForestClassifier with shape {X.shape}")
         try:
             model = RandomForestClassifier(random_state=42)
-            #model = DecisionTreeClassifier(random_state=42)
-            print("finished building RandomForestClassifier")
+            #print("finished building RandomForestClassifier")
         except Exception as e:
-            print(f"A RandomForestClassifier error occurred: {e}")
-            #print(f"A DecisionTreeClassifier error occurred: {e}")
+            #print(f"A RandomForestClassifier error occurred: {e}")
             sys.exit(1)
     elif target_type == 'continuous':
-        print(f"building RandomForestRegressor with shape {X.shape}")
+        #print(f"building RandomForestRegressor with shape {X.shape}")
         try:
             model = RandomForestRegressor(random_state=42)
-            print("finished building RandomForestRegressor")
+            #print("finished building RandomForestRegressor")
         except Exception as e:
-            print(f"A RandomForestRegressor error occurred: {e}")
+            #print(f"A RandomForestRegressor error occurred: {e}")
             sys.exit(1)
     else:
         raise ValueError("target_type must be 'categorical' or 'continuous'")
@@ -141,9 +138,9 @@ def make_config():
                 attack_jobs.append({
                     'dir_name': dir_name,
                     'secret': secret,
-                    'num_runs': num_runs_per_attack,
+                    'num_runs': num_attacks_per_job,
                 })
-                attacks_so_far += num_runs_per_attack
+                attacks_so_far += num_attacks_per_job
     # randomize the order in which the attack_jobs are run
     random.shuffle(attack_jobs)
     for index, job in enumerate(attack_jobs):
@@ -288,7 +285,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         num_subset_combs = 0
         num_subset_correct = 0
         col_combs = get_valid_combs(tm, secret_col)
-        print(f"Running with total {max_subsets} of {len(col_combs)} column combinations")
+        #print(f"Running with total {max_subsets} of {len(col_combs)} column combinations")
         if len(col_combs) > max_subsets:
             col_combs = random.sample(col_combs, max_subsets)
         pred_values = []
@@ -342,9 +339,10 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             'base_meter_pred_value': base_meter_pred_value,
             'base_meter_answer': base_meter_answer,
         })
-        print('---------------------------------------------------')
-        pp.pprint(attacks[-1])
+        #print('---------------------------------------------------')
+        #pp.pprint(attacks[-1])
     print(f"num_model_base_correct: {num_model_base_correct}\nnum_syn_correct: {num_syn_correct}\nnum_meter_base_correct: {num_meter_base_correct}\nnum_model_attack_correct: {num_model_attack_correct}")
+    return attacks
 
 
 def run_attack(job_num):
@@ -387,8 +385,9 @@ def run_attack(job_num):
     else:
         regression = False
         target_type = 'categorical'
-    do_inference_attacks(tm, job['secret'], target_type, aux_cols, regression, tm.df_orig, df_control, df_syn, job['num_runs'])
-    pass
+    attacks = do_inference_attacks(tm, job['secret'], target_type, aux_cols, regression, tm.df_orig, df_control, df_syn, job['num_runs'])
+    with open(file_path, 'w') as f:
+        json.dump(attacks, f, indent=4)
 
 def gather(instances_path):
     pass
