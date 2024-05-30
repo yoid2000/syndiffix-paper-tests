@@ -343,6 +343,16 @@ def gather(instances_path):
 def do_plots():
     pass
 
+def do_tests():
+    if find_most_frequent_value([1, 2, 2, 3, 3, 3], 0.5) != 3:
+        print("failed 1")
+    if find_most_frequent_value([1, 2, 2, 3, 3, 3], 0.6) is not None:
+        print("failed 2")
+    if find_most_frequent_value([], 0.5) is not None:
+        print("failed 3")
+    if find_most_frequent_value([1, 1, 1, 1, 1], 0.2) != 1:
+        print("failed 4")
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("command", help="'config' to run make_config(), or an integer to run run_attacks()")
@@ -350,6 +360,8 @@ def main():
 
     if args.command == 'config':
         make_config()
+    if args.command == 'test':
+        do_tests()
     elif args.command == 'gather':
         gather(instances_path=os.path.join(attack_path, 'instances'))
     elif args.command == 'plots':
