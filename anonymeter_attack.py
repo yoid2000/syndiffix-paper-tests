@@ -218,6 +218,9 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         targets = df_original[attack_cols].sample(1)
         # Get the value of the secret column in the first row of targets
         secret_value = targets[secret_col].iloc[0]
+        # Count the number of rows that contian secret_value in column secret_col
+        num_secret_rows = df_original[secret_col].value_counts().get(secret_value, 0)
+        secret_percentage = round(100*(num_secret_rows / len(df_original)), 2)
 
         # Now get the model baseline prediction
         try:
@@ -322,6 +325,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
 
         attacks.append({
             'secret_value': secret_value,
+            'secret_percentage:', secret_percentage,
             'model_base_pred_value': model_base_pred_value,
             'model_base_answer': model_base_answer,
             'model_attack_pred_value': model_attack_pred_value,
