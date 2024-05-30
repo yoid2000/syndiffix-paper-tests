@@ -41,7 +41,7 @@ def build_and_train_model(df, target_col, target_type):
 
     # Build and train the model
     if target_type == 'categorical':
-        print("building RandomForestClassifier")
+        print(f"building RandomForestClassifier with shape {X.shape}")
         try:
             model = RandomForestClassifier(random_state=42)
         except Exception as e:
