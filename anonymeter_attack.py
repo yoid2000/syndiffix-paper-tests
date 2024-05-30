@@ -29,6 +29,7 @@ attack_path = os.path.join(base_path, 'anonymeter_attacks')
 os.makedirs(attack_path, exist_ok=True)
 num_attacks = 35000
 num_runs_per_attack = 100
+max_subsets = 200
 
 def build_and_train_model(df, target_col, target_type):
     X = df.drop(target_col, axis=1)
@@ -221,7 +222,9 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         num_subset_combs = 0
         num_subset_correct = 0
         col_combs = get_valid_combs(tm, secret_col)
-        print(f"Running with total {len(col_combs)} column combinations")
+        print(f"Running with total {max_subsets} of {len(col_combs)} column combinations")
+        if len(col_combs) > max_subsets:
+            col_combs = random.sample(col_combs, max_subsets)
         for col_comb in col_combs:
             df_syn_subset = tm.get_syn_df(col_comb)
             print(f"run anonymeter attack on {col_comb}")
