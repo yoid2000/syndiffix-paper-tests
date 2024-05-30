@@ -259,8 +259,9 @@ def run_anonymeter_attack(
 
     guesses_idx = nn.kneighbors(queries=targets[aux_cols])
     guesses = basis.iloc[guesses_idx.flatten()][secret]
-
-    return evaluate_inference_guesses(guesses=guesses, secrets=targets[secret], regression=regression).sum()
+    
+    return guesses
+    #return evaluate_inference_guesses(guesses=guesses, secrets=targets[secret], regression=regression).sum()
 
 
 def evaluate_inference_guesses(

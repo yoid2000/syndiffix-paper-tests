@@ -111,7 +111,7 @@ python {exe_path} $arrayNum
     with open(os.path.join(attack_path, 'attack.slurm'), 'w', encoding='utf-8') as f:
         f.write(slurm_template)
 
-def do_inference_attacks(secret_col, secret_col_type, aux_cols, regression, df_original, df_control, df_syn, num_runs):
+def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, df_original, df_control, df_syn, num_runs):
     ''' df_original and df_control have all columns.
         df_syn has only the columns in aux_cols and secret_col.
 
@@ -128,6 +128,7 @@ def do_inference_attacks(secret_col, secret_col_type, aux_cols, regression, df_o
     num_model_attack_correct = 0
     num_syn_correct = 0
     num_meter_base_correct = 0
+    attacks = []
     for i in range(num_runs):
         # There is a chance of replicas here, but small enough that we ignore it
         targets = df_original[attack_cols].sample(1)
@@ -165,12 +166,13 @@ def do_inference_attacks(secret_col, secret_col_type, aux_cols, regression, df_o
         num_model_attack_correct += model_attack_answer
 
         # Run the anonymeter-style attack on the synthetic data
-        syn_anonymeter_answer = anonymeter_mods.run_anonymeter_attack(
+        syn_anonymeter_pred_value_series = anonymeter_mods.run_anonymeter_attack(
                                         targets=targets,
                                         basis=df_syn[attack_cols],
                                         aux_cols=aux_cols,
                                         secret=secret_col,
                                         regression=regression)
+        syn_anonymeter_answer = anonymeter_mods.evaluate_inference_guesses(guesses=syn_anonymeter_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
         if syn_anonymeter_answer not in [0,1]:
             print(f"Error: unexpected answer {syn_anonymeter_answer}")
             sys.exit(1)
@@ -178,17 +180,32 @@ def do_inference_attacks(secret_col, secret_col_type, aux_cols, regression, df_o
         num_syn_correct += syn_anonymeter_answer
 
         # Run the anonymeter-style attack on the control data for the baseline
-        base_meter_answer = anonymeter_mods.run_anonymeter_attack(
+        base_meter_pred_value_series = anonymeter_mods.run_anonymeter_attack(
                                         targets=targets,
                                         basis=df_control[attack_cols],
                                         aux_cols=aux_cols,
                                         secret=secret_col,
                                         regression=regression)
+        base_meter_answer = anonymeter_mods.evaluate_inference_guesses(guesses=base_meter_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
         if base_meter_answer not in [0,1]:
             print(f"Error: unexpected answer {base_meter_answer}")
             sys.exit(1)
         print(f"base_meter_answer: {base_meter_answer}")
         num_meter_base_correct += base_meter_answer
+
+        # Now, we want to run the anonymeter-style attack on every valid
+        # synthetic dataset. We will use this additional information to decide
+        # if the anonymeter-style attack on the full dataset is correct or not.
+
+        attacks.append{
+            'secret_value': secret_value,
+            'model_base_pred_value': model_base_pred_value,
+            'model_base_answer': model_base_answer,
+            'model_attack_pred_value': model_attack_pred_value,
+            'model_attack_answer': model_attack_answer,
+            'syn_anonymeter_answer': syn_anonymeter_answer,
+            'base_meter_answer': base_meter_answer,
+        }
     print(f"num_model_base_correct: {num_model_base_correct}\nnum_syn_correct: {num_syn_correct}\nnum_meter_base_correct: {num_meter_base_correct}\nnum_model_attack_correct: {num_model_attack_correct}")
 
 
@@ -234,7 +251,7 @@ def run_attack(job_num):
         target_type = 'categorical'
     # This model can be used to establish the baseline
     print("build model")
-    do_inference_attacks(job['secret'], target_type, aux_cols, regression, tm.df_orig, df_control, df_syn, job['num_runs'])
+    do_inference_attacks(tm, job['secret'], target_type, aux_cols, regression, tm.df_orig, df_control, df_syn, job['num_runs'])
     pass
 
 def gather(instances_path):
