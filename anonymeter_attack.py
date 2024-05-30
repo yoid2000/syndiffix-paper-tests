@@ -197,7 +197,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         # synthetic dataset. We will use this additional information to decide
         # if the anonymeter-style attack on the full dataset is correct or not.
 
-        attacks.append{
+        attacks.append({
             'secret_value': secret_value,
             'model_base_pred_value': model_base_pred_value,
             'model_base_answer': model_base_answer,
@@ -205,7 +205,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             'model_attack_answer': model_attack_answer,
             'syn_anonymeter_answer': syn_anonymeter_answer,
             'base_meter_answer': base_meter_answer,
-        }
+        })
     print(f"num_model_base_correct: {num_model_base_correct}\nnum_syn_correct: {num_syn_correct}\nnum_meter_base_correct: {num_meter_base_correct}\nnum_model_attack_correct: {num_model_attack_correct}")
 
 
