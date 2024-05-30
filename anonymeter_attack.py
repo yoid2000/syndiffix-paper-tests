@@ -344,7 +344,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             'low_syn_meter_pred_value': str(low_syn_meter_pred_value),
             'low_syn_meter_answer': str(low_syn_meter_answer),
             'num_subset_combs': num_subset_combs,
-            'num_subset_correct': num_subset_correct,
+            'num_subset_correct': str(num_subset_correct),
             'base_meter_pred_value': str(base_meter_pred_value),
             'base_meter_answer': str(base_meter_answer),
         })
