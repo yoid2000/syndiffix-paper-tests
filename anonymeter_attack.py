@@ -175,6 +175,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         # Now get the model baseline prediction
         try:
             model_base_pred_value = model_base.predict(targets.drop(secret_col, axis=1))
+            model_base_pred_value = model_base_pred_value[0]
         except Exception as e:
             print(f"A model.predict() error occurred: {e}")
             quit()
@@ -189,6 +190,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         # Now run the model attack
         try:
             model_attack_pred_value = model_attack.predict(targets.drop(secret_col, axis=1))
+            model_attack_pred_value = model_attack_pred_value[0]
         except Exception as e:
             print(f"A model.predict() error occurred: {e}")
             quit()
@@ -258,14 +260,14 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
 
         low_syn_meter_pred_value = find_most_frequent_value(pred_values, 0.5)
         if low_syn_meter_pred_value is not None:
-            low_syn_meter_pred_value_series = pd.Series(model_attack_pred_value, index=targets.index)
+            low_syn_meter_pred_value_series = pd.Series(low_syn_meter_pred_value, index=targets.index)
             low_syn_meter_answer = anonymeter_mods.evaluate_inference_guesses(guesses=low_syn_meter_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
         else:
             low_syn_meter_answer = -1     # no prediction
 
         high_syn_meter_pred_value = find_most_frequent_value(pred_values, 0.5)
         if high_syn_meter_pred_value is not None:
-            high_syn_meter_pred_value_series = pd.Series(model_attack_pred_value, index=targets.index)
+            high_syn_meter_pred_value_series = pd.Series(high_syn_meter_pred_value, index=targets.index)
             high_syn_meter_answer = anonymeter_mods.evaluate_inference_guesses(guesses=high_syn_meter_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
         else:
             high_syn_meter_answer = -1     # no prediction
