@@ -33,6 +33,14 @@ num_attacks = 35000
 num_runs_per_attack = 100
 max_subsets = 200
 
+def convert_unique_strings_to_int(df, secret_col):
+    string_columns = df.select_dtypes(include=['object']).columns
+    for col in string_columns:
+        if col == secret_col:
+            continue
+        df[col] = pd.factorize(df[col])[0]
+    return df
+
 def find_most_frequent_value(lst, fraction):
     if len(lst) == 0:
         return None
@@ -60,15 +68,15 @@ def build_and_train_model(df, target_col, target_type):
 
     # Build and train the model
     if target_type == 'categorical':
-        #print(f"building RandomForestClassifier with shape {X.shape}")
-        print(f"building DecisionTreeClassifier with shape {X.shape}")
+        print(f"building RandomForestClassifier with shape {X.shape}")
+        #print(f"building DecisionTreeClassifier with shape {X.shape}")
         try:
-            #model = RandomForestClassifier(random_state=42)
-            model = DecisionTreeClassifier(random_state=42)
+            model = RandomForestClassifier(random_state=42)
+            #model = DecisionTreeClassifier(random_state=42)
             print("finished building RandomForestClassifier")
         except Exception as e:
-            #print(f"A RandomForestClassifier error occurred: {e}")
-            print(f"A DecisionTreeClassifier error occurred: {e}")
+            print(f"A RandomForestClassifier error occurred: {e}")
+            #print(f"A DecisionTreeClassifier error occurred: {e}")
             sys.exit(1)
     elif target_type == 'continuous':
         print(f"building RandomForestRegressor with shape {X.shape}")
@@ -162,6 +170,11 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         df_syn is the synthetic data generated from df_original.
         df_control is disjoint from df_original
     '''
+    # Because I'm modeling the control and syn dataframes, and because the models
+    # don't play well with string types, I'm just going to convert everthing
+    df_original = convert_unique_strings_to_int(df_original, secret_col)
+    df_control = convert_unique_strings_to_int(df_control, secret_col)
+    df_syn = convert_unique_strings_to_int(df_syn, secret_col)
     attack_cols = aux_cols + [secret_col]
     # model_base is the baseline built from an ML model
     print("build baseline model")
