@@ -326,6 +326,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         attacks.append({
             'secret_value': secret_value,
             'secret_percentage:': secret_percentage,
+            'secret_col_type': secret_col_type,
             'model_base_pred_value': model_base_pred_value,
             'model_base_answer': model_base_answer,
             'model_attack_pred_value': model_attack_pred_value,
