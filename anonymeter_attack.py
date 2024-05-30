@@ -55,6 +55,15 @@ def transform_df(df, encoders):
         df[col] = encoder.transform(df[col])
     return df
 
+def transform_df_with_update(df, encoders):
+    for col, encoder in encoders.items():
+        if col in df.columns:
+            unique_values = pd.Series(df[col].unique())
+            unseen_values = unique_values[~unique_values.isin(encoder.classes_)]
+            encoder.classes_ = np.concatenate([encoder.classes_, unseen_values])
+            df[col] = encoder.transform(df[col])
+    return df
+
 def find_most_frequent_value(lst, fraction):
     if len(lst) == 0:
         return None
@@ -282,7 +291,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         pred_values = []
         for col_comb in col_combs:
             df_syn_subset = tm.get_syn_df(col_comb)
-            df_syn_subset = transform_df(df_syn_subset, encoders)
+            df_syn_subset = transform_df_with_update(df_syn_subset, encoders)
             subset_aux_cols = col_comb.copy()
             subset_aux_cols.remove(secret_col)
             subset_meter_pred_value_series = anonymeter_mods.run_anonymeter_attack(
