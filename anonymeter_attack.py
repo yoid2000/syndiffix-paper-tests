@@ -11,6 +11,7 @@ from matplotlib.lines import Line2D
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
+from collections import Counter
 import pprint
 
 pp = pprint.PrettyPrinter(indent=4)
@@ -30,6 +31,19 @@ os.makedirs(attack_path, exist_ok=True)
 num_attacks = 35000
 num_runs_per_attack = 100
 max_subsets = 200
+
+def find_most_frequent_value(lst, fraction):
+    # Count the frequency of each value in the list
+    counter = Counter(lst)
+    
+    # Find the most common value and its count
+    most_common_value, most_common_count = counter.most_common(1)[0]
+    
+    # Check if the most common value accounts for at least the given fraction of total entries
+    if most_common_count / len(lst) >= fraction:
+        return most_common_value
+    else:
+        return None
 
 def build_and_train_model(df, target_col, target_type):
     X = df.drop(target_col, axis=1)
@@ -225,9 +239,9 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         print(f"Running with total {max_subsets} of {len(col_combs)} column combinations")
         if len(col_combs) > max_subsets:
             col_combs = random.sample(col_combs, max_subsets)
+        pred_values = []
         for col_comb in col_combs:
             df_syn_subset = tm.get_syn_df(col_comb)
-            print(f"run anonymeter attack on {col_comb}")
             subset_aux_cols = col_comb.copy()
             subset_aux_cols.remove(secret_col)
             subset_meter_pred_value_series = anonymeter_mods.run_anonymeter_attack(
@@ -237,14 +251,24 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
                                             secret=secret_col,
                                             regression=regression)
             subset_meter_pred_value = subset_meter_pred_value_series.iloc[0]
-            syn_meter_pred_values.append(subset_meter_pred_value)
+            pred_values.append(subset_meter_pred_value)
             subset_meter_answer = anonymeter_mods.evaluate_inference_guesses(guesses=subset_meter_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
-            if subset_meter_answer not in [0,1]:
-                print(f"Error: unexpected answer {base_meter_answer}")
-                sys.exit(1)
             num_subset_combs += 1
             num_subset_correct += subset_meter_answer
-            pass
+
+        low_syn_meter_pred_value = find_most_frequent_value(pred_values, 0.5)
+        if low_syn_meter_pred_value is not None:
+            low_syn_meter_pred_value_series = pd.Series(model_attack_pred_value, index=targets.index)
+            low_syn_meter_answer = anonymeter_mods.evaluate_inference_guesses(guesses=low_syn_meter_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
+        else:
+            low_syn_meter_answer = -1     # no prediction
+
+        high_syn_meter_pred_value = find_most_frequent_value(pred_values, 0.5)
+        if high_syn_meter_pred_value is not None:
+            high_syn_meter_pred_value_series = pd.Series(model_attack_pred_value, index=targets.index)
+            high_syn_meter_answer = anonymeter_mods.evaluate_inference_guesses(guesses=high_syn_meter_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
+        else:
+            high_syn_meter_answer = -1     # no prediction
 
         attacks.append({
             'secret_value': secret_value,
@@ -254,6 +278,10 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             'model_attack_answer': model_attack_answer,
             'syn_meter_pred_value': syn_meter_pred_value,
             'syn_meter_answer': syn_meter_answer,
+            'high_syn_meter_pred_value': high_syn_meter_pred_value,
+            'high_syn_meter_answer': high_syn_meter_answer,
+            'low_syn_meter_pred_value': low_syn_meter_pred_value,
+            'low_syn_meter_answer': low_syn_meter_answer,
             'num_subset_combs': num_subset_combs,
             'num_subset_correct': num_subset_correct,
             'base_meter_pred_value': base_meter_pred_value,
