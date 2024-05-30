@@ -6,6 +6,7 @@ import json
 import sys
 import random
 import numpy as np
+from sklearn.preprocessing import LabelEncoder
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
@@ -33,14 +34,25 @@ num_attacks = 35000
 num_runs_per_attack = 100
 max_subsets = 200
 
-def convert_unique_strings_to_int(df, secret_col):
-    print(df.head())
-    string_columns = df.select_dtypes(include=['object']).columns
+from sklearn.preprocessing import LabelEncoder
+
+def fit_encoders(dfs):
+    # Get the string columns
+    string_columns = dfs[0].select_dtypes(include=['object']).columns
+
+    encoders = {col: LabelEncoder() for col in string_columns}
+
     for col in string_columns:
-        if col == secret_col:
-            continue
-        df[col] = pd.factorize(df[col])[0]
-    print(df.head())
+        # Concatenate the values from all DataFrames for this column
+        values = pd.concat(df[col] for df in dfs).unique()
+        # Fit the encoder on the unique values
+        encoders[col].fit(values)
+
+    return encoders
+
+def transform_df(df, encoders):
+    for col, encoder in encoders.items():
+        df[col] = encoder.transform(df[col])
     return df
 
 def find_most_frequent_value(lst, fraction):
@@ -174,9 +186,11 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
     '''
     # Because I'm modeling the control and syn dataframes, and because the models
     # don't play well with string types, I'm just going to convert everthing
-    df_original = convert_unique_strings_to_int(df_original, secret_col)
-    df_control = convert_unique_strings_to_int(df_control, secret_col)
-    df_syn = convert_unique_strings_to_int(df_syn, secret_col)
+    encoders = fit_encoders([df_original, df_control, df_syn])
+
+    df_original = transform_df(df_original, encoders)
+    df_control = transform_df(df_control, encoders)
+    df_syn = transform_df(df_syn, encoders)
     attack_cols = aux_cols + [secret_col]
     # model_base is the baseline built from an ML model
     print("build baseline model")
@@ -268,6 +282,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         pred_values = []
         for col_comb in col_combs:
             df_syn_subset = tm.get_syn_df(col_comb)
+            df_syn_subset = transform_df(df_syn_subset, encoders)
             subset_aux_cols = col_comb.copy()
             subset_aux_cols.remove(secret_col)
             subset_meter_pred_value_series = anonymeter_mods.run_anonymeter_attack(
