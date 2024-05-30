@@ -36,6 +36,12 @@ max_subsets = 200
 
 from sklearn.preprocessing import LabelEncoder
 
+def convert_datetime_to_timestamp(df):
+    for col in df.columns:
+        if df[col].dtype == 'datetime64[ns]':
+            df[col] = df[col].astype(int) / 10**9
+    return df
+
 def fit_encoders(dfs):
     # Get the string columns
     string_columns = dfs[0].select_dtypes(include=['object']).columns
@@ -158,7 +164,7 @@ def make_config():
     num_jobs = len(attack_jobs) - 1
     # Define the slurm template
     slurm_template = f'''#!/bin/bash
-#SBATCH --job-name=suppress_attack
+#SBATCH --job-name=anonymeter_attack
 #SBATCH --output={slurm_out}
 #SBATCH --time=7-0
 #SBATCH --mem=16G
@@ -191,7 +197,10 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         df_control is disjoint from df_original
     '''
     # Because I'm modeling the control and syn dataframes, and because the models
-    # don't play well with string types, I'm just going to convert everthing
+    # don't play well with string or datetime types, I'm just going to convert everthing
+    df_original = convert_datetime_to_timestamp(df_original)
+    df_control = convert_datetime_to_timestamp(df_control)
+    df_syn = convert_datetime_to_timestamp(df_syn)
     encoders = fit_encoders([df_original, df_control, df_syn])
 
     df_original = transform_df(df_original, encoders)
@@ -321,23 +330,23 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             high_syn_meter_answer = -1     # no prediction
 
         attacks.append({
-            'secret_value': secret_value,
+            'secret_value': str(secret_value),
             'secret_percentage:': secret_percentage,
             'secret_col_type': secret_col_type,
-            'model_base_pred_value': model_base_pred_value,
-            'model_base_answer': model_base_answer,
-            'model_attack_pred_value': model_attack_pred_value,
-            'model_attack_answer': model_attack_answer,
-            'syn_meter_pred_value': syn_meter_pred_value,
-            'syn_meter_answer': syn_meter_answer,
-            'high_syn_meter_pred_value': high_syn_meter_pred_value,
-            'high_syn_meter_answer': high_syn_meter_answer,
-            'low_syn_meter_pred_value': low_syn_meter_pred_value,
-            'low_syn_meter_answer': low_syn_meter_answer,
+            'model_base_pred_value': str(model_base_pred_value),
+            'model_base_answer': str(model_base_answer),
+            'model_attack_pred_value': str(model_attack_pred_value),
+            'model_attack_answer': str(model_attack_answer),
+            'syn_meter_pred_value': str(syn_meter_pred_value),
+            'syn_meter_answer': str(syn_meter_answer),
+            'high_syn_meter_pred_value': str(high_syn_meter_pred_value),
+            'high_syn_meter_answer': str(high_syn_meter_answer),
+            'low_syn_meter_pred_value': str(low_syn_meter_pred_value),
+            'low_syn_meter_answer': str(low_syn_meter_answer),
             'num_subset_combs': num_subset_combs,
             'num_subset_correct': num_subset_correct,
-            'base_meter_pred_value': base_meter_pred_value,
-            'base_meter_answer': base_meter_answer,
+            'base_meter_pred_value': str(base_meter_pred_value),
+            'base_meter_answer': str(base_meter_answer),
         })
         #print('---------------------------------------------------')
         #pp.pprint(attacks[-1])
