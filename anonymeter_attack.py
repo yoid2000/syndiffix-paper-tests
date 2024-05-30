@@ -34,11 +34,13 @@ num_runs_per_attack = 100
 max_subsets = 200
 
 def convert_unique_strings_to_int(df, secret_col):
+    print(df.head())
     string_columns = df.select_dtypes(include=['object']).columns
     for col in string_columns:
         if col == secret_col:
             continue
         df[col] = pd.factorize(df[col])[0]
+    print(df.head())
     return df
 
 def find_most_frequent_value(lst, fraction):
