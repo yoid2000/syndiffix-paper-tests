@@ -130,8 +130,10 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
     '''
     attack_cols = aux_cols + [secret_col]
     # model_base is the baseline built from an ML model
+    print("build baseline model")
     model_base = build_and_train_model(df_control[attack_cols], secret_col, secret_col_type)
     # model_attack is used to generate a groundhog day type attack
+    print("build attack model")
     model_attack = build_and_train_model(df_syn[attack_cols], secret_col, secret_col_type)
 
     num_model_base_correct = 0
@@ -174,6 +176,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         num_model_attack_correct += model_attack_answer
 
         # Run the anonymeter-style attack on the synthetic data
+        syn_meter_pred_values = []
         syn_meter_pred_value_series = anonymeter_mods.run_anonymeter_attack(
                                         targets=targets,
                                         basis=df_syn[attack_cols],
@@ -181,6 +184,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
                                         secret=secret_col,
                                         regression=regression)
         syn_meter_pred_value = syn_meter_pred_value_series.iloc[0]
+        syn_meter_pred_values.append(syn_meter_pred_value)
         syn_meter_answer = anonymeter_mods.evaluate_inference_guesses(guesses=syn_meter_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
         if syn_meter_answer not in [0,1]:
             print(f"Error: unexpected answer {syn_meter_answer}")
@@ -216,6 +220,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
                                             secret=secret_col,
                                             regression=regression)
             subset_meter_pred_value = subset_meter_pred_value_series.iloc[0]
+            syn_meter_pred_values.append(subset_meter_pred_value)
             subset_meter_answer = anonymeter_mods.evaluate_inference_guesses(guesses=subset_meter_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
             if subset_meter_answer not in [0,1]:
                 print(f"Error: unexpected answer {base_meter_answer}")
@@ -282,8 +287,6 @@ def run_attack(job_num):
     else:
         regression = False
         target_type = 'categorical'
-    # This model can be used to establish the baseline
-    print("build model")
     do_inference_attacks(tm, job['secret'], target_type, aux_cols, regression, tm.df_orig, df_control, df_syn, job['num_runs'])
     pass
 
