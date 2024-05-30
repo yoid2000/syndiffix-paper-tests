@@ -42,10 +42,18 @@ def build_and_train_model(df, target_col, target_type):
     # Build and train the model
     if target_type == 'categorical':
         print("building RandomForestClassifier")
-        model = RandomForestClassifier(random_state=42)
+        try:
+            model = RandomForestClassifier(random_state=42)
+        except Exception as e:
+            print(f"A RandomForestClassifier error occurred: {e}")
+            sys.exit(1)
     elif target_type == 'continuous':
         print("building RandomForestRegressor")
-        model = RandomForestRegressor(random_state=42)
+        try:
+            model = RandomForestRegressor(random_state=42)
+        except Exception as e:
+            print(f"A RandomForestRegressor error occurred: {e}")
+            sys.exit(1)
     else:
         raise ValueError("target_type must be 'categorical' or 'continuous'")
 
