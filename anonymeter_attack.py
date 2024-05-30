@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from collections import Counter
@@ -61,10 +62,12 @@ def build_and_train_model(df, target_col, target_type):
     if target_type == 'categorical':
         print(f"building RandomForestClassifier with shape {X.shape}")
         try:
-            model = RandomForestClassifier(random_state=42)
+            #model = RandomForestClassifier(random_state=42)
+            model = DecisionTreeClassifier(random_state=42)
             print("finished building RandomForestClassifier")
         except Exception as e:
-            print(f"A RandomForestClassifier error occurred: {e}")
+            #print(f"A RandomForestClassifier error occurred: {e}")
+            print(f"A DecisionTreeClassifier error occurred: {e}")
             sys.exit(1)
     elif target_type == 'continuous':
         print(f"building RandomForestRegressor with shape {X.shape}")
