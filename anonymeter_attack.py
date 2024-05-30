@@ -33,6 +33,9 @@ num_runs_per_attack = 100
 max_subsets = 200
 
 def find_most_frequent_value(lst, fraction):
+    if len(list) == 0:
+        return None
+
     # Count the frequency of each value in the list
     counter = Counter(lst)
     
