@@ -223,10 +223,11 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         col_combs = get_valid_combs(tm, secret_col)
         for col_comb in col_combs:
             df_syn_subset = tm.get_syn_df(col_comb)
+            print(f"run anonymeter attack on {col_comb}")
             subset_meter_pred_value_series = anonymeter_mods.run_anonymeter_attack(
                                             targets=targets,
                                             basis=df_syn_subset[col_comb],
-                                            aux_cols=aux_cols,
+                                            aux_cols=col_comb.remove[secret_col],
                                             secret=secret_col,
                                             regression=regression)
             subset_meter_pred_value = subset_meter_pred_value_series.iloc[0]
