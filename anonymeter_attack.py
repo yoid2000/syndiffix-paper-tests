@@ -61,7 +61,6 @@ def make_config():
     # Loop over each directory name in syn_path
     attacks_so_far = 0
     while attacks_so_far < num_attacks:
-        print(f"Loop: attacks_so_far: {attacks_so_far}, num_attacks: {len(attack_jobs)}")
         for dir_name in os.listdir(syn_path):
             dataset_path = os.path.join(syn_path, dir_name, 'anonymeter')
             # Check if dataset_path exists
@@ -147,7 +146,6 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         if model_base_answer not in [0,1]:
             print(f"Error: unexpected answer {model_base_answer}")
             sys.exit(1)
-        print(f"secret_value: {secret_value}, model_base_pred_value: {model_base_pred_value}, model_base_answer: {model_base_answer}")
         num_model_base_correct += model_base_answer
 
         # Now run the model attack
@@ -162,22 +160,21 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         if model_attack_answer not in [0,1]:
             print(f"Error: unexpected answer {model_attack_answer}")
             sys.exit(1)
-        print(f"secret_value: {secret_value}, model_attack_pred_value: {model_attack_pred_value}, model_attack_answer: {model_attack_answer}")
         num_model_attack_correct += model_attack_answer
 
         # Run the anonymeter-style attack on the synthetic data
-        syn_anonymeter_pred_value_series = anonymeter_mods.run_anonymeter_attack(
+        syn_meter_pred_value_series = anonymeter_mods.run_anonymeter_attack(
                                         targets=targets,
                                         basis=df_syn[attack_cols],
                                         aux_cols=aux_cols,
                                         secret=secret_col,
                                         regression=regression)
-        syn_anonymeter_answer = anonymeter_mods.evaluate_inference_guesses(guesses=syn_anonymeter_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
-        if syn_anonymeter_answer not in [0,1]:
-            print(f"Error: unexpected answer {syn_anonymeter_answer}")
+        syn_meter_pred_value = syn_meter_pred_value_series.iloc[0]
+        syn_meter_answer = anonymeter_mods.evaluate_inference_guesses(guesses=syn_meter_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
+        if syn_meter_answer not in [0,1]:
+            print(f"Error: unexpected answer {syn_meter_answer}")
             sys.exit(1)
-        print(f"syn_anonymeter_answer: {syn_anonymeter_answer}")
-        num_syn_correct += syn_anonymeter_answer
+        num_syn_correct += syn_meter_answer
 
         # Run the anonymeter-style attack on the control data for the baseline
         base_meter_pred_value_series = anonymeter_mods.run_anonymeter_attack(
@@ -186,11 +183,11 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
                                         aux_cols=aux_cols,
                                         secret=secret_col,
                                         regression=regression)
+        base_meter_pred_value = base_meter_pred_value_series.iloc[0]
         base_meter_answer = anonymeter_mods.evaluate_inference_guesses(guesses=base_meter_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
         if base_meter_answer not in [0,1]:
             print(f"Error: unexpected answer {base_meter_answer}")
             sys.exit(1)
-        print(f"base_meter_answer: {base_meter_answer}")
         num_meter_base_correct += base_meter_answer
 
         # Now, we want to run the anonymeter-style attack on every valid
@@ -203,9 +200,12 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             'model_base_answer': model_base_answer,
             'model_attack_pred_value': model_attack_pred_value,
             'model_attack_answer': model_attack_answer,
-            'syn_anonymeter_answer': syn_anonymeter_answer,
+            'syn_meter_pred_value': syn_meter_pred_value,
+            'syn_meter_answer': syn_meter_answer,
+            'base_meter_pred_value': base_meter_pred_value,
             'base_meter_answer': base_meter_answer,
         })
+        pp.pprint(attacks[-1])
     print(f"num_model_base_correct: {num_model_base_correct}\nnum_syn_correct: {num_syn_correct}\nnum_meter_base_correct: {num_meter_base_correct}\nnum_model_attack_correct: {num_model_attack_correct}")
 
 
