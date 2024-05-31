@@ -219,9 +219,11 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
     num_syn_correct = 0
     num_meter_base_correct = 0
     attacks = []
+    print(f"secret_col: {secret_col}")
     print(f"df_original.columns: {df_original.columns}")
     print(f"df_control.columns: {df_control.columns}")	
     print(f"df_syn.columns: {df_syn.columns}")
+    quit()
     for i in range(num_runs):
         # There is a chance of replicas here, but small enough that we ignore it
         targets = df_original[attack_cols].sample(1)
@@ -309,6 +311,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             #print(f"subset_aux_cols: {subset_aux_cols}")
             #print(f"col_comb: {col_comb}")
             #print(f"df_syn_subset.columns: {df_syn_subset.columns}")
+            print(f"secret_col: {secret_col}")
             subset_meter_pred_value_series = anonymeter_mods.run_anonymeter_attack(
                                             targets=targets,
                                             basis=df_syn_subset[col_comb],
