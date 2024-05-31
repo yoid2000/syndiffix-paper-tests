@@ -306,9 +306,9 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             df_syn_subset = transform_df_with_update(df_syn_subset, encoders)
             subset_aux_cols = col_comb.copy()
             subset_aux_cols.remove(secret_col)
-            print(f"subset_aux_cols: {subset_aux_cols}")
-            print(f"col_comb: {col_comb}")
-            print(f"df_syn_subset.columns: {df_syn_subset.columns}")
+            #print(f"subset_aux_cols: {subset_aux_cols}")
+            #print(f"col_comb: {col_comb}")
+            #print(f"df_syn_subset.columns: {df_syn_subset.columns}")
             subset_meter_pred_value_series = anonymeter_mods.run_anonymeter_attack(
                                             targets=targets,
                                             basis=df_syn_subset[col_comb],
