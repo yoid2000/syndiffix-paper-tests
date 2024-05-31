@@ -396,8 +396,11 @@ def run_attack(job_num):
     tm = TablesManager(dir_path=dataset_path)
     # First, run the attack on the full synthetic dataset
     df_syn = tm.get_syn_df()
+    print(f"df_syn has shape {df_syn.shape} and columns {df_syn.columns}")
     # set aux_cols to all columns except the secret column
     aux_cols = [col for col in df_syn.columns if col not in job['secret']]
+    print(f"aux_cols has {len(aux_cols)} columns: {aux_cols}")
+    quit()
     if tm.orig_meta_data['column_classes'][job['secret']] == 'continuous':
         regression = True
         target_type = 'continuous'
