@@ -223,7 +223,6 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
     print(f"df_original.columns: {df_original.columns}")
     print(f"df_control.columns: {df_control.columns}")	
     print(f"df_syn.columns: {df_syn.columns}")
-    quit()
     for i in range(num_runs):
         # There is a chance of replicas here, but small enough that we ignore it
         targets = df_original[attack_cols].sample(1)
@@ -278,6 +277,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             print(f"Error: unexpected answer {syn_meter_answer}")
             sys.exit(1)
         num_syn_correct += syn_meter_answer
+        quit()
 
         # Run the anonymeter-style attack on the control data for the baseline
         base_meter_pred_value_series = anonymeter_mods.run_anonymeter_attack(
