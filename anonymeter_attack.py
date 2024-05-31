@@ -219,6 +219,9 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
     num_syn_correct = 0
     num_meter_base_correct = 0
     attacks = []
+    print(f"df_original.columns: {df_original.columns}")
+    print(f"df_control.columns: {df_control.columns}")	
+    print(f"df_syn.columns: {df_syn.columns}")
     for i in range(num_runs):
         # There is a chance of replicas here, but small enough that we ignore it
         targets = df_original[attack_cols].sample(1)
