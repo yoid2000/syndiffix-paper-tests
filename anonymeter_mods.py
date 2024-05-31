@@ -395,6 +395,8 @@ class MixedTypeKNeighbors:
             n_neighbors = self._candidates.shape[0]
 
         if self._ctypes is None:
+            print(df1.columns)
+            print(df2.columns)	
             self._ctypes = detect_consistent_col_types(df1=self._candidates, df2=queries)
         candidates, queries = mixed_types_transform(
             df1=self._candidates, df2=queries, num_cols=self._ctypes["num"], cat_cols=self._ctypes["cat"]
