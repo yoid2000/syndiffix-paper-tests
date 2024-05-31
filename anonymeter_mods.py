@@ -258,7 +258,7 @@ def run_anonymeter_attack(
     nn = MixedTypeKNeighbors(n_jobs=n_jobs, n_neighbors=1).fit(candidates=basis[aux_cols])
 
     print(f"aux_cols: {aux_cols}")
-    print(f"targets[aux_cols]: {targets[aux_cols].head()}"	)
+    print(f"targets: {targets.head()}"	)
     print(f"basis[aux_cols]: {basis[aux_cols].head()}"	)	
     guesses_idx = nn.kneighbors(queries=targets[aux_cols])
     guesses = basis.iloc[guesses_idx.flatten()][secret]
