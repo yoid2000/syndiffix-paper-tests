@@ -300,6 +300,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         pred_values = []
         for col_comb in col_combs:
             df_syn_subset = tm.get_syn_df(col_comb)
+            df_syn_subset = convert_datetime_to_timestamp(df_syn_subset)
             df_syn_subset = transform_df_with_update(df_syn_subset, encoders)
             subset_aux_cols = col_comb.copy()
             subset_aux_cols.remove(secret_col)
