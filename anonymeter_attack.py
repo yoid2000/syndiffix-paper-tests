@@ -207,6 +207,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
     df_control = transform_df(df_control, encoders)
     df_syn = transform_df(df_syn, encoders)
     attack_cols = aux_cols + [secret_col]
+    print(f"attack_cols: {attack_cols}"	)
     # model_base is the baseline built from an ML model
     print("build baseline model")
     model_base = build_and_train_model(df_control[attack_cols], secret_col, secret_col_type)
@@ -264,7 +265,6 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         num_model_attack_correct += model_attack_answer
 
         # Run the anonymeter-style attack on the synthetic data
-        print(f"2: targets.columns: {targets.columns}")
         syn_meter_pred_values = []
         syn_meter_pred_value_series = anonymeter_mods.run_anonymeter_attack(
                                         targets=targets,
