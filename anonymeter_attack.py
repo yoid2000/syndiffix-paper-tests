@@ -226,6 +226,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
     for i in range(num_runs):
         # There is a chance of replicas here, but small enough that we ignore it
         targets = df_original[attack_cols].sample(1)
+        print(f"1: targets.columns: {targets.columns}")
         # Get the value of the secret column in the first row of targets
         secret_value = targets[secret_col].iloc[0]
         # Count the number of rows that contian secret_value in column secret_col
@@ -263,6 +264,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         num_model_attack_correct += model_attack_answer
 
         # Run the anonymeter-style attack on the synthetic data
+        print(f"2: targets.columns: {targets.columns}")
         syn_meter_pred_values = []
         syn_meter_pred_value_series = anonymeter_mods.run_anonymeter_attack(
                                         targets=targets,
