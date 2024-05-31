@@ -277,7 +277,6 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             print(f"Error: unexpected answer {syn_meter_answer}")
             sys.exit(1)
         num_syn_correct += syn_meter_answer
-        quit()
 
         # Run the anonymeter-style attack on the control data for the baseline
         base_meter_pred_value_series = anonymeter_mods.run_anonymeter_attack(
