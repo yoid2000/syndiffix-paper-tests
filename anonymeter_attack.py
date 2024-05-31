@@ -207,7 +207,6 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
     df_control = transform_df(df_control, encoders)
     df_syn = transform_df(df_syn, encoders)
     attack_cols = aux_cols + [secret_col]
-    print(f"attack_cols: {attack_cols}"	)
     # model_base is the baseline built from an ML model
     print("build baseline model")
     model_base = build_and_train_model(df_control[attack_cols], secret_col, secret_col_type)
@@ -220,14 +219,9 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
     num_syn_correct = 0
     num_meter_base_correct = 0
     attacks = []
-    print(f"secret_col: {secret_col}")
-    print(f"df_original.columns: {df_original.columns}")
-    print(f"df_control.columns: {df_control.columns}")	
-    print(f"df_syn.columns: {df_syn.columns}")
     for i in range(num_runs):
         # There is a chance of replicas here, but small enough that we ignore it
         targets = df_original[attack_cols].sample(1)
-        print(f"1: targets.columns: {targets.columns}")
         # Get the value of the secret column in the first row of targets
         secret_value = targets[secret_col].iloc[0]
         # Count the number of rows that contian secret_value in column secret_col
@@ -309,10 +303,6 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             df_syn_subset = transform_df_with_update(df_syn_subset, encoders)
             subset_aux_cols = col_comb.copy()
             subset_aux_cols.remove(secret_col)
-            #print(f"subset_aux_cols: {subset_aux_cols}")
-            #print(f"col_comb: {col_comb}")
-            #print(f"df_syn_subset.columns: {df_syn_subset.columns}")
-            print(f"secret_col: {secret_col}")
             subset_meter_pred_value_series = anonymeter_mods.run_anonymeter_attack(
                                             targets=targets,
                                             basis=df_syn_subset[col_comb],
