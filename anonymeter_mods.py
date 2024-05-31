@@ -238,6 +238,8 @@ def detect_consistent_col_types(df1: pd.DataFrame, df2: pd.DataFrame):
     ctypes1 = detect_col_types(df1)
 
     if ctypes1 != detect_col_types(df2):
+        print(ctypes1)
+        print(detect_col_types(df2))
         raise RuntimeError("Input dataframes have different column names/types.")
 
     return ctypes1
@@ -395,8 +397,6 @@ class MixedTypeKNeighbors:
             n_neighbors = self._candidates.shape[0]
 
         if self._ctypes is None:
-            print(df1.columns)
-            print(df2.columns)	
             self._ctypes = detect_consistent_col_types(df1=self._candidates, df2=queries)
         candidates, queries = mixed_types_transform(
             df1=self._candidates, df2=queries, num_cols=self._ctypes["num"], cat_cols=self._ctypes["cat"]
