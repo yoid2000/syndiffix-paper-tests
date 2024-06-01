@@ -402,16 +402,28 @@ def run_attack(job_num):
 
 def gather(instances_path):
     attacks = []
-    all_files = list(os.listdir(instances_path))
-    # loop through the index and filename of all_files
-    for i, filename in enumerate(all_files):
-        if not filename.endswith('.json'):
-            continue
-        with open(os.path.join(instances_path, filename), 'r') as f:
-            print(f"Reading {i+1} of {len(all_files)} {filename}")
-            res = json.load(f)
-            attacks += res
-    print(f"Total attacks: {len(attacks)}")
+    # check to see if attacks.parquet exists
+    if os.path.exists(os.path.join(attack_path, 'attacks.parquet')):
+        # read it as a DataFrame
+        print("Reading attacks.parquet")
+        df = pd.read_parquet(os.path.join(attack_path, 'attacks.parquet'))
+    else:
+        all_files = list(os.listdir(instances_path))
+        # loop through the index and filename of all_files
+        for i, filename in enumerate(all_files):
+            if not filename.endswith('.json'):
+                continue
+            with open(os.path.join(instances_path, filename), 'r') as f:
+                print(f"Reading {i+1} of {len(all_files)} {filename}")
+                res = json.load(f)
+                attacks += res
+        print(f"Total attacks: {len(attacks)}")
+        # convert attacks to a DataFrame
+        df = pd.DataFrame(attacks)
+        # save the dataframe to a parquet file
+        df.to_parquet(os.path.join(attack_path, 'attacks.parquet'))
+        # save the dataframe to a csv file
+        df.to_csv(os.path.join(attack_path, 'attacks.csv'))
 
 def do_plots():
     pass
