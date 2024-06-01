@@ -430,7 +430,14 @@ def do_plots():
     df = gather(instances_path=os.path.join(attack_path, 'instances'))
     print(f"df has shape {df.shape} and columns:")
     pp.pprint(list(df.columns))
-    pass
+    stats = {}
+    stats['num_attacks'] = len(df)
+    stats['model_base_precision'] = df['model_base_answer'].sum() / len(df)
+    stats['meter_base_precision'] = df['base_meter_answer'].sum() / len(df)
+
+    # save stats as json file
+    with open(os.path.join(attack_path, 'stats.json'), 'w') as f:
+        json.dump(stats, f, indent=4)
 
 def do_tests():
     if find_most_frequent_value([1, 2, 2, 3, 3, 3], 0.5) != 3:
