@@ -428,6 +428,8 @@ def gather(instances_path):
 
 def do_plots():
     df = gather(instances_path=os.path.join(attack_path, 'instances'))
+    print(f"df has shape {df.shape} and columns:")
+    pp.pprint(list(df.columns))
     pass
 
 def do_tests():
