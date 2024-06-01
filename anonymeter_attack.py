@@ -434,6 +434,7 @@ def do_plots():
     stats['num_attacks'] = len(df)
     stats['model_base_precision'] = df['model_base_answer'].sum() / len(df)
     stats['meter_base_precision'] = df['base_meter_answer'].sum() / len(df)
+    pp.pprint(stats)
 
     # save stats as json file
     with open(os.path.join(attack_path, 'stats.json'), 'w') as f:
