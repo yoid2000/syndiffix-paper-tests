@@ -401,6 +401,7 @@ def run_attack(job_num):
         json.dump(attacks, f, indent=4)
 
 def gather(instances_path):
+    attacks = []
     all_files = list(os.listdir(instances_path))
     # loop through the index and filename of all_files
     for i, filename in enumerate(all_files):
@@ -409,6 +410,8 @@ def gather(instances_path):
         with open(os.path.join(instances_path, filename), 'r') as f:
             print(f"Reading {i+1} of {len(all_files)} {filename}")
             res = json.load(f)
+            attacks += res
+    print(f"Total attacks: {len(attacks)}")
 
 def do_plots():
     pass
