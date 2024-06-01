@@ -424,8 +424,10 @@ def gather(instances_path):
         df.to_parquet(os.path.join(attack_path, 'attacks.parquet'))
         # save the dataframe to a csv file
         df.to_csv(os.path.join(attack_path, 'attacks.csv'))
+    return df
 
 def do_plots():
+    df = gather(instances_path=os.path.join(attack_path, 'instances'))
     pass
 
 def do_tests():
@@ -447,8 +449,6 @@ def main():
         make_config()
     if args.command == 'test':
         do_tests()
-    elif args.command == 'gather':
-        gather(instances_path=os.path.join(attack_path, 'instances'))
     elif args.command == 'plots':
         do_plots()
     else:
