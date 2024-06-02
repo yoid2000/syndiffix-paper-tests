@@ -163,3 +163,5 @@ exact_count_results/
 exact_count_slurm.sh
 out.txt
 suppress_attacks/*.parquet
+anonymeter_attacks/*.parquet
+anonymeter_attacks/*.json
