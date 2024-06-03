@@ -271,8 +271,11 @@ def run_anonymeter_attack(
     print("basis[aux_cols]:", basis[aux_cols])
     print("match_row shape:", match_row.shape)
     print("match_row:", match_row)
-    matching_rows = (basis[aux_cols] == match_row[aux_cols]).all(axis=1)
-    print(4, matching_rows)
+    try:
+        matching_rows = (basis[aux_cols] == match_row[aux_cols]).all(axis=1)
+        print(4, matching_rows)
+    except Exception as e:
+        print("Exception occurred:", e)
     df_matching = basis[matching_rows]
     modal_value = df_matching[secret].mode()[0]
     print(5, modal_value)
