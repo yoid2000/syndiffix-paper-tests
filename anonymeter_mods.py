@@ -1,5 +1,6 @@
 from typing import List, Optional, Union, Tuple, Dict
 
+import sys
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
@@ -266,7 +267,7 @@ def get_matches(basis: pd.DataFrame, guess_idx: np.ndarray, aux_cols: list) -> p
     # Use the mask to get the matching rows from basis
     matching_rows_df = basis[mask]
 
-    return matching_rows_df
+    return matching_rows_df, match_row
 
 def run_anonymeter_attack(
     targets: pd.DataFrame,    # This is the victim information
@@ -285,7 +286,7 @@ def run_anonymeter_attack(
 
     guess_idx = nn.kneighbors(queries=targets[aux_cols])
     guess = basis.iloc[guess_idx.flatten()][secret]
-    df_matching = get_matches(basis=basis, guess_idx=guess_idx, aux_cols=aux_cols)
+    df_matching, match_row = get_matches(basis=basis, guess_idx=guess_idx, aux_cols=aux_cols)
     modal_value = df_matching[secret].mode()[0]
     modal_count = (df_matching[secret] == modal_value).sum()
     fraction = modal_count / len(df_matching)
@@ -295,11 +296,11 @@ def run_anonymeter_attack(
             'modal_value': modal_value,
             'modal_count': modal_count,
             'modal_fraction': fraction}
-    if len(matching_rows) == 0:
+    if len(df_matching) == 0:
         print(f"no matching rows")
         pp.pprint(ans)
         sys.exit(1)
-    if len(matching_rows) > 1:
+    if len(df_matching) > 1:
         pp.pprint(ans)
     return ans
     #return evaluate_inference_guesses(guesses=guesses, secrets=targets[secret], regression=regression).sum()
