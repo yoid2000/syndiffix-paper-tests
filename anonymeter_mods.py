@@ -262,18 +262,18 @@ def run_anonymeter_attack(
     nn = MixedTypeKNeighbors(n_jobs=n_jobs, n_neighbors=1).fit(candidates=basis[aux_cols])
 
     guess_idx = nn.kneighbors(queries=targets[aux_cols])
-    print(guess_idx)
+    print(1, guess_idx)
     match_row = basis.iloc[guess_idx.flatten()]
-    print(match_row)
+    print(2, match_row)
     guess = basis.iloc[guess_idx.flatten()][secret]
-    print(guess)
+    print(3, guess)
     matching_rows = (basis[aux_cols] == match_row[aux_cols]).all(axis=1)
-    print(matching_rows)
+    print(4, matching_rows)
     df_matching = basis[matching_rows]
     modal_value = df_matching[secret].mode()[0]
-    print(modal_value)
+    print(5, modal_value)
     modal_count = (df_matching[secret] == modal_value).sum()
-    print(modal_count)
+    print(6, modal_count)
     fraction = modal_count / len(df_matching)
     
     ans = {'guess_series': guess,
