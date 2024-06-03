@@ -296,8 +296,6 @@ def run_anonymeter_attack(
         print(f"no matching rows")
         pp.pprint(ans)
         sys.exit(1)
-    if ans['modal_count'] == 2:
-        pp.pprint(ans)
     return ans
     #return evaluate_inference_guesses(guesses=guesses, secrets=targets[secret], regression=regression).sum()
 
