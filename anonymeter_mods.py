@@ -264,7 +264,7 @@ def run_anonymeter_attack(
     guess_idx = nn.kneighbors(queries=targets[aux_cols])
     match_row = basis.iloc[guess_idx.flatten()]
     guess = basis.iloc[guess_idx.flatten()][secret]
-    matching_rows = basis[aux_cols].isin(match_row[aux_cols]).all(axis=1)
+    matching_rows = (basis[aux_cols] == match_row[aux_cols]).all(axis=1)
     df_matching = basis[matching_rows]
     modal_value = df_matching[secret].mode()[0]
     modal_count = (df_matching[secret] == modal_value).sum()
@@ -275,6 +275,10 @@ def run_anonymeter_attack(
             'modal_value': modal_value,
             'modal_count': modal_count,
             'modal_fraction': fraction}
+    if ans['modal_count'] == 0:
+        print(f"modal_count is 0")
+        pp.pprint(ans)
+        sys.exit(1)
     if ans['modal_count'] > 1:
         pp.pprint(ans)
     return ans
