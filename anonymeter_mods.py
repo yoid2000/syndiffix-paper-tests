@@ -273,7 +273,8 @@ def run_anonymeter_attack(
     print("match_row:", match_row)
     try:
         match_row_series = match_row.squeeze()
-        matching_rows = (basis[aux_cols] == match_row_series).all(axis=1)
+        basis_aligned, match_row_aligned = basis[aux_cols].align(match_row_series, axis=1)
+        matching_rows = (basis_aligned == match_row_aligned).all(axis=1)
         print(4, matching_rows)
     except Exception as e:
         print("Exception occurred:", e)
