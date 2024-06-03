@@ -246,6 +246,18 @@ def detect_consistent_col_types(df1: pd.DataFrame, df2: pd.DataFrame):
 
     return ctypes1
 
+def get_matches(basis: pd.DataFrame, guess_idx: np.ndarray, aux_cols: list) -> pd.DataFrame:
+    # Get the matching row
+    match_row = basis.iloc[guess_idx].squeeze()
+
+    # Create a boolean mask where each row is True if the row matches the matching row for all aux_cols
+    mask = (basis[aux_cols] == match_row[aux_cols]).all(axis=1)
+
+    # Use the mask to get the matching rows from basis
+    matching_rows_df = basis[mask]
+
+    return matching_rows_df
+
 def run_anonymeter_attack(
     targets: pd.DataFrame,    # This is the victim information
     basis: pd.DataFrame,      # This is control or synthetic data, depending
@@ -262,29 +274,10 @@ def run_anonymeter_attack(
     nn = MixedTypeKNeighbors(n_jobs=n_jobs, n_neighbors=1).fit(candidates=basis[aux_cols])
 
     guess_idx = nn.kneighbors(queries=targets[aux_cols])
-    print(f"type of guess_idx: {type(guess_idx)}")
-    print(f"guess_idx: {guess_idx}")
-    print(f"type of basis: {type(basis)}")
-    match_row = basis.iloc[guess_idx.flatten()].reset_index(drop=True)
-    print(2, match_row)
     guess = basis.iloc[guess_idx.flatten()][secret]
-    print(3, guess)
-    print("basis[aux_cols] shape:", basis[aux_cols].shape)
-    print("basis[aux_cols]:", basis[aux_cols])
-    print("match_row shape:", match_row.shape)
-    print("match_row:", match_row)
-    try:
-        match_row_series = match_row.squeeze()
-        basis_aligned, match_row_aligned = basis[aux_cols].align(match_row_series, axis=1)
-        matching_rows = (basis_aligned == match_row_aligned).all(axis=1)
-        print(4, matching_rows)
-    except Exception as e:
-        print("Exception occurred:", e)
-    df_matching = basis[matching_rows]
+    df_matching = get_matches(basis=basis, guess_idx=guess_idx, aux_cols=aux_cols)
     modal_value = df_matching[secret].mode()[0]
-    print(5, modal_value)
     modal_count = (df_matching[secret] == modal_value).sum()
-    print(6, modal_count)
     fraction = modal_count / len(df_matching)
     
     ans = {'guess_series': guess,
