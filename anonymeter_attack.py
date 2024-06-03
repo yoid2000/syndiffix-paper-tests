@@ -222,6 +222,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
     modal_value = df_original[secret_col].mode().iloc[0]
     num_modal_rows = df_original[df_original[secret_col] == modal_value].shape[0]
     modal_percentage = round(100*(num_modal_rows / len(df_original)), 2)
+    print(f"Run {num_runs} attacks:")
     for i in range(num_runs):
         # There is a chance of replicas here, but small enough that we ignore it
         targets = df_original[attack_cols].sample(1)
