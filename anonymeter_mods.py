@@ -266,8 +266,8 @@ def run_anonymeter_attack(
     guess = basis.iloc[guess_idx.flatten()][secret]
     matching_rows = basis[aux_cols].isin(match_row[aux_cols]).all(axis=1)
     df_matching = basis[matching_rows]
-    modal_value = df_matching['secret'].mode()[0]
-    modal_count = (df_matching['secret'] == modal_value).sum()
+    modal_value = df_matching[secret].mode()[0]
+    modal_count = (df_matching[secret] == modal_value).sum()
     fraction = modal_count / len(df_matching)
     
     ans = {'guess_series': guess,
