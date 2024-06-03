@@ -219,6 +219,9 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
     num_syn_correct = 0
     num_meter_base_correct = 0
     attacks = []
+    modal_value = df_original[secret_col].mode().iloc[0]
+    num_modal_rows = df_original[df_original[secret_col] == modal_value].shape[0]
+    modal_percentage = round(100*(num_modal_rows / len(df_original)), 2)
     for i in range(num_runs):
         # There is a chance of replicas here, but small enough that we ignore it
         targets = df_original[attack_cols].sample(1)
@@ -227,7 +230,6 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         # Count the number of rows that contian secret_value in column secret_col
         num_secret_rows = df_original[secret_col].value_counts().get(secret_value, 0)
         secret_percentage = round(100*(num_secret_rows / len(df_original)), 2)
-
         # Now get the model baseline prediction
         try:
             model_base_pred_value = model_base.predict(targets.drop(secret_col, axis=1))
@@ -332,8 +334,10 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
 
         attacks.append({
             'secret_value': str(secret_value),
-            'secret_percentage:': secret_percentage,
+            'secret_percentage': secret_percentage,
             'secret_col_type': secret_col_type,
+            'modal_value': str(modal_value),
+            'modal_percentage': modal_percentage,
             'model_base_pred_value': str(model_base_pred_value),
             'model_base_answer': str(model_base_answer),
             'model_attack_pred_value': str(model_attack_pred_value),
@@ -401,17 +405,124 @@ def run_attack(job_num):
         json.dump(attacks, f, indent=4)
 
 def gather(instances_path):
-    all_files = list(os.listdir(instances_path))
-    # loop through the index and filename of all_files
-    for i, filename in enumerate(all_files):
-        if not filename.endswith('.json'):
-            continue
-        with open(os.path.join(instances_path, filename), 'r') as f:
-            print(f"Reading {i+1} of {len(all_files)} {filename}")
-            res = json.load(f)
+    attacks = []
+    # check to see if attacks.parquet exists
+    if os.path.exists(os.path.join(attack_path, 'attacks.parquet')):
+        # read it as a DataFrame
+        print("Reading attacks.parquet")
+        df = pd.read_parquet(os.path.join(attack_path, 'attacks.parquet'))
+    else:
+        all_files = list(os.listdir(instances_path))
+        # loop through the index and filename of all_files
+        for i, filename in enumerate(all_files):
+            if not filename.endswith('.json'):
+                continue
+            with open(os.path.join(instances_path, filename), 'r') as f:
+                print(f"Reading {i+1} of {len(all_files)} {filename}")
+                res = json.load(f)
+                attacks += res
+        print(f"Total attacks: {len(attacks)}")
+        # convert attacks to a DataFrame
+        df = pd.DataFrame(attacks)
+        # save the dataframe to a parquet file
+        df.to_parquet(os.path.join(attack_path, 'attacks.parquet'))
+        # save the dataframe to a csv file
+        df.to_csv(os.path.join(attack_path, 'attacks.csv'))
+    return df
+
+def get_basic_stats(stats, df):
+    stats['num_attacks'] = len(df)
+    stats['average_percentage'] = round(df['secret_percentage'].mean(), 2)
+    p_model = round(df['model_base_answer'].sum() / len(df), 3)
+    stats['model_base_precision'] = p_model
+    p_meter = round(df['base_meter_answer'].sum() / len(df), 3)
+    stats['meter_base_precision'] = p_meter
+    base = max(p_model, p_meter)
+    p = round(df['model_attack_answer'].sum() / len(df), 3)
+    stats['model_attack_precision'] = p
+    stats['model_attack_improve'] = round((p-base)/(1.0000001-base), 3)
+    p = round(df['syn_meter_answer'].sum() / len(df), 3)
+    stats['meter_attack_precision'] = p
+    stats['meter_attack_improve'] = round((p-base)/(1.0000001-base), 3)
+    p = round(df['high_syn_meter_answer'].sum() / len(df), 3)
+    stats['high_meter_attack_precision'] = p
+    stats['high_meter_attack_improve'] = round((p-base)/(1.0000001-base), 3)
+    p = round(df['low_syn_meter_answer'].sum() / len(df), 3)
+    stats['low_meter_attack_precision'] = p
+    stats['low_meter_attack_improve'] = round((p-base)/(1.0000001-base), 3)
+
+def get_by_metric_from_by_slice(stats):
+    for metric in stats['by_slice']['all_results'].keys():
+        stats['by_metric'][metric] = {}	
+        for slice, result in stats['by_slice'].items():
+            stats['by_metric'][metric][slice] = result[metric]
+
+def digin(df):
+    df = df.copy()
+    df['frac_comb_correct'] = df['num_subset_correct'] / df['num_subset_combs']
+    df1 = df[(df['high_syn_meter_answer'] == 1) & (df['model_base_answer'] == 0)]
+    df1 = df1.copy()
+    df2 = df[(df['high_syn_meter_answer'] == 0) & (df['model_base_answer'] == 1)]
+    df2 = df2.copy()
+    #df1 = df1.sort_values(by='frac_comb_correct', ascending=False)
+    #print(df1[['secret_percentage', 'frac_comb_correct']].head(20))
+    #print(df1[['secret_percentage', 'frac_comb_correct']].tail(20))
+    print("secret_percentage: high_syn right, model base wrong")
+    print(df1['secret_percentage'].describe())
+    print("secret_percentage: high_syn wrong, model base right")
+    print(df2['secret_percentage'].describe())
+    print(f"df1 has shape {df1.shape}, df2 has shape {df2.shape}")
+    print("---------------------------------------------------")
+    for low, high in [[0,10], [10,20], [20,30], [30,40], [40,50], [50,60], [60,70], [70,80], [80,90], [90,100]]:
+        num_rows_high_true = df[(df['modal_value'] == df['secret_value']) & (df['modal_percentage'] > low) & (df['modal_percentage'] < high) & (df['high_syn_meter_answer'] == 1)].shape[0]
+        num_rows_high_false = df[(df['modal_value'] == df['secret_value']) & (df['modal_percentage'] > low) & (df['modal_percentage'] < high) & (df['high_syn_meter_answer'] == 0)].shape[0]
+        frac_true = round(100*(num_rows_high_true / (num_rows_high_true + num_rows_high_false + 0.00001)), 2)
+        print(f"{low}-{high} percent true = {frac_true} ({num_rows_high_true}, {num_rows_high_false})")
+    print("---------------------------------------------------")
+    for low, high in [[0,10], [10,20], [20,30], [30,40], [40,50], [50,60], [60,70], [70,80], [80,90], [90,100]]:
+        num_rows_true = df[(df['modal_value'] == df['secret_value']) & (df['modal_percentage'] > low) & (df['modal_percentage'] <= high)].shape[0]
+        num_rows = df[(df['modal_percentage'] > low) & (df['modal_percentage'] <= high)].shape[0]
+        frac_true = round(100*(num_rows_true / (num_rows + 0.00001)), 2)
+        print(f"{low}-{high} precision = {frac_true} ({num_rows_true}, {num_rows})")
 
 def do_plots():
-    pass
+    df = gather(instances_path=os.path.join(attack_path, 'instances'))
+
+    print(f"df has shape {df.shape} and columns:")
+    print(df.head())
+    for col in df.columns:
+        if df[col].dtype == object:
+            try:
+                df[col] = df[col].astype(int)
+            except ValueError:
+                try:
+                    df[col] = df[col].astype(float)
+                except ValueError:
+                    pass
+    # print the columns and dtypes of df
+    print(df.dtypes)
+    stats = {'by_slice': {}, 'by_metric': {}}
+    stats['by_slice']['all_results'] = {}
+    get_basic_stats(stats['by_slice']['all_results'], df)
+    # make a new df that contains only rows where 'secret_col_type' is 'categorical'
+    df_cat = df[df['secret_col_type'] == 'categorical']
+    df_cat = df_cat.copy()
+    stats['by_slice']['categorical_results'] = {}
+    get_basic_stats(stats['by_slice']['categorical_results'], df_cat)
+    #df_cat['percentile_bin'] = pd.qcut(df_cat['secret_percentage'], q=10, labels=False)
+    df_cat['percentile_bin'] = pd.cut(df_cat['modal_percentage'], bins=10, labels=False)
+    for bin_value, df_bin in df_cat.groupby('percentile_bin'):
+        average_percentage = round(df_bin['secret_percentage'].mean(), 2)
+        slice_name = f"cat_modal_percentage_{average_percentage}"
+        stats['by_slice'][slice_name] = {}
+        get_basic_stats(stats['by_slice'][slice_name], df_bin)
+    digin(df_cat)
+    get_by_metric_from_by_slice(stats)
+    #pp.pprint(stats)
+
+    # save stats as json file
+    with open(os.path.join(attack_path, 'stats.json'), 'w') as f:
+        json.dump(stats, f, indent=4)
 
 def do_tests():
     if find_most_frequent_value([1, 2, 2, 3, 3, 3], 0.5) != 3:
@@ -432,8 +543,6 @@ def main():
         make_config()
     if args.command == 'test':
         do_tests()
-    elif args.command == 'gather':
-        gather(instances_path=os.path.join(attack_path, 'instances'))
     elif args.command == 'plots':
         do_plots()
     else:
