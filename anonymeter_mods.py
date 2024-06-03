@@ -251,7 +251,10 @@ def get_matches(basis: pd.DataFrame, guess_idx: np.ndarray, aux_cols: list) -> p
     match_row = basis.iloc[guess_idx].squeeze()
 
     # Create a boolean mask where each row is True if the row matches the matching row for all aux_cols
-    mask = (basis[aux_cols] == match_row[aux_cols]).all(axis=1)
+    try:
+        mask = (basis[aux_cols] == match_row[aux_cols]).all(axis=1)
+    except Exception as e:
+        print("Exception occurred:", e)
 
     # Use the mask to get the matching rows from basis
     matching_rows_df = basis[mask]
