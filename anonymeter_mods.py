@@ -247,8 +247,12 @@ def detect_consistent_col_types(df1: pd.DataFrame, df2: pd.DataFrame):
     return ctypes1
 
 def get_matches(basis: pd.DataFrame, guess_idx: np.ndarray, aux_cols: list) -> pd.DataFrame:
+    print(f"get_matches: basis type {type(basis)}, guess_idx type {type(guess_idx)}, aux_cols type {type(aux_cols)}")
+    print(f"get_matches: basis.shape: {basis.shape}, guess_idx.shape: {guess_idx.shape}, aux_cols: {aux_cols}")	
     # Get the matching row
     match_row = basis.iloc[guess_idx].squeeze()
+    print(f"match_row type: {type(match_row)}")
+    print(f"match_row: {match_row}")
 
     # Create a boolean mask where each row is True if the row matches the matching row for all aux_cols
     try:
