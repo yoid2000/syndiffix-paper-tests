@@ -6,11 +6,13 @@ from sklearn.preprocessing import LabelEncoder
 from joblib import Parallel, delayed
 from numba import float64, int64, jit
 from math import fabs, isnan
+import pprint
+
+pp = pprint.PrettyPrinter(indent=4)
 
 '''
-The code in here was all cut-n-paste from the github repo anonymeter.
+The code in here was cut-n-paste from the github repo anonymeter, with minor additions.
 '''
-
 
 @jit(nopython=True, nogil=True)
 def gower_distance(r0: np.ndarray, r1: np.ndarray, cat_cols_index: np.ndarray) -> float64:
@@ -259,10 +261,22 @@ def run_anonymeter_attack(
 
     nn = MixedTypeKNeighbors(n_jobs=n_jobs, n_neighbors=1).fit(candidates=basis[aux_cols])
 
-    guesses_idx = nn.kneighbors(queries=targets[aux_cols])
-    guesses = basis.iloc[guesses_idx.flatten()][secret]
+    guess_idx = nn.kneighbors(queries=targets[aux_cols])
+    match_row = basis.iloc[guess_idx.flatten()]
+    guess = basis.iloc[guess_idx.flatten()][secret]
+    matching_rows = basis[aux_cols].isin(match_row[aux_cols]).all(axis=1)
+    df_matching = basis[matching_rows]
+    modal_value = df_matching['secret'].mode()[0]
+    modal_count = (df_matching['secret'] == modal_value).sum()
+    fraction = modal_count / len(df_matching)
     
-    return guesses
+    ans = {'guess_series': guess,
+            'match_row': match_row,
+            'modal_value': modal_value,
+            'modal_count': modal_count,
+            'modal_fraction': fraction}
+    pp.pprint(ans)
+    return ans
     #return evaluate_inference_guesses(guesses=guesses, secrets=targets[secret], regression=regression).sum()
 
 

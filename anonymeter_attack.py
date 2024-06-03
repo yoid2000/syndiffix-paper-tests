@@ -262,12 +262,13 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
 
         # Run the anonymeter-style attack on the synthetic data
         syn_meter_pred_values = []
-        syn_meter_pred_value_series = anonymeter_mods.run_anonymeter_attack(
+        ans = anonymeter_mods.run_anonymeter_attack(
                                         targets=targets,
                                         basis=df_syn[attack_cols],
                                         aux_cols=aux_cols,
                                         secret=secret_col,
                                         regression=regression)
+        syn_meter_pred_value_series = ans['guess_series']
         syn_meter_pred_value = syn_meter_pred_value_series.iloc[0]
         syn_meter_pred_values.append(syn_meter_pred_value)
         syn_meter_answer = anonymeter_mods.evaluate_inference_guesses(guesses=syn_meter_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
@@ -277,12 +278,13 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         num_syn_correct += syn_meter_answer
 
         # Run the anonymeter-style attack on the control data for the baseline
-        base_meter_pred_value_series = anonymeter_mods.run_anonymeter_attack(
+        ans = anonymeter_mods.run_anonymeter_attack(
                                         targets=targets,
                                         basis=df_control[attack_cols],
                                         aux_cols=aux_cols,
                                         secret=secret_col,
                                         regression=regression)
+        base_meter_pred_value_series = ans['guess_series']
         base_meter_pred_value = base_meter_pred_value_series.iloc[0]
         base_meter_answer = anonymeter_mods.evaluate_inference_guesses(guesses=base_meter_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
         if base_meter_answer not in [0,1]:
@@ -306,12 +308,13 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             df_syn_subset = transform_df_with_update(df_syn_subset, encoders)
             subset_aux_cols = col_comb.copy()
             subset_aux_cols.remove(secret_col)
-            subset_meter_pred_value_series = anonymeter_mods.run_anonymeter_attack(
+            ans = anonymeter_mods.run_anonymeter_attack(
                                             targets=targets[col_comb],
                                             basis=df_syn_subset[col_comb],
                                             aux_cols=subset_aux_cols,
                                             secret=secret_col,
                                             regression=regression)
+            subset_meter_pred_value_series = ans['guess_series']
             subset_meter_pred_value = subset_meter_pred_value_series.iloc[0]
             pred_values.append(subset_meter_pred_value)
             subset_meter_answer = anonymeter_mods.evaluate_inference_guesses(guesses=subset_meter_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
