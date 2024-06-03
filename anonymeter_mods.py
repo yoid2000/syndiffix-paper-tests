@@ -267,6 +267,10 @@ def run_anonymeter_attack(
     print(2, match_row)
     guess = basis.iloc[guess_idx.flatten()][secret]
     print(3, guess)
+    print("basis[aux_cols] shape:", basis[aux_cols].shape)
+    print("basis[aux_cols]:", basis[aux_cols])
+    print("match_row shape:", match_row.shape)
+    print("match_row:", match_row)
     matching_rows = (basis[aux_cols] == match_row[aux_cols]).all(axis=1)
     print(4, matching_rows)
     df_matching = basis[matching_rows]
@@ -281,11 +285,11 @@ def run_anonymeter_attack(
             'modal_value': modal_value,
             'modal_count': modal_count,
             'modal_fraction': fraction}
-    if ans['modal_count'] == 0:
-        print(f"modal_count is 0")
+    if len(matching_rows) == 0:
+        print(f"no matching rows")
         pp.pprint(ans)
         sys.exit(1)
-    if ans['modal_count'] > 1:
+    if len(matching_rows) > 1:
         pp.pprint(ans)
     return ans
     #return evaluate_inference_guesses(guesses=guesses, secrets=targets[secret], regression=regression).sum()
