@@ -245,6 +245,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             print(f"Error: unexpected answer {model_base_answer}")
             sys.exit(1)
         num_model_base_correct += model_base_answer
+        print("Got model_base_answer")
 
         # Now run the model attack
         try:
@@ -260,6 +261,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             print(f"Error: unexpected answer {model_attack_answer}")
             sys.exit(1)
         num_model_attack_correct += model_attack_answer
+        print("Got model_attack_answer"	)
 
         # Run the anonymeter-style attack on the synthetic data
         syn_meter_pred_values = []
@@ -277,6 +279,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             print(f"Error: unexpected answer {syn_meter_answer}")
             sys.exit(1)
         num_syn_correct += syn_meter_answer
+        print("Got syn_meter_answer")
 
         # Run the anonymeter-style attack on the control data for the baseline
         ans = anonymeter_mods.run_anonymeter_attack(
@@ -292,6 +295,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             print(f"Error: unexpected answer {base_meter_answer}")
             sys.exit(1)
         num_meter_base_correct += base_meter_answer
+        print("Got base_meter_answer")
 
         # Now, we want to run the anonymeter-style attack on every valid
         # synthetic dataset. We will use this additional information to decide
@@ -335,6 +339,8 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             high_syn_meter_answer = anonymeter_mods.evaluate_inference_guesses(guesses=high_syn_meter_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
         else:
             high_syn_meter_answer = -1     # no prediction
+        
+        print("Got col_combs stuff")
 
         attacks.append({
             'secret_value': str(secret_value),
