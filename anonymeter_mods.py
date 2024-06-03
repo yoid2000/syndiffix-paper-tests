@@ -247,11 +247,11 @@ def detect_consistent_col_types(df1: pd.DataFrame, df2: pd.DataFrame):
     return ctypes1
 
 def get_matches(basis: pd.DataFrame, guess_idx: np.ndarray, aux_cols: list) -> pd.DataFrame:
-    print(f"get_matches: basis type {type(basis)}, guess_idx type {type(guess_idx)}, aux_cols type {type(aux_cols)}")
+    print(f"get_matches: basis type {type(basis)}, guess_idx type {type(guess_idx)}, aux_cols type {type(aux_cols)}, guess_idx[0] type {type(guess_idx[0])}")
     print(f"get_matches: basis.shape: {basis.shape}, guess_idx.shape: {guess_idx.shape}")
     # Get the matching row
     try:
-        match_row = basis.iloc[guess_idx].squeeze()
+        match_row = basis.iloc[guess_idx[0]].squeeze()
     except Exception as e:
         print("basis.iloc exception occurred:", e)
     print(f"match_row type: {type(match_row)}")
