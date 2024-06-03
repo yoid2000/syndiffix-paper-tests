@@ -263,7 +263,7 @@ def run_anonymeter_attack(
 
     guess_idx = nn.kneighbors(queries=targets[aux_cols])
     print(1, guess_idx)
-    match_row = basis.iloc[guess_idx.flatten()]
+    match_row = basis.iloc[guess_idx.flatten()].reset_index(drop=True)
     print(2, match_row)
     guess = basis.iloc[guess_idx.flatten()][secret]
     print(3, guess)
