@@ -275,7 +275,8 @@ def run_anonymeter_attack(
             'modal_value': modal_value,
             'modal_count': modal_count,
             'modal_fraction': fraction}
-    pp.pprint(ans)
+    if ans['modal_count'] > 1:
+        pp.pprint(ans)
     return ans
     #return evaluate_inference_guesses(guesses=guesses, secrets=targets[secret], regression=regression).sum()
 
