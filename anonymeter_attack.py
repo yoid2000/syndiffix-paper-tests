@@ -237,7 +237,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             model_base_pred_value = model_base_pred_value[0]
         except Exception as e:
             print(f"A model.predict() error occurred: {e}")
-            quit()
+            sys.exit(1)
         # convert model_base_pred_value to a series
         model_base_pred_value_series = pd.Series(model_base_pred_value, index=targets.index)
         model_base_answer = anonymeter_mods.evaluate_inference_guesses(guesses=model_base_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
@@ -253,7 +253,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             model_attack_pred_value = model_attack_pred_value[0]
         except Exception as e:
             print(f"A model.predict() error occurred: {e}")
-            quit()
+            sys.exit(1)
         # convert model_attack_pred_value to a series
         model_attack_pred_value_series = pd.Series(model_attack_pred_value, index=targets.index)
         model_attack_answer = anonymeter_mods.evaluate_inference_guesses(guesses=model_attack_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
