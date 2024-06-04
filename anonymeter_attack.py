@@ -213,6 +213,9 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
     # model_attack is used to generate a groundhog day type attack
     print("build attack model")
     model_attack = build_and_train_model(df_syn[attack_cols], secret_col, secret_col_type)
+    # model_original is used simply to demonstrate the ineffectiveness of the groundhog attack
+    print("build original model")
+    model_original = build_and_train_model(df_original[attack_cols], secret_col, secret_col_type)
 
     num_model_base_correct = 0
     num_model_attack_correct = 0
@@ -253,9 +256,9 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             print(f"Error: unexpected answer {model_base_answer}")
             sys.exit(1)
         num_model_base_correct += model_base_answer
-
         this_attack['model_base_pred_value'] = str(model_base_pred_value)
         this_attack['model_base_answer'] = int(model_base_answer)
+
         # Now run the model attack
         try:
             model_attack_pred_value = model_attack.predict(targets.drop(secret_col, axis=1))
@@ -272,6 +275,23 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         num_model_attack_correct += model_attack_answer
         this_attack['model_attack_pred_value'] = str(model_attack_pred_value)
         this_attack['model_attack_answer'] = int(model_attack_answer)
+
+        # Now run the model attack using the groundhog model
+        try:
+            model_original_pred_value = model_original.predict(targets.drop(secret_col, axis=1))
+            model_original_pred_value = model_original_pred_value[0]
+        except Exception as e:
+            print(f"A model.predict() Error occurred: {e}")
+            sys.exit(1)
+        # convert model_original_pred_value to a series
+        model_original_pred_value_series = pd.Series(model_original_pred_value, index=targets.index)
+        model_original_answer = anonymeter_mods.evaluate_inference_guesses(guesses=model_original_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
+        if model_original_answer not in [0,1]:
+            print(f"Error: unexpected answer {model_original_answer}")
+            sys.exit(1)
+        num_model_original_correct += model_original_answer
+        this_attack['model_original_pred_value'] = str(model_original_pred_value)
+        this_attack['model_original_answer'] = int(model_original_answer)
 
         # Run the anonymeter-style attack on the synthetic data
         syn_meter_pred_values = []
