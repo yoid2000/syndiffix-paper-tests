@@ -219,6 +219,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
 
     num_model_base_correct = 0
     num_model_attack_correct = 0
+    num_model_original_correct = 0
     num_syn_correct = 0
     num_meter_base_correct = 0
     attacks = []
