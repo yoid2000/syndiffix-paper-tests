@@ -255,7 +255,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         num_model_base_correct += model_base_answer
 
         this_attack['model_base_pred_value'] = str(model_base_pred_value)
-        this_attack['model_base_answer'] = model_base_answer
+        this_attack['model_base_answer'] = int(model_base_answer)
         # Now run the model attack
         try:
             model_attack_pred_value = model_attack.predict(targets.drop(secret_col, axis=1))
@@ -271,7 +271,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             sys.exit(1)
         num_model_attack_correct += model_attack_answer
         this_attack['model_attack_pred_value'] = str(model_attack_pred_value)
-        this_attack['model_attack_answer'] = model_attack_answer
+        this_attack['model_attack_answer'] = int(model_attack_answer)
 
         # Run the anonymeter-style attack on the synthetic data
         syn_meter_pred_values = []
@@ -290,7 +290,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             sys.exit(1)
         num_syn_correct += syn_meter_answer
         this_attack['syn_meter_pred_value'] = str(syn_meter_pred_value)
-        this_attack['syn_meter_answer'] = syn_meter_answer
+        this_attack['syn_meter_answer'] = int(syn_meter_answer)
 
         # Run the anonymeter-style attack on the control data for the baseline
         ans = anonymeter_mods.run_anonymeter_attack(
@@ -307,7 +307,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             sys.exit(1)
         num_meter_base_correct += base_meter_answer
         this_attack['base_meter_pred_value'] = str(base_meter_pred_value)
-        this_attack['base_meter_answer'] = base_meter_answer
+        this_attack['base_meter_answer'] = int(base_meter_answer)
 
         # Now, we want to run the anonymeter-style attack on every valid
         # synthetic dataset. We will use this additional information to decide
@@ -369,7 +369,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
                 else:
                     answer = -1     # no prediction
                 this_attack[f'{label}_value'] = str(pred_value)
-                this_attack[f'{label}_answer'] = answer
+                this_attack[f'{label}_answer'] = int(answer)
 
         attacks.append(this_attack)
         #print('---------------------------------------------------')
