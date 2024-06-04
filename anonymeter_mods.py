@@ -285,13 +285,13 @@ def run_anonymeter_attack(
     df_matching, match_row = get_matches(basis=basis, guess_idx=guess_idx, aux_cols=aux_cols)
     modal_value = df_matching[secret].mode()[0]
     modal_count = (df_matching[secret] == modal_value).sum()
-    fraction = modal_count / len(df_matching)
+    percentage = 100*(modal_count / len(df_matching))
     
     ans = {'guess_series': guess,
             'match_row': match_row,
             'modal_value': modal_value,
             'modal_count': modal_count,
-            'modal_fraction': fraction}
+            'modal_percentage': percentage}
     if len(df_matching) == 0:
         print(f"Error: no matching rows")
         pp.pprint(ans)
