@@ -530,19 +530,6 @@ def get_by_metric_from_by_slice(stats):
 
 def digin(df):
     df = df.copy()
-    df['frac_comb_correct'] = df['num_subset_correct'] / df['num_subset_combs']
-    df1 = df[(df['high_syn_meter_answer'] == 1) & (df['model_base_answer'] == 0)]
-    df1 = df1.copy()
-    df2 = df[(df['high_syn_meter_answer'] == 0) & (df['model_base_answer'] == 1)]
-    df2 = df2.copy()
-    #df1 = df1.sort_values(by='frac_comb_correct', ascending=False)
-    #print(df1[['secret_percentage', 'frac_comb_correct']].head(20))
-    #print(df1[['secret_percentage', 'frac_comb_correct']].tail(20))
-    print("secret_percentage: high_syn right, model base wrong")
-    print(df1['secret_percentage'].describe())
-    print("secret_percentage: high_syn wrong, model base right")
-    print(df2['secret_percentage'].describe())
-    print(f"df1 has shape {df1.shape}, df2 has shape {df2.shape}")
     print("---------------------------------------------------")
     for low, high in [[0,10], [10,20], [20,30], [30,40], [40,50], [50,60], [60,70], [70,80], [80,90], [90,100]]:
         num_rows_high_true = df[(df['modal_value'] == df['secret_value']) & (df['modal_percentage'] > low) & (df['modal_percentage'] < high) & (df['high_syn_meter_answer'] == 1)].shape[0]
@@ -587,7 +574,7 @@ def do_plots():
         slice_name = f"cat_modal_percentage_{average_percentage}"
         stats['by_slice'][slice_name] = {}
         get_basic_stats(stats['by_slice'][slice_name], df_bin)
-    digin(df_cat)
+    #digin(df_cat)
     get_by_metric_from_by_slice(stats)
     #pp.pprint(stats)
 
