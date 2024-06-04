@@ -465,6 +465,15 @@ def gather(instances_path):
         print(f"Total attacks: {len(attacks)}")
         # convert attacks to a DataFrame
         df = pd.DataFrame(attacks)
+        for col in df.columns:
+            if df[col].dtype == object:
+                try:
+                    df[col] = df[col].astype(int)
+                except ValueError:
+                    try:
+                        df[col] = df[col].astype(float)
+                    except ValueError:
+                        pass
         # print the dtypes of df
         pp.pprint(df.dtypes)
         # save the dataframe to a parquet file
