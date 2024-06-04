@@ -395,7 +395,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         attacks.append(this_attack)
         #print('---------------------------------------------------')
         #pp.pprint(attacks[-1])
-    print(f"num_model_base_correct: {num_model_base_correct}\nnum_syn_correct: {num_syn_correct}\nnum_meter_base_correct: {num_meter_base_correct}\nnum_model_attack_correct: {num_model_attack_correct}")
+    print(f"\nnum_model_base_correct: {num_model_base_correct}\nnum_syn_correct: {num_syn_correct}\nnum_meter_base_correct: {num_meter_base_correct}\nnum_model_attack_correct: {num_model_attack_correct}\nnum_model_original_correct: {num_model_original_correct}")
     return attacks
 
 
