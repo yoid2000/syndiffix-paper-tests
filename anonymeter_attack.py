@@ -510,6 +510,8 @@ def get_basic_stats(stats, df):
             num_fp = df[df[answer] == 0].shape[0]
             num_tp = df[df[answer] == 1].shape[0]
             if (num_no_pred + num_fp + num_tp) != len(df):
+                value_counts = df[answer].value_counts()
+                print(value_counts)
                 print(f"Error with subset predictions: {num_no_pred} + {num_fp} + {num_tp} != {len(df)}")
                 sys.exit(1)
             stats[coverage] = (num_fp + num_tp) / len(df)
