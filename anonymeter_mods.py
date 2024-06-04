@@ -293,7 +293,7 @@ def run_anonymeter_attack(
             'modal_count': modal_count,
             'modal_fraction': fraction}
     if len(df_matching) == 0:
-        print(f"no matching rows")
+        print(f"Error: no matching rows")
         pp.pprint(ans)
         sys.exit(1)
     return ans
