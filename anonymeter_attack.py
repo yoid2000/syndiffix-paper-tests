@@ -30,8 +30,10 @@ else:
 syn_path = os.path.join(base_path, 'synDatasets')
 attack_path = os.path.join(base_path, 'anonymeter_attacks')
 os.makedirs(attack_path, exist_ok=True)
-num_attacks = 100000
-num_attacks_per_job = 50
+# This is the total number of attacks that will be run
+num_attacks = 500000
+# This is the number of attacks per slurm job, and determines how many slurm jobs are created
+num_attacks_per_job = 100
 max_subsets = 200
 
 # These are the variants of the attack that exploits sub-tables
