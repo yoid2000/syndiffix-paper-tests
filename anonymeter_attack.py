@@ -81,7 +81,7 @@ def find_most_frequent_value(lst, fraction):
     most_common_value, most_common_count = counter.most_common(1)[0]
     
     # Check if the most common value accounts for at least the given fraction of total entries
-    if most_common_count / len(lst) >= fraction:
+    if most_common_count / len(lst) > fraction:
         return most_common_value
     else:
         return None
@@ -213,16 +213,22 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
     # model_attack is used to generate a groundhog day type attack
     print("build attack model")
     model_attack = build_and_train_model(df_syn[attack_cols], secret_col, secret_col_type)
+    # model_original is used simply to demonstrate the ineffectiveness of the groundhog attack
+    print("build original model")
+    model_original = build_and_train_model(df_original[attack_cols], secret_col, secret_col_type)
 
     num_model_base_correct = 0
     num_model_attack_correct = 0
+    num_model_original_correct = 0
     num_syn_correct = 0
     num_meter_base_correct = 0
     attacks = []
     modal_value = df_original[secret_col].mode().iloc[0]
     num_modal_rows = df_original[df_original[secret_col] == modal_value].shape[0]
     modal_percentage = round(100*(num_modal_rows / len(df_original)), 2)
+    print(f"start {num_runs} runs")
     for i in range(num_runs):
+        print(".", end='', flush=True)
         # There is a chance of replicas here, but small enough that we ignore it
         targets = df_original[attack_cols].sample(1)
         # Get the value of the secret column in the first row of targets
@@ -230,13 +236,20 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         # Count the number of rows that contian secret_value in column secret_col
         num_secret_rows = df_original[secret_col].value_counts().get(secret_value, 0)
         secret_percentage = round(100*(num_secret_rows / len(df_original)), 2)
+        this_attack = {
+            'secret_value': str(secret_value),
+            'secret_percentage': secret_percentage,
+            'secret_col_type': secret_col_type,
+            'modal_value': str(modal_value),
+            'modal_percentage': modal_percentage,
+        }
         # Now get the model baseline prediction
         try:
             model_base_pred_value = model_base.predict(targets.drop(secret_col, axis=1))
             model_base_pred_value = model_base_pred_value[0]
         except Exception as e:
-            print(f"A model.predict() error occurred: {e}")
-            quit()
+            print(f"A model.predict() Error occurred: {e}")
+            sys.exit(1)
         # convert model_base_pred_value to a series
         model_base_pred_value_series = pd.Series(model_base_pred_value, index=targets.index)
         model_base_answer = anonymeter_mods.evaluate_inference_guesses(guesses=model_base_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
@@ -244,14 +257,16 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             print(f"Error: unexpected answer {model_base_answer}")
             sys.exit(1)
         num_model_base_correct += model_base_answer
+        this_attack['model_base_pred_value'] = str(model_base_pred_value)
+        this_attack['model_base_answer'] = int(model_base_answer)
 
         # Now run the model attack
         try:
             model_attack_pred_value = model_attack.predict(targets.drop(secret_col, axis=1))
             model_attack_pred_value = model_attack_pred_value[0]
         except Exception as e:
-            print(f"A model.predict() error occurred: {e}")
-            quit()
+            print(f"A model.predict() Error occurred: {e}")
+            sys.exit(1)
         # convert model_attack_pred_value to a series
         model_attack_pred_value_series = pd.Series(model_attack_pred_value, index=targets.index)
         model_attack_answer = anonymeter_mods.evaluate_inference_guesses(guesses=model_attack_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
@@ -259,15 +274,35 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             print(f"Error: unexpected answer {model_attack_answer}")
             sys.exit(1)
         num_model_attack_correct += model_attack_answer
+        this_attack['model_attack_pred_value'] = str(model_attack_pred_value)
+        this_attack['model_attack_answer'] = int(model_attack_answer)
+
+        # Now run the model attack using the groundhog model
+        try:
+            model_original_pred_value = model_original.predict(targets.drop(secret_col, axis=1))
+            model_original_pred_value = model_original_pred_value[0]
+        except Exception as e:
+            print(f"A model.predict() Error occurred: {e}")
+            sys.exit(1)
+        # convert model_original_pred_value to a series
+        model_original_pred_value_series = pd.Series(model_original_pred_value, index=targets.index)
+        model_original_answer = anonymeter_mods.evaluate_inference_guesses(guesses=model_original_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
+        if model_original_answer not in [0,1]:
+            print(f"Error: unexpected answer {model_original_answer}")
+            sys.exit(1)
+        num_model_original_correct += model_original_answer
+        this_attack['model_original_pred_value'] = str(model_original_pred_value)
+        this_attack['model_original_answer'] = int(model_original_answer)
 
         # Run the anonymeter-style attack on the synthetic data
         syn_meter_pred_values = []
-        syn_meter_pred_value_series = anonymeter_mods.run_anonymeter_attack(
+        ans = anonymeter_mods.run_anonymeter_attack(
                                         targets=targets,
                                         basis=df_syn[attack_cols],
                                         aux_cols=aux_cols,
                                         secret=secret_col,
                                         regression=regression)
+        syn_meter_pred_value_series = ans['guess_series']
         syn_meter_pred_value = syn_meter_pred_value_series.iloc[0]
         syn_meter_pred_values.append(syn_meter_pred_value)
         syn_meter_answer = anonymeter_mods.evaluate_inference_guesses(guesses=syn_meter_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
@@ -275,20 +310,25 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             print(f"Error: unexpected answer {syn_meter_answer}")
             sys.exit(1)
         num_syn_correct += syn_meter_answer
+        this_attack['syn_meter_pred_value'] = str(syn_meter_pred_value)
+        this_attack['syn_meter_answer'] = int(syn_meter_answer)
 
         # Run the anonymeter-style attack on the control data for the baseline
-        base_meter_pred_value_series = anonymeter_mods.run_anonymeter_attack(
+        ans = anonymeter_mods.run_anonymeter_attack(
                                         targets=targets,
                                         basis=df_control[attack_cols],
                                         aux_cols=aux_cols,
                                         secret=secret_col,
                                         regression=regression)
+        base_meter_pred_value_series = ans['guess_series']
         base_meter_pred_value = base_meter_pred_value_series.iloc[0]
         base_meter_answer = anonymeter_mods.evaluate_inference_guesses(guesses=base_meter_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
         if base_meter_answer not in [0,1]:
             print(f"Error: unexpected answer {base_meter_answer}")
             sys.exit(1)
         num_meter_base_correct += base_meter_answer
+        this_attack['base_meter_pred_value'] = str(base_meter_pred_value)
+        this_attack['base_meter_answer'] = int(base_meter_answer)
 
         # Now, we want to run the anonymeter-style attack on every valid
         # synthetic dataset. We will use this additional information to decide
@@ -299,63 +339,63 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         #print(f"Running with total {max_subsets} of {len(col_combs)} column combinations")
         if len(col_combs) > max_subsets:
             col_combs = random.sample(col_combs, max_subsets)
-        pred_values = []
+        # In this attack, we have several variants:
+        variants = {'vanilla':[],
+                    'modal':[],
+                    'modal_50':[],
+                    'modal_90':[],
+        }
         for col_comb in col_combs:
             df_syn_subset = tm.get_syn_df(col_comb)
             df_syn_subset = convert_datetime_to_timestamp(df_syn_subset)
             df_syn_subset = transform_df_with_update(df_syn_subset, encoders)
             subset_aux_cols = col_comb.copy()
             subset_aux_cols.remove(secret_col)
-            subset_meter_pred_value_series = anonymeter_mods.run_anonymeter_attack(
+            ans = anonymeter_mods.run_anonymeter_attack(
                                             targets=targets[col_comb],
                                             basis=df_syn_subset[col_comb],
                                             aux_cols=subset_aux_cols,
                                             secret=secret_col,
                                             regression=regression)
-            subset_meter_pred_value = subset_meter_pred_value_series.iloc[0]
-            pred_values.append(subset_meter_pred_value)
-            subset_meter_answer = anonymeter_mods.evaluate_inference_guesses(guesses=subset_meter_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
-            num_subset_combs += 1
-            num_subset_correct += subset_meter_answer
+            # Compute an answer based on the vanilla anonymeter attack
+            pred_value_series = ans['guess_series']
+            pred_value = pred_value_series.iloc[0]
+            variants['vanilla'].append(pred_value)
 
-        low_syn_meter_pred_value = find_most_frequent_value(pred_values, 0.5)
-        if low_syn_meter_pred_value is not None:
-            low_syn_meter_pred_value_series = pd.Series(low_syn_meter_pred_value, index=targets.index)
-            low_syn_meter_answer = anonymeter_mods.evaluate_inference_guesses(guesses=low_syn_meter_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
-        else:
-            low_syn_meter_answer = -1     # no prediction
+            # Compute an answer based on the modal anonymeter attack
+            variants['modal'].append(ans['modal_value'])	
 
-        high_syn_meter_pred_value = find_most_frequent_value(pred_values, 0.5)
-        if high_syn_meter_pred_value is not None:
-            high_syn_meter_pred_value_series = pd.Series(high_syn_meter_pred_value, index=targets.index)
-            high_syn_meter_answer = anonymeter_mods.evaluate_inference_guesses(guesses=high_syn_meter_pred_value_series, secrets=targets[secret_col], regression=regression).sum()
-        else:
-            high_syn_meter_answer = -1     # no prediction
+            # Compute an answer only if the modal value is more than 50% of the possible answers
+            if ans['modal_percentage'] > 50:
+                variants['modal_50'].append(ans['modal_value'])
 
-        attacks.append({
-            'secret_value': str(secret_value),
-            'secret_percentage': secret_percentage,
-            'secret_col_type': secret_col_type,
-            'modal_value': str(modal_value),
-            'modal_percentage': modal_percentage,
-            'model_base_pred_value': str(model_base_pred_value),
-            'model_base_answer': str(model_base_answer),
-            'model_attack_pred_value': str(model_attack_pred_value),
-            'model_attack_answer': str(model_attack_answer),
-            'syn_meter_pred_value': str(syn_meter_pred_value),
-            'syn_meter_answer': str(syn_meter_answer),
-            'high_syn_meter_pred_value': str(high_syn_meter_pred_value),
-            'high_syn_meter_answer': str(high_syn_meter_answer),
-            'low_syn_meter_pred_value': str(low_syn_meter_pred_value),
-            'low_syn_meter_answer': str(low_syn_meter_answer),
-            'num_subset_combs': num_subset_combs,
-            'num_subset_correct': str(num_subset_correct),
-            'base_meter_pred_value': str(base_meter_pred_value),
-            'base_meter_answer': str(base_meter_answer),
-        })
+            # Compute an answer only if the modal value is more than 90% of the possible answers
+            if ans['modal_percentage'] > 90:
+                variants['modal_90'].append(ans['modal_value'])
+
+        # We want to filter again according to the amount of agreement among the
+        # different column combinations
+        col_comb_thresholds = {
+                                 'thresh_0':0,
+                                 'thresh_50':50,
+                                 'thresh_90':90,
+        }
+        for v_label, pred_values in variants.items():
+            for cc_label, cc_thresh in col_comb_thresholds.items():
+                label = f"syn_meter_{v_label}_{cc_label}"
+                pred_value = find_most_frequent_value(pred_values, cc_thresh)
+                if pred_value is not None:
+                    pred_value_series = pd.Series(pred_value, index=targets.index)
+                    answer = anonymeter_mods.evaluate_inference_guesses(guesses=pred_value_series, secrets=targets[secret_col], regression=regression).sum()
+                else:
+                    answer = -1     # no prediction
+                this_attack[f'{label}_value'] = str(pred_value)
+                this_attack[f'{label}_answer'] = int(answer)
+
+        attacks.append(this_attack)
         #print('---------------------------------------------------')
         #pp.pprint(attacks[-1])
-    print(f"num_model_base_correct: {num_model_base_correct}\nnum_syn_correct: {num_syn_correct}\nnum_meter_base_correct: {num_meter_base_correct}\nnum_model_attack_correct: {num_model_attack_correct}")
+    print(f"\nnum_model_base_correct: {num_model_base_correct}\nnum_syn_correct: {num_syn_correct}\nnum_meter_base_correct: {num_meter_base_correct}\nnum_model_attack_correct: {num_model_attack_correct}\nnum_model_original_correct: {num_model_original_correct}")
     return attacks
 
 

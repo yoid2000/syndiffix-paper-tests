@@ -1,16 +1,19 @@
 from typing import List, Optional, Union, Tuple, Dict
 
+import sys
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 from joblib import Parallel, delayed
 from numba import float64, int64, jit
 from math import fabs, isnan
+import pprint
+
+pp = pprint.PrettyPrinter(indent=4)
 
 '''
-The code in here was all cut-n-paste from the github repo anonymeter.
+The code in here was cut-n-paste from the github repo anonymeter, with minor additions.
 '''
-
 
 @jit(nopython=True, nogil=True)
 def gower_distance(r0: np.ndarray, r1: np.ndarray, cat_cols_index: np.ndarray) -> float64:
@@ -244,6 +247,24 @@ def detect_consistent_col_types(df1: pd.DataFrame, df2: pd.DataFrame):
 
     return ctypes1
 
+def get_matches(basis: pd.DataFrame, guess_idx: np.ndarray, aux_cols: list) -> pd.DataFrame:
+    # Get the matching row
+    try:
+        match_row = basis.iloc[guess_idx[0]].squeeze()
+    except Exception as e:
+        print("basis.iloc exception occurred:", e)
+
+    # Create a boolean mask where each row is True if the row matches the matching row for all aux_cols
+    try:
+        mask = (basis[aux_cols] == match_row[aux_cols]).all(axis=1)
+    except Exception as e:
+        print("mask exception occurred:", e)
+
+    # Use the mask to get the matching rows from basis
+    matching_rows_df = basis[mask]
+
+    return matching_rows_df, match_row
+
 def run_anonymeter_attack(
     targets: pd.DataFrame,    # This is the victim information
     basis: pd.DataFrame,      # This is control or synthetic data, depending
@@ -259,10 +280,23 @@ def run_anonymeter_attack(
 
     nn = MixedTypeKNeighbors(n_jobs=n_jobs, n_neighbors=1).fit(candidates=basis[aux_cols])
 
-    guesses_idx = nn.kneighbors(queries=targets[aux_cols])
-    guesses = basis.iloc[guesses_idx.flatten()][secret]
+    guess_idx = nn.kneighbors(queries=targets[aux_cols])
+    guess = basis.iloc[guess_idx.flatten()][secret]
+    df_matching, match_row = get_matches(basis=basis, guess_idx=guess_idx, aux_cols=aux_cols)
+    modal_value = df_matching[secret].mode()[0]
+    modal_count = (df_matching[secret] == modal_value).sum()
+    percentage = 100*(modal_count / len(df_matching))
     
-    return guesses
+    ans = {'guess_series': guess,
+            'match_row': match_row,
+            'modal_value': modal_value,
+            'modal_count': modal_count,
+            'modal_percentage': percentage}
+    if len(df_matching) == 0:
+        print(f"Error: no matching rows")
+        pp.pprint(ans)
+        sys.exit(1)
+    return ans
     #return evaluate_inference_guesses(guesses=guesses, secrets=targets[secret], regression=regression).sum()
 
 
