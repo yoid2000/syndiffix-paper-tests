@@ -30,10 +30,24 @@ else:
 syn_path = os.path.join(base_path, 'synDatasets')
 attack_path = os.path.join(base_path, 'anonymeter_attacks')
 os.makedirs(attack_path, exist_ok=True)
-num_attacks = 100000
-num_attacks_per_job = 50
+# This is the total number of attacks that will be run
+num_attacks = 500000
+# This is the number of attacks per slurm job, and determines how many slurm jobs are created
+num_attacks_per_job = 100
 max_subsets = 200
 
+# These are the variants of the attack that exploits sub-tables
+variants = {'vanilla':[],
+            'modal':[],
+            'modal_50':[],
+            'modal_90':[],
+}
+# These are the thresholds we use to decide whether to use a prediction
+col_comb_thresholds = {
+                            'thresh_0':0,
+                            'thresh_50':50,
+                            'thresh_90':90,
+}
 from sklearn.preprocessing import LabelEncoder
 
 def convert_datetime_to_timestamp(df):
@@ -339,12 +353,6 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         #print(f"Running with total {max_subsets} of {len(col_combs)} column combinations")
         if len(col_combs) > max_subsets:
             col_combs = random.sample(col_combs, max_subsets)
-        # In this attack, we have several variants:
-        variants = {'vanilla':[],
-                    'modal':[],
-                    'modal_50':[],
-                    'modal_90':[],
-        }
         for col_comb in col_combs:
             df_syn_subset = tm.get_syn_df(col_comb)
             df_syn_subset = convert_datetime_to_timestamp(df_syn_subset)
@@ -375,11 +383,6 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
 
         # We want to filter again according to the amount of agreement among the
         # different column combinations
-        col_comb_thresholds = {
-                                 'thresh_0':0,
-                                 'thresh_50':50,
-                                 'thresh_90':90,
-        }
         for v_label, pred_values in variants.items():
             for cc_label, cc_thresh in col_comb_thresholds.items():
                 label = f"syn_meter_{v_label}_{cc_label}"
@@ -464,6 +467,17 @@ def gather(instances_path):
         print(f"Total attacks: {len(attacks)}")
         # convert attacks to a DataFrame
         df = pd.DataFrame(attacks)
+        for col in df.columns:
+            if df[col].dtype == object:
+                try:
+                    df[col] = df[col].astype(int)
+                except ValueError:
+                    try:
+                        df[col] = df[col].astype(float)
+                    except ValueError:
+                        pass
+        # print the dtypes of df
+        pp.pprint(df.dtypes)
         # save the dataframe to a parquet file
         df.to_parquet(os.path.join(attack_path, 'attacks.parquet'))
         # save the dataframe to a csv file
@@ -481,15 +495,34 @@ def get_basic_stats(stats, df):
     p = round(df['model_attack_answer'].sum() / len(df), 3)
     stats['model_attack_precision'] = p
     stats['model_attack_improve'] = round((p-base)/(1.0000001-base), 3)
+    p = round(df['model_original_answer'].sum() / len(df), 3)
+    stats['model_original_precision'] = p
+    stats['model_original_improve'] = round((p-base)/(1.0000001-base), 3)
     p = round(df['syn_meter_answer'].sum() / len(df), 3)
     stats['meter_attack_precision'] = p
     stats['meter_attack_improve'] = round((p-base)/(1.0000001-base), 3)
-    p = round(df['high_syn_meter_answer'].sum() / len(df), 3)
-    stats['high_meter_attack_precision'] = p
-    stats['high_meter_attack_improve'] = round((p-base)/(1.0000001-base), 3)
-    p = round(df['low_syn_meter_answer'].sum() / len(df), 3)
-    stats['low_meter_attack_precision'] = p
-    stats['low_meter_attack_improve'] = round((p-base)/(1.0000001-base), 3)
+    for v_label in variants.keys():
+        for cc_label in col_comb_thresholds.keys():
+            answer = f"syn_meter_{v_label}_{cc_label}_answer"
+            precision = f"syn_meter_{v_label}_{cc_label}_precision"
+            improve = f"syn_meter_{v_label}_{cc_label}_improve"
+            coverage = f"syn_meter_{v_label}_{cc_label}_coverage"
+            # count the number of rows in df[answer] that have value -1
+            num_no_pred = df[df[answer] == -1].shape[0]
+            num_fp = df[df[answer] == 0].shape[0]
+            num_tp = df[df[answer] == 1].shape[0]
+            if (num_no_pred + num_fp + num_tp) != len(df):
+                value_counts = df[answer].value_counts()
+                print(value_counts)
+                print(f"Error with subset predictions: {num_no_pred} + {num_fp} + {num_tp} != {len(df)}")
+                sys.exit(1)
+            stats[coverage] = (num_fp + num_tp) / len(df)
+            if num_tp + num_fp == 0:
+                p = 0
+            else:
+                p = round(num_tp / (num_tp + num_fp), 3)
+            stats[precision] = p
+            stats[improve] = round((p-base)/(1.0000001-base), 3)
 
 def get_by_metric_from_by_slice(stats):
     for metric in stats['by_slice']['all_results'].keys():
@@ -499,19 +532,6 @@ def get_by_metric_from_by_slice(stats):
 
 def digin(df):
     df = df.copy()
-    df['frac_comb_correct'] = df['num_subset_correct'] / df['num_subset_combs']
-    df1 = df[(df['high_syn_meter_answer'] == 1) & (df['model_base_answer'] == 0)]
-    df1 = df1.copy()
-    df2 = df[(df['high_syn_meter_answer'] == 0) & (df['model_base_answer'] == 1)]
-    df2 = df2.copy()
-    #df1 = df1.sort_values(by='frac_comb_correct', ascending=False)
-    #print(df1[['secret_percentage', 'frac_comb_correct']].head(20))
-    #print(df1[['secret_percentage', 'frac_comb_correct']].tail(20))
-    print("secret_percentage: high_syn right, model base wrong")
-    print(df1['secret_percentage'].describe())
-    print("secret_percentage: high_syn wrong, model base right")
-    print(df2['secret_percentage'].describe())
-    print(f"df1 has shape {df1.shape}, df2 has shape {df2.shape}")
     print("---------------------------------------------------")
     for low, high in [[0,10], [10,20], [20,30], [30,40], [40,50], [50,60], [60,70], [70,80], [80,90], [90,100]]:
         num_rows_high_true = df[(df['modal_value'] == df['secret_value']) & (df['modal_percentage'] > low) & (df['modal_percentage'] < high) & (df['high_syn_meter_answer'] == 1)].shape[0]
@@ -556,7 +576,7 @@ def do_plots():
         slice_name = f"cat_modal_percentage_{average_percentage}"
         stats['by_slice'][slice_name] = {}
         get_basic_stats(stats['by_slice'][slice_name], df_bin)
-    digin(df_cat)
+    #digin(df_cat)
     get_by_metric_from_by_slice(stats)
     #pp.pprint(stats)
 

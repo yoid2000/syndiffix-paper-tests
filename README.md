@@ -83,3 +83,19 @@ The syntax is:
 * `y_test.parquet`
 
 `command = plots`: Creates visual plots from the models, and puts the resulting `png` files in `suppress_attack`.
+
+### Anonymeter style attack
+
+In this attack, we run an anonymeter style attack for attribute inference, whereby we want to infer an unknown (secret) attribute given some known attributes. The basic approach of the attack is to find the record in the synthetic data that most closely matches the known attributes, and to read the secret value from that record. We modify the scoring of the attack by using a non-member baseline rather than anonymeter's approach.
+
+The syntax is:
+
+`python anonymeter_attack.py <command>`
+
+`command = config`: Reads the datasets in synDatasets and uses them to generate the files `attack.slurm` and `attack_jobs.json` in directory `SDX_TEST_DIR/anonymeter_attacks`.
+
+`command = <index>`: When the command is an integer, the attack at the corresponding index from the list in `attack_jobs.json` is run. The results are placed in a file in `SDX_TEST_DIR/anonymeter_attack/instances`.
+
+To run all of the jobs using slurm, do `sbatch attack.slurm`.
+
+`command = plots`: If the file `SDX_TEST_DIR/anonymeter_attack/attacks.parquet` does not exist, reads in the json files at `SDX_TEST_DIR/anonymeter_attack/instances`, summarizes them, and puts the summary in the file `attacks.parquet`. It then reads in `attacks.parquet`, computes various statistics, and puts them in `stats.json`.
