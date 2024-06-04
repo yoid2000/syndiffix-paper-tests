@@ -222,7 +222,9 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
     modal_value = df_original[secret_col].mode().iloc[0]
     num_modal_rows = df_original[df_original[secret_col] == modal_value].shape[0]
     modal_percentage = round(100*(num_modal_rows / len(df_original)), 2)
+    print(f"start {num_runs} runs")
     for i in range(num_runs):
+        print(".", end='', flush=True)
         # There is a chance of replicas here, but small enough that we ignore it
         targets = df_original[attack_cols].sample(1)
         # Get the value of the secret column in the first row of targets
@@ -252,7 +254,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             sys.exit(1)
         num_model_base_correct += model_base_answer
 
-        this_attack['model_base_pred_value'] = model_base_pred_value
+        this_attack['model_base_pred_value'] = str(model_base_pred_value)
         this_attack['model_base_answer'] = model_base_answer
         # Now run the model attack
         try:
@@ -268,7 +270,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             print(f"Error: unexpected answer {model_attack_answer}")
             sys.exit(1)
         num_model_attack_correct += model_attack_answer
-        this_attack['model_attack_pred_value'] = model_attack_pred_value
+        this_attack['model_attack_pred_value'] = str(model_attack_pred_value)
         this_attack['model_attack_answer'] = model_attack_answer
 
         # Run the anonymeter-style attack on the synthetic data
@@ -287,7 +289,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             print(f"Error: unexpected answer {syn_meter_answer}")
             sys.exit(1)
         num_syn_correct += syn_meter_answer
-        this_attack['syn_meter_pred_value'] = syn_meter_pred_value
+        this_attack['syn_meter_pred_value'] = str(syn_meter_pred_value)
         this_attack['syn_meter_answer'] = syn_meter_answer
 
         # Run the anonymeter-style attack on the control data for the baseline
@@ -304,7 +306,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             print(f"Error: unexpected answer {base_meter_answer}")
             sys.exit(1)
         num_meter_base_correct += base_meter_answer
-        this_attack['base_meter_pred_value'] = base_meter_pred_value
+        this_attack['base_meter_pred_value'] = str(base_meter_pred_value)
         this_attack['base_meter_answer'] = base_meter_answer
 
         # Now, we want to run the anonymeter-style attack on every valid
@@ -366,7 +368,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
                     answer = anonymeter_mods.evaluate_inference_guesses(guesses=pred_value_series, secrets=targets[secret_col], regression=regression).sum()
                 else:
                     answer = -1     # no prediction
-                this_attack[f'{label}_value'] = pred_value
+                this_attack[f'{label}_value'] = str(pred_value)
                 this_attack[f'{label}_answer'] = answer
 
         attacks.append(this_attack)
