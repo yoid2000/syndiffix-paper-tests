@@ -35,6 +35,7 @@ num_attacks = 500000
 # This is the number of attacks per slurm job, and determines how many slurm jobs are created
 num_attacks_per_job = 100
 max_subsets = 200
+debug = True
 
 # These are the variants of the attack that exploits sub-tables
 variants = {'vanilla':[],
@@ -578,6 +579,10 @@ def do_plots():
     for bin_value, df_bin in df_cat.groupby('percentile_bin'):
         average_percentage = round(df_bin['secret_percentage'].mean(), 2)
         slice_name = f"cat_modal_percentage_{average_percentage}"
+        stats['by_slice'][slice_name] = {}
+        get_basic_stats(stats['by_slice'][slice_name], df_bin)
+    for bin_value, df_bin in df_cat.groupby('dataset'):
+        slice_name = f"cat_dataset_{bin_value}"
         stats['by_slice'][slice_name] = {}
         get_basic_stats(stats['by_slice'][slice_name], df_bin)
     #digin(df_cat)

@@ -10,6 +10,7 @@ from math import fabs, isnan
 import pprint
 
 pp = pprint.PrettyPrinter(indent=4)
+debug = True
 
 '''
 The code in here was cut-n-paste from the github repo anonymeter, with minor additions.
@@ -286,6 +287,15 @@ def run_anonymeter_attack(
     modal_value = df_matching[secret].mode()[0]
     modal_count = (df_matching[secret] == modal_value).sum()
     percentage = 100*(modal_count / len(df_matching))
+    if debug:
+        distinct_values = df_matching[secret].nunique()
+        print(f"got {len(df_matching)} matching rows")
+        print(f"secret distinct values: {distinct_values}"	)
+        print(f"modal_value: {modal_value}, modal_count: {modal_count}, percentage: {percentage}")
+        if percentage >= 50:
+            print("hit_50")
+        if percentage >= 90:
+            print("hit_90")
     
     ans = {'guess_series': guess,
             'match_row': match_row,
