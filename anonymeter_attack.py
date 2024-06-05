@@ -460,9 +460,12 @@ def gather(instances_path):
         for i, filename in enumerate(all_files):
             if not filename.endswith('.json'):
                 continue
+            # split the filename on '.'
+            table = filename.split('.')[0]
             with open(os.path.join(instances_path, filename), 'r') as f:
                 print(f"Reading {i+1} of {len(all_files)} {filename}")
                 res = json.load(f)
+                res['dataset'] = table
                 attacks += res
         print(f"Total attacks: {len(attacks)}")
         # convert attacks to a DataFrame
