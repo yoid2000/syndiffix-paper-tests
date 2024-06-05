@@ -243,6 +243,10 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
     modal_percentage = round(100*(num_modal_rows / len(df_original)), 2)
     print(f"start {num_runs} runs")
     for i in range(num_runs):
+        variants['vanilla'] = []
+        variants['modal'] = []
+        variants['modal_50'] = []
+        variants['modal_90'] = []
         print(".", end='', flush=True)
         # There is a chance of replicas here, but small enough that we ignore it
         targets = df_original[attack_cols].sample(1)
@@ -382,6 +386,9 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             if ans['modal_percentage'] > 90:
                 variants['modal_90'].append(ans['modal_value'])
 
+        if debug:
+            print(f"variants:")
+            pp.pprint(variants)
         # We want to filter again according to the amount of agreement among the
         # different column combinations
         for v_label, pred_values in variants.items():
@@ -399,6 +406,9 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
                 this_attack[f'{label}_value'] = str(pred_value)
                 this_attack[f'{label}_answer'] = int(answer)
 
+        if debug:
+            print(f"this_attack:")
+            pp.pprint(this_attack)
         attacks.append(this_attack)
         #print('---------------------------------------------------')
         #pp.pprint(attacks[-1])
