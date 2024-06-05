@@ -397,7 +397,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
                 print(f"pred_values: {pred_values}")
             for cc_label, cc_thresh in col_comb_thresholds.items():
                 label = f"syn_meter_{v_label}_{cc_label}"
-                pred_value = find_most_frequent_value(pred_values, cc_thresh)
+                pred_value = find_most_frequent_value(pred_values, cc_thresh/100)
                 if pred_value is not None:
                     pred_value_series = pd.Series(pred_value, index=targets.index)
                     answer = anonymeter_mods.evaluate_inference_guesses(guesses=pred_value_series, secrets=targets[secret_col], regression=regression).sum()
