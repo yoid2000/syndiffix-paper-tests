@@ -385,6 +385,9 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         # We want to filter again according to the amount of agreement among the
         # different column combinations
         for v_label, pred_values in variants.items():
+            if debug:
+                print(f"v_label: {v_label}")
+                print(f"pred_values: {pred_values}")
             for cc_label, cc_thresh in col_comb_thresholds.items():
                 label = f"syn_meter_{v_label}_{cc_label}"
                 pred_value = find_most_frequent_value(pred_values, cc_thresh)
