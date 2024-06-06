@@ -376,15 +376,15 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             variants['vanilla'].append(pred_value)
 
             # Compute an answer based on the modal anonymeter attack
-            variants['modal'].append(ans['modal_value'])	
+            variants['modal'].append(ans['match_modal_value'])	
 
             # Compute an answer only if the modal value is more than 50% of the possible answers
-            if ans['modal_percentage'] > 50:
-                variants['modal_50'].append(ans['modal_value'])
+            if ans['match_modal_percentage'] > 50:
+                variants['modal_50'].append(ans['match_modal_value'])
 
             # Compute an answer only if the modal value is more than 90% of the possible answers
-            if ans['modal_percentage'] > 90:
-                variants['modal_90'].append(ans['modal_value'])
+            if ans['match_modal_percentage'] > 90:
+                variants['modal_90'].append(ans['match_modal_value'])
 
         if debug:
             print(f"variants:")
@@ -505,48 +505,57 @@ def gather(instances_path):
 def get_basic_stats(stats, df):
     stats['num_attacks'] = len(df)
     stats['average_percentage'] = round(df['secret_percentage'].mean(), 2)
-    p_model = round(df['model_base_answer'].sum() / len(df), 3)
+    p_model = round(df['model_base_answer'].sum() / len(df), 6)
     stats['model_base_precision'] = p_model
-    p_meter = round(df['base_meter_answer'].sum() / len(df), 3)
+    p_meter = round(df['base_meter_answer'].sum() / len(df), 6)
     stats['meter_base_precision'] = p_meter
-    base = max(p_model, p_meter)
-    p = round(df['model_attack_answer'].sum() / len(df), 3)
+    p_base = max(p_model, p_meter)
+    p = round(df['model_attack_answer'].sum() / len(df), 6)
     stats['model_attack_precision'] = p
-    stats['model_attack_improve'] = round((p-base)/(1.0000001-base), 3)
-    p = round(df['model_original_answer'].sum() / len(df), 3)
+    stats['model_attack_improve'] = round((p-p_base)/(1.0000001-p_base), 6)
+    p = round(df['model_original_answer'].sum() / len(df), 6)
     stats['model_original_precision'] = p
-    stats['model_original_improve'] = round((p-base)/(1.0000001-base), 3)
-    p = round(df['syn_meter_answer'].sum() / len(df), 3)
+    stats['model_original_improve'] = round((p-p_base)/(1.0000001-p_base), 6)
+    p = round(df['syn_meter_answer'].sum() / len(df), 6)
     stats['meter_attack_precision'] = p
-    stats['meter_attack_improve'] = round((p-base)/(1.0000001-base), 3)
+    stats['meter_attack_improve'] = round((p-p_base)/(1.0000001-p_base), 6)
     for v_label in variants.keys():
         for cc_label in col_comb_thresholds.keys():
             answer = f"syn_meter_{v_label}_{cc_label}_answer"
             precision = f"syn_meter_{v_label}_{cc_label}_precision"
             improve = f"syn_meter_{v_label}_{cc_label}_improve"
             coverage = f"syn_meter_{v_label}_{cc_label}_coverage"
-            # count the number of rows in df[answer] that have value -1
-            num_no_pred = df[df[answer] == -1].shape[0]
-            num_fp = df[df[answer] == 0].shape[0]
-            num_tp = df[df[answer] == 1].shape[0]
-            if (num_no_pred + num_fp + num_tp) != len(df):
-                value_counts = df[answer].value_counts()
-                print(value_counts)
-                print(f"Error with subset predictions: {num_no_pred} + {num_fp} + {num_tp} != {len(df)}")
-                sys.exit(1)
-            stats[coverage] = (num_fp + num_tp) / len(df)
-            if num_tp + num_fp == 0:
-                p = 0
-            else:
-                p = round(num_tp / (num_tp + num_fp), 3)
-            stats[precision] = p
-            stats[improve] = round((p-base)/(1.0000001-base), 3)
+            model_base = f"model_base_{v_label}_{cc_label}_precision"
+            meter_base = f"meter_base_{v_label}_{cc_label}_precision"
+            # df_pred contains only the rows where predictions were made
+            df_pred = df[df[answer] != -1]
+            if len(df_pred) == 0:
+                stats[model_base] = 0
+                stats[meter_base] = 0
+                stats[coverage] = 0
+                stats[precision] = 0
+                stats[improve] = 0
+                continue
+            p_model_pred = round(df_pred['model_base_answer'].sum() / len(df_pred), 6)
+            stats[model_base] = p_model_pred
+            p_meter_pred = round(df_pred['base_meter_answer'].sum() / len(df_pred), 6)
+            stats[meter_base] = p_meter_pred
+            p_base_pred = max(p_model_pred, p_meter_pred)
+            stats[coverage] = len(df_pred) / len(df)
+            p = df_pred[answer].sum() / len(df_pred)
+            stats[precision] = round(p, 6)
+            stats[improve] = round((p-p_base_pred)/(1.0000001-p_base_pred), 6)
 
 def get_by_metric_from_by_slice(stats):
+    problem_cases = []
     for metric in stats['by_slice']['all_results'].keys():
         stats['by_metric'][metric] = {}	
-        for slice, result in stats['by_slice'].items():
-            stats['by_metric'][metric][slice] = result[metric]
+        for slice_key, result in stats['by_slice'].items():
+            stats['by_metric'][metric][slice_key] = result[metric]
+            if metric[-7:] == 'improve' and metric != 'model_original_improve':
+                if result[metric] > 0.5:
+                    problem_cases.append(str((slice_key, metric, result[metric])))
+    stats['problem_cases'] = problem_cases
 
 def digin(df):
     df = df.copy()
@@ -562,6 +571,40 @@ def digin(df):
         num_rows = df[(df['modal_percentage'] > low) & (df['modal_percentage'] <= high)].shape[0]
         frac_true = round(100*(num_rows_true / (num_rows + 0.00001)), 2)
         print(f"{low}-{high} precision = {frac_true} ({num_rows_true}, {num_rows})")
+
+
+def df_compare(df1: pd.DataFrame, df2: pd.DataFrame) -> int:
+    # Ensure the dataframes have the same columns and index
+    df1, df2 = df1.align(df2)
+
+    # Create a boolean mask where each row is True if the row in df1 differs from the row in df2
+    mask = ~(df1 == df2).all(axis=1)
+
+    # Count the number of True values in the mask
+    num_differing_rows = mask.sum()
+
+    return num_differing_rows
+
+def set_model_base_predictions(df, thresh):
+    df_copy = df.copy()
+    num_pred_value_changes = 0
+    num_answer_changes_to_1 = 0
+    num_answer_changes_to_0 = 0
+    for index, row in df_copy.iterrows():
+        if row['modal_percentage'] > thresh:
+            if row['model_base_pred_value'] != row['modal_value']:
+                num_pred_value_changes += 1
+                #print(row['model_base_pred_value'], row['modal_value'])
+                df_copy.at[index, 'model_base_pred_value'] = row['modal_value']
+            if row['modal_value'] == row['secret_value']:
+                if row['model_base_answer'] != 1:
+                    num_answer_changes_to_1 += 1
+                df_copy.at[index, 'model_base_answer'] = 1
+            else:
+                if row['model_base_answer'] != 0:
+                    num_answer_changes_to_0 += 1
+                df_copy.at[index, 'model_base_answer'] = 0
+    return df_copy
 
 def do_plots():
     df = gather(instances_path=os.path.join(attack_path, 'instances'))
@@ -579,25 +622,40 @@ def do_plots():
                     pass
     # print the columns and dtypes of df
     print(df.dtypes)
+    # print the distinct values in modal_value, secret_value, and model_base_pred_value
     stats = {'by_slice': {}, 'by_metric': {}}
     stats['by_slice']['all_results'] = {}
     get_basic_stats(stats['by_slice']['all_results'], df)
     # make a new df that contains only rows where 'secret_col_type' is 'categorical'
     df_cat = df[df['secret_col_type'] == 'categorical']
-    df_cat = df_cat.copy()
+    df_cat_copy = df_cat.copy()
     stats['by_slice']['categorical_results'] = {}
-    get_basic_stats(stats['by_slice']['categorical_results'], df_cat)
-    #df_cat['percentile_bin'] = pd.qcut(df_cat['secret_percentage'], q=10, labels=False)
-    df_cat['percentile_bin'] = pd.cut(df_cat['modal_percentage'], bins=10, labels=False)
-    for bin_value, df_bin in df_cat.groupby('percentile_bin'):
+    get_basic_stats(stats['by_slice']['categorical_results'], df_cat_copy)
+    #df_cat_copy['percentile_bin'] = pd.qcut(df_cat_copy['secret_percentage'], q=10, labels=False)
+    df_cat_copy['percentile_bin'] = pd.cut(df_cat_copy['modal_percentage'], bins=10, labels=False)
+    for bin_value, df_bin in df_cat_copy.groupby('percentile_bin'):
         average_percentage = round(df_bin['secret_percentage'].mean(), 2)
         slice_name = f"cat_modal_percentage_{average_percentage}"
         stats['by_slice'][slice_name] = {}
         get_basic_stats(stats['by_slice'][slice_name], df_bin)
-    for bin_value, df_bin in df_cat.groupby('dataset'):
+    for bin_value, df_bin in df_cat_copy.groupby('dataset'):
         slice_name = f"cat_dataset_{bin_value}"
         stats['by_slice'][slice_name] = {}
         get_basic_stats(stats['by_slice'][slice_name], df_bin)
+    if False:
+        df_70 = set_model_base_predictions(df_cat, 70)
+        stats['by_slice']['categorical_results_70'] = {}
+        get_basic_stats(stats['by_slice']['categorical_results_70'], df_70)
+        df_70['percentile_bin'] = pd.cut(df_70['modal_percentage'], bins=10, labels=False)
+        for bin_value, df_bin in df_70.groupby('percentile_bin'):
+            average_percentage = round(df_bin['secret_percentage'].mean(), 2)
+            slice_name = f"cat_70_modal_percentage_{average_percentage}"
+            stats['by_slice'][slice_name] = {}
+            get_basic_stats(stats['by_slice'][slice_name], df_bin)
+        for bin_value, df_bin in df_70.groupby('dataset'):
+            slice_name = f"cat_70_dataset_{bin_value}"
+            stats['by_slice'][slice_name] = {}
+            get_basic_stats(stats['by_slice'][slice_name], df_bin)
     #digin(df_cat)
     get_by_metric_from_by_slice(stats)
     #pp.pprint(stats)

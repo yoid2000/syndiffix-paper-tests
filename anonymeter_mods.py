@@ -283,15 +283,17 @@ def run_anonymeter_attack(
 
     guess_idx = nn.kneighbors(queries=targets[aux_cols])
     guess = basis.iloc[guess_idx.flatten()][secret]
+    # df_matching contains all of the rows that match the known attributes (aux_cols) of the best
+    # matching row in the basis data
     df_matching, match_row = get_matches(basis=basis, guess_idx=guess_idx, aux_cols=aux_cols)
-    modal_value = df_matching[secret].mode()[0]
-    modal_count = (df_matching[secret] == modal_value).sum()
-    percentage = 100*(modal_count / len(df_matching))
+    match_modal_value = df_matching[secret].mode()[0]
+    match_modal_count = (df_matching[secret] == match_modal_value).sum()
+    percentage = 100*(match_modal_count / len(df_matching))
     if debug:
         distinct_values = df_matching[secret].nunique()
         print(f"got {len(df_matching)} matching rows")
         print(f"secret distinct values: {distinct_values}"	)
-        print(f"modal_value: {modal_value}, modal_count: {modal_count}, percentage: {percentage}")
+        print(f"match_modal_value: {match_modal_value}, match_modal_count: {match_modal_count}, percentage: {percentage}")
         if percentage >= 50:
             print("hit_50")
         if percentage >= 90:
@@ -299,9 +301,9 @@ def run_anonymeter_attack(
     
     ans = {'guess_series': guess,
             'match_row': match_row,
-            'modal_value': modal_value,
-            'modal_count': modal_count,
-            'modal_percentage': percentage}
+            'match_modal_value': match_modal_value,
+            'match_modal_count': match_modal_count,
+            'match_modal_percentage': percentage}
     if len(df_matching) == 0:
         print(f"Error: no matching rows")
         pp.pprint(ans)
