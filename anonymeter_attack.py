@@ -35,7 +35,7 @@ num_attacks = 500000
 # This is the number of attacks per slurm job, and determines how many slurm jobs are created
 num_attacks_per_job = 100
 max_subsets = 200
-debug = True
+debug = False
 
 # These are the variants of the attack that exploits sub-tables
 variants = {'vanilla':[],

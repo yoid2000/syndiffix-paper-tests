@@ -10,7 +10,7 @@ from math import fabs, isnan
 import pprint
 
 pp = pprint.PrettyPrinter(indent=4)
-debug = True
+debug = False
 
 '''
 The code in here was cut-n-paste from the github repo anonymeter, with minor additions.
