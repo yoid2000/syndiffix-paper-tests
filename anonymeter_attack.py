@@ -135,33 +135,40 @@ def build_and_train_model(df, target_col, target_type):
 
 def make_config():
     ''' I want to generate num_attacks attacks. Each attack will be on a given secret
-    column in a given table. I will run multiple of these attacks per secret/table if
-    necessary.
+    column in a given table with given known columns. I will run multiple of these
+    attacks per secret/table if necessary.
     '''
+
+    num_known_columns = [-1,3,6]
     # Initialize attack_jobs
     attack_jobs = []
 
     # Loop over each directory name in syn_path
-    attacks_so_far = 0
-    while attacks_so_far < num_attacks:
-        for dir_name in os.listdir(syn_path):
-            dataset_path = os.path.join(syn_path, dir_name, 'anonymeter')
-            # Check if dataset_path exists
-            if not os.path.exists(dataset_path):
-                continue
-            tm = TablesManager(dir_path=dataset_path)
-            columns = list(tm.df_orig.columns)
-            pid_cols = tm.get_pid_cols()
-            if len(pid_cols) > 0:
-                # We can't really run the attack on time-series data
-                continue
-            for secret in columns:
-                attack_jobs.append({
-                    'dir_name': dir_name,
-                    'secret': secret,
-                    'num_runs': num_attacks_per_job,
-                })
-                attacks_so_far += num_attacks_per_job
+    for num_known in num_known_columns:
+        attacks_so_far = 0
+        while attacks_so_far < num_attacks:
+            for dir_name in os.listdir(syn_path):
+                dataset_path = os.path.join(syn_path, dir_name, 'anonymeter')
+                # Check if dataset_path exists
+                if not os.path.exists(dataset_path):
+                    continue
+                tm = TablesManager(dir_path=dataset_path)
+                columns = list(tm.df_orig.columns)
+                pid_cols = tm.get_pid_cols()
+                if len(pid_cols) > 0:
+                    # We can't really run the attack on time-series data
+                    continue
+                for secret in columns:
+                    # We are only setup to test on categorical columns
+                    if tm.orig_meta_data['column_classes'][secret] == 'continuous':
+                        continue
+                    attack_jobs.append({
+                        'dir_name': dir_name,
+                        'secret': secret,
+                        'num_runs': num_attacks_per_job,
+                        'num_known': num_known,
+                    })
+                    attacks_so_far += num_attacks_per_job
     # randomize the order in which the attack_jobs are run
     random.shuffle(attack_jobs)
     for index, job in enumerate(attack_jobs):
@@ -555,6 +562,8 @@ def get_by_metric_from_by_slice(stats):
             if metric[-7:] == 'improve' and metric != 'model_original_improve':
                 if result[metric] > 0.5:
                     problem_cases.append(str((slice_key, metric, result[metric])))
+                    new_metric = metric[:-7] + 'coverage'
+                    problem_cases.append(str((slice_key, new_metric, stats['by_metric'][new_metric][slice_key])))
     stats['problem_cases'] = problem_cases
 
 def digin(df):
