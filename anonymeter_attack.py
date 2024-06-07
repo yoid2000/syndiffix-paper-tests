@@ -162,11 +162,16 @@ def make_config():
                     # We are only setup to test on categorical columns
                     if tm.orig_meta_data['column_classes'][secret] == 'continuous':
                         continue
+                    aux_cols = []
+                    if num_known != -1:
+                        aux_cols = [col for col in columns if col not in secret]
+                        aux_cols = random.sample(aux_cols, num_known)
                     attack_jobs.append({
                         'dir_name': dir_name,
                         'secret': secret,
                         'num_runs': num_attacks_per_job,
                         'num_known': num_known,
+                        'aux_cols': aux_cols,
                     })
                     attacks_so_far += num_attacks_per_job
     # randomize the order in which the attack_jobs are run
@@ -268,6 +273,8 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             'secret_col_type': secret_col_type,
             'modal_value': str(modal_value),
             'modal_percentage': modal_percentage,
+            'num_known_cols': len(aux_cols),
+            'known_cols': str(aux_cols),
         }
         # Now get the model baseline prediction
         try:
@@ -457,9 +464,10 @@ def run_attack(job_num):
     df_syn = tm.get_syn_df()
     print(f"df_syn has shape {df_syn.shape} and columns {df_syn.columns}")
     # set aux_cols to all columns except the secret column
-    aux_cols = [col for col in df_syn.columns if col not in [job['secret']]]
-    if job['num_known'] != -1:
-        aux_cols = random.sample(aux_cols, job['num_known'])
+    if job['num_known'] == -1:
+        aux_cols = [col for col in df_syn.columns if col not in [job['secret']]]
+    else:
+        aux_cols = job['aux_cols']
     if tm.orig_meta_data['column_classes'][job['secret']] == 'continuous':
         regression = True
         target_type = 'continuous'
