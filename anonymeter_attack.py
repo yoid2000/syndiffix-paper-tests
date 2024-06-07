@@ -216,11 +216,9 @@ def get_valid_combs(tm, secret_col, aux_cols):
     if tm.catalog is None:
         tm.build_catalog()
     valid_combs = []
-    pp.pprint(aux_cols)
     for catalog_entry in tm.catalog:
         # check to see if every column in catalog_entry is in aux_cols
-        pp.pprint(catalog_entry['columns'])
-        if not all(col in aux_cols for col in catalog_entry['columns']):
+        if not all(col in catalog_entry['columns'] for col in aux_cols):
             continue
         if secret_col in catalog_entry['columns'] and len(catalog_entry['columns']) > 1:
             valid_combs.append(catalog_entry['columns'])
