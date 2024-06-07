@@ -380,6 +380,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         #print(f"Running with total {max_subsets} of {len(col_combs)} column combinations")
         if len(col_combs) > max_subsets:
             col_combs = random.sample(col_combs, max_subsets)
+        this_attack['num_subsets'] = len(col_combs)
         for col_comb in col_combs:
             df_syn_subset = tm.get_syn_df(col_comb)
             df_syn_subset = convert_datetime_to_timestamp(df_syn_subset)
