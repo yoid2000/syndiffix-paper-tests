@@ -458,9 +458,13 @@ def run_attack(job_num):
     print(f"df_syn has shape {df_syn.shape} and columns {df_syn.columns}")
     # set aux_cols to all columns except the secret column
     aux_cols = [col for col in df_syn.columns if col not in [job['secret']]]
+    if job['num_known'] != -1:
+        aux_cols = random.sample(aux_cols, job['num_known'])
     if tm.orig_meta_data['column_classes'][job['secret']] == 'continuous':
         regression = True
         target_type = 'continuous'
+        print(f"We are no longer doing continuous secret column attacks: {job}")
+        sys.exit(1)
     else:
         regression = False
         target_type = 'categorical'
