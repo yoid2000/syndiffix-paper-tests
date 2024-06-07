@@ -165,6 +165,11 @@ def make_config():
                     aux_cols = []
                     if num_known != -1:
                         aux_cols = [col for col in columns if col not in secret]
+                        if len(aux_cols) < num_known:
+                            # We can't make enough aux_cols for the experiment, so just
+                            # skip this secret
+                            attacks_so_far += num_attacks_per_job
+                            continue
                         aux_cols = random.sample(aux_cols, num_known)
                     attack_jobs.append({
                         'dir_name': dir_name,
