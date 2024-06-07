@@ -210,13 +210,16 @@ python {exe_path} $arrayNum
     with open(os.path.join(attack_path, 'attack.slurm'), 'w', encoding='utf-8') as f:
         f.write(slurm_template)
 
-def get_valid_combs(tm, secret_col):
+def get_valid_combs(tm, secret_col, aux_cols):
     # We want the column combinations that containt secret_col and have at least
-    # one other column
+    # one other column. tm.catalog contains every subset combination that was created.
     if tm.catalog is None:
         tm.build_catalog()
     valid_combs = []
     for catalog_entry in tm.catalog:
+        # check to see if every column in catalog_entry is in aux_cols
+        if not all(col in aux_cols for col in catalog_entry['columns']):
+            continue
         if secret_col in catalog_entry['columns'] and len(catalog_entry['columns']) > 1:
             valid_combs.append(catalog_entry['columns'])
     return valid_combs
@@ -373,7 +376,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         # if the anonymeter-style attack on the full dataset is correct or not.
         num_subset_combs = 0
         num_subset_correct = 0
-        col_combs = get_valid_combs(tm, secret_col)
+        col_combs = get_valid_combs(tm, secret_col, aux_cols)
         #print(f"Running with total {max_subsets} of {len(col_combs)} column combinations")
         if len(col_combs) > max_subsets:
             col_combs = random.sample(col_combs, max_subsets)
