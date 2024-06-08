@@ -531,9 +531,9 @@ def gather(instances_path):
         df.to_csv(os.path.join(attack_path, 'attacks.csv'))
     return df
 
-def get_basic_stats(stats, df, num_subsets):
+def get_basic_stats(stats, df):
     stats['num_attacks'] = len(df)
-    stats['num_subsets'] = num_subsets
+    stats['avg_num_subsets'] = round(df['num_subsets'].mean(), 2)
     stats['average_percentage'] = round(df['secret_percentage'].mean(), 2)
     p_model = round(df['model_base_answer'].sum() / len(df), 6)
     stats['model_base_precision'] = p_model
@@ -640,37 +640,37 @@ def set_model_base_predictions(df, thresh):
 
 def run_stats_for_subsets(stats, df, num_subsets):
     stats['by_slice']['all_results'] = {}
-    get_basic_stats(stats['by_slice']['all_results'], df, num_subsets)
+    get_basic_stats(stats['by_slice']['all_results'], df)
     # make a new df that contains only rows where 'secret_col_type' is 'categorical'
     df_cat = df[df['secret_col_type'] == 'categorical']
     df_cat_copy = df_cat.copy()
     stats['by_slice']['categorical_results'] = {}
-    get_basic_stats(stats['by_slice']['categorical_results'], df_cat_copy, num_subsets)
+    get_basic_stats(stats['by_slice']['categorical_results'], df_cat_copy)
     #df_cat_copy['percentile_bin'] = pd.qcut(df_cat_copy['secret_percentage'], q=10, labels=False)
     df_cat_copy['percentile_bin'] = pd.cut(df_cat_copy['modal_percentage'], bins=10, labels=False)
     for bin_value, df_bin in df_cat_copy.groupby('percentile_bin'):
         average_percentage = round(df_bin['secret_percentage'].mean(), 2)
         slice_name = f"cat_modal_percentage_{average_percentage}"
         stats['by_slice'][slice_name] = {}
-        get_basic_stats(stats['by_slice'][slice_name], df_bin, num_subsets)
+        get_basic_stats(stats['by_slice'][slice_name], df_bin)
     for bin_value, df_bin in df_cat_copy.groupby('dataset'):
         slice_name = f"cat_dataset_{bin_value}"
         stats['by_slice'][slice_name] = {}
-        get_basic_stats(stats['by_slice'][slice_name], df_bin, num_subsets)
+        get_basic_stats(stats['by_slice'][slice_name], df_bin)
     if False:
         df_70 = set_model_base_predictions(df_cat, 70)
         stats['by_slice']['categorical_results_70'] = {}
-        get_basic_stats(stats['by_slice']['categorical_results_70'], df_70, num_subsets)
+        get_basic_stats(stats['by_slice']['categorical_results_70'], df_70)
         df_70['percentile_bin'] = pd.cut(df_70['modal_percentage'], bins=10, labels=False)
         for bin_value, df_bin in df_70.groupby('percentile_bin'):
             average_percentage = round(df_bin['secret_percentage'].mean(), 2)
             slice_name = f"cat_70_modal_percentage_{average_percentage}"
             stats['by_slice'][slice_name] = {}
-            get_basic_stats(stats['by_slice'][slice_name], df_bin, num_subsets)
+            get_basic_stats(stats['by_slice'][slice_name], df_bin)
         for bin_value, df_bin in df_70.groupby('dataset'):
             slice_name = f"cat_70_dataset_{bin_value}"
             stats['by_slice'][slice_name] = {}
-            get_basic_stats(stats['by_slice'][slice_name], df_bin, num_subsets)
+            get_basic_stats(stats['by_slice'][slice_name], df_bin)
     #digin(df_cat)
     get_by_metric_from_by_slice(stats)
     #pp.pprint(stats)
@@ -694,7 +694,10 @@ def do_plots():
     # print the distinct values in modal_value, secret_value, and model_base_pred_value
     stats = {}
     for sub_key, num_subsets in [('num_subsets_all', -1), ('num_subsets_3', 3), ('num_subsets_6', 6)]:
-        df_copy = df[df['num_subsets'] == num_subsets].copy()
+        if num_subsets != -1:
+            df_copy = df[df['num_subsets'] == num_subsets].copy()
+        else:
+            df_copy = df[(df['num_subsets'] != 3) & (df['num_subsets'] != 6)].copy()
         stats[sub_key] = {'by_slice': {}, 'by_metric': {}}
         run_stats_for_subsets(stats[sub_key], df_copy, num_subsets)
     # save stats as json file
