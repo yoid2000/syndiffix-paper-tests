@@ -505,7 +505,8 @@ def gather(instances_path):
             # split the filename on '.'
             table = filename.split('.')[0]
             with open(os.path.join(instances_path, filename), 'r') as f:
-                print(f"Reading {i+1} of {len(all_files)} {filename}")
+                if i % 100 == 0:
+                    print(f"Reading {i+1} of {len(all_files)} {filename}")
                 res = json.load(f)
                 for record in res:
                     record['dataset'] = table
@@ -692,9 +693,10 @@ def do_plots():
     print(df.dtypes)
     # print the distinct values in modal_value, secret_value, and model_base_pred_value
     stats = {}
-    for sub_key, num_subsets in [('num_subsets_all', 0), ('num_subsets_3', 3), ('num_subsets_6', 6)]:
+    for sub_key, num_subsets in [('num_subsets_all', -1), ('num_subsets_3', 3), ('num_subsets_6', 6)]:
+        df_copy = df[df['num_subsets'] == num_subsets].copy()
         stats[sub_key] = {'by_slice': {}, 'by_metric': {}}
-        run_stats_for_subsets(stats[sub_key], df, num_subsets)
+        run_stats_for_subsets(stats[sub_key], df_copy, num_subsets)
     # save stats as json file
     with open(os.path.join(attack_path, 'stats.json'), 'w') as f:
         json.dump(stats, f, indent=4)
