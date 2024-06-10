@@ -529,6 +529,8 @@ def gather(instances_path):
                 for record in res:
                     record['dataset'] = table
                 attacks += res
+                pp.pprint(res[0])
+                quit()
                 if res[0]['num_known_cols'] == 3:
                     num_files_with_num_known[3] += 1
                 elif res[0]['num_known_cols'] == 6:
