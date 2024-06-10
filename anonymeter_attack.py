@@ -138,10 +138,7 @@ def attack_stats():
         jobs = json.load(f)
     secrets = {3:{}, 6:{}, -1:{}}
     for job in jobs:
-        if job['num_known'] not in [3,6]:
-            nk = -1
-        else:
-            nk = job['num_known']
+        nk = job['num_known']
         if job['secret'] not in secrets[nk]:
             secrets[nk][job['secret']] = job['num_runs']
         else:
@@ -518,6 +515,7 @@ def gather(instances_path):
     else:
         all_files = list(os.listdir(instances_path))
         # loop through the index and filename of all_files
+        num_files_with_num_known = {3:0, 6:0, -1:0}
         for i, filename in enumerate(all_files):
             if not filename.endswith('.json'):
                 print(f"!!!!!!!!!!!!!!! bad filename: {filename}!!!!!!!!!!!!!!!!!!!!!!!")
@@ -531,7 +529,14 @@ def gather(instances_path):
                 for record in res:
                     record['dataset'] = table
                 attacks += res
+                if res[0]['num_known_cols'] == 3:
+                    num_files_with_num_known[3] += 1
+                elif res[0]['num_known_cols'] == 6:
+                    num_files_with_num_known[6] += 1
+                else:
+                    num_files_with_num_known[-1] += 1
         print(f"Total attacks: {len(attacks)}")
+        pp.pprint(num_files_with_num_known)
         # convert attacks to a DataFrame
         df = pd.DataFrame(attacks)
         for col in df.columns:
@@ -733,6 +738,9 @@ def do_plots():
     print(df.dtypes)
     # print the distinct values in modal_value, secret_value, and model_base_pred_value
     stats = {}
+    # print the count of each distinct value in num_subsets
+    print(df['num_subsets'].value_counts())
+    quit()
     for sub_key, num_subsets in [('num_subsets_all', -1), ('num_subsets_3', 3), ('num_subsets_6', 6)]:
         if num_subsets != -1:
             df_copy = df[df['num_subsets'] == num_subsets].copy()
