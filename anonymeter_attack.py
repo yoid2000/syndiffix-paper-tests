@@ -748,7 +748,6 @@ def do_plots():
     stats = {}
     # print the count of each distinct value in num_known_cols
     print(df['num_known_cols'].value_counts())
-    quit()
     for sub_key, num_known in [('num_known_all', -1), ('num_known_3', 3), ('num_known_6', 6)]:
         if num_known != -1:
             df_copy = df[df['num_known_cols'] == num_known].copy()
@@ -757,6 +756,7 @@ def do_plots():
         stats[sub_key] = {'by_slice': {}, 'by_metric': {}}
         run_stats_for_subsets(stats[sub_key], df_copy, num_known)
     # save stats as json file
+    print(f"Writing stats to {os.path.join(attack_path, 'stats.json')}")
     with open(os.path.join(attack_path, 'stats.json'), 'w') as f:
         json.dump(stats, f, indent=4)
 
