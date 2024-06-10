@@ -520,6 +520,7 @@ def gather(instances_path):
         # loop through the index and filename of all_files
         for i, filename in enumerate(all_files):
             if not filename.endswith('.json'):
+                print(f"!!!!!!!!!!!!!!! bad filename: {filename}!!!!!!!!!!!!!!!!!!!!!!!")
                 continue
             # split the filename on '.'
             table = filename.split('.')[0]
