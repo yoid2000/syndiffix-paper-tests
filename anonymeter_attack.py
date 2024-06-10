@@ -133,6 +133,24 @@ def build_and_train_model(df, target_col, target_type):
     model.fit(X, y)
     return model
 
+def attack_stats():
+    with open(os.path.join(attack_path, 'attack_jobs.json'), 'r') as f:
+        jobs = json.load(f)
+    secrets = {3:{}, 6:{}, -1:{}}
+    for job in jobs:
+        if job['num_known'] not in [3,6]:
+            nk = -1
+        else:
+            nk = job['num_known']
+        if job['secret'] not in secrets[nk]:
+            secrets[nk][job['secret']] = job['num_runs']
+        else:
+            secrets[nk][job['secret']] += job['num_runs']
+    
+    for nk in [-1,3,6]:
+        print(f"Number of secrets for {nk} known columns: {len(secrets[nk])}")
+        print(f"Average count per secret: {sum(secrets[nk].values()) / len(secrets)}")
+
 def make_config():
     ''' I want to generate num_attacks attacks. Each attack will be on a given secret
     column in a given table with given known columns. I will run multiple of these
@@ -461,8 +479,9 @@ def run_attack(job_num):
     file_path = os.path.join(instances_path, file_name)
 
     if os.path.exists(file_path):
-        print(f"File already exists: {file_path}")
-        return
+        if job['num_known'] == -1:
+            print(f"File already exists: {file_path}")
+            return
     dataset_path = os.path.join(syn_path, job['dir_name'], 'anonymeter')
     control_path = os.path.join(dataset_path, 'control.parquet')
     # read the control file into a DataFrame
@@ -473,10 +492,10 @@ def run_attack(job_num):
     df_syn = tm.get_syn_df()
     print(f"df_syn has shape {df_syn.shape} and columns {df_syn.columns}")
     # set aux_cols to all columns except the secret column
-    if job['num_known'] == -1:
-        aux_cols = [col for col in df_syn.columns if col not in [job['secret']]]
-    else:
-        aux_cols = job['aux_cols']
+    aux_cols = [col for col in df_syn.columns if col not in [job['secret']]]
+    if job['num_known'] != -1:
+        # select num_known columns from aux_cols
+        aux_cols = random.sample(aux_cols, job['num_known'])
     if tm.orig_meta_data['column_classes'][job['secret']] == 'continuous':
         regression = True
         target_type = 'continuous'
@@ -531,7 +550,21 @@ def gather(instances_path):
         df.to_csv(os.path.join(attack_path, 'attacks.csv'))
     return df
 
+def update_max_improve(max_improve, max_info, label, stats):
+    improve_label = f"{label}_improve"
+    cov_label = f"{label}_coverage"
+    if stats[improve_label] > max_improve:
+        max_improve = stats[improve_label]
+        if cov_label in stats:
+            cov = stats[cov_label]
+        else:
+            cov = 1.0
+        max_info = {'label':label, 'improve':max_improve, 'coverage':cov}
+    return max_improve, max_info
+
 def get_basic_stats(stats, df):
+    max_improve = -1000
+    max_info = {}
     stats['num_attacks'] = len(df)
     stats['avg_num_subsets'] = round(df['num_subsets'].mean(), 2)
     stats['average_percentage'] = round(df['secret_percentage'].mean(), 2)
@@ -549,12 +582,14 @@ def get_basic_stats(stats, df):
     p = round(df['syn_meter_answer'].sum() / len(df), 6)
     stats['meter_attack_precision'] = p
     stats['meter_attack_improve'] = round((p-p_base)/(1.0000001-p_base), 6)
+    max_improve, max_info = update_max_improve(max_improve, max_info, 'meter_attack', stats)
     for v_label in variants.keys():
         for cc_label in col_comb_thresholds.keys():
-            answer = f"syn_meter_{v_label}_{cc_label}_answer"
-            precision = f"syn_meter_{v_label}_{cc_label}_precision"
-            improve = f"syn_meter_{v_label}_{cc_label}_improve"
-            coverage = f"syn_meter_{v_label}_{cc_label}_coverage"
+            base_label = f"syn_meter_{v_label}_{cc_label}"
+            answer = f"{base_label}_answer"
+            precision = f"{base_label}_precision"
+            improve = f"{base_label}_improve"
+            coverage = f"{base_label}_coverage"
             model_base = f"model_base_{v_label}_{cc_label}_precision"
             meter_base = f"meter_base_{v_label}_{cc_label}_precision"
             # df_pred contains only the rows where predictions were made
@@ -575,6 +610,10 @@ def get_basic_stats(stats, df):
             p = df_pred[answer].sum() / len(df_pred)
             stats[precision] = round(p, 6)
             stats[improve] = round((p-p_base_pred)/(1.0000001-p_base_pred), 6)
+            max_improve, max_info = update_max_improve(max_improve, max_info, base_label, stats)
+    stats['max_improve_record'] = max_info
+    stats['max_improve'] = max_info['improve']
+    stats['max_coverage'] = max_info['coverage']	
 
 def get_by_metric_from_by_slice(stats):
     problem_cases = []
@@ -582,7 +621,7 @@ def get_by_metric_from_by_slice(stats):
         stats['by_metric'][metric] = {}	
         for slice_key, result in stats['by_slice'].items():
             stats['by_metric'][metric][slice_key] = result[metric]
-            if metric[-7:] == 'improve' and metric != 'model_original_improve':
+            if metric[-7:] == 'improve' and metric not in ['model_original_improve', 'max_improve']:
                 if result[metric] > 0.5:
                     problem_cases.append(str((slice_key, metric, result[metric])))
                     new_metric = metric[:-7] + 'coverage'
@@ -721,6 +760,8 @@ def main():
 
     if args.command == 'config':
         make_config()
+    if args.command == 'stats':
+        attack_stats()
     if args.command == 'test':
         do_tests()
     elif args.command == 'plots':
