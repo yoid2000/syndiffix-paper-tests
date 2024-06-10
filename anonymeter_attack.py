@@ -746,8 +746,8 @@ def do_plots():
     print(df.dtypes)
     # print the distinct values in modal_value, secret_value, and model_base_pred_value
     stats = {}
-    # print the count of each distinct value in num_known
-    print(df['num_known'].value_counts())
+    # print the count of each distinct value in num_known_cols
+    print(df['num_known_cols'].value_counts())
     quit()
     for sub_key, num_known in [('num_known_all', -1), ('num_known_3', 3), ('num_known_6', 6)]:
         if num_known != -1:
