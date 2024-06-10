@@ -746,16 +746,16 @@ def do_plots():
     print(df.dtypes)
     # print the distinct values in modal_value, secret_value, and model_base_pred_value
     stats = {}
-    # print the count of each distinct value in num_subsets
-    print(df['num_subsets'].value_counts())
+    # print the count of each distinct value in num_known
+    print(df['num_known'].value_counts())
     quit()
-    for sub_key, num_subsets in [('num_subsets_all', -1), ('num_subsets_3', 3), ('num_subsets_6', 6)]:
-        if num_subsets != -1:
-            df_copy = df[df['num_subsets'] == num_subsets].copy()
+    for sub_key, num_known in [('num_known_all', -1), ('num_known_3', 3), ('num_known_6', 6)]:
+        if num_known != -1:
+            df_copy = df[df['num_known_cols'] == num_known].copy()
         else:
-            df_copy = df[(df['num_subsets'] != 3) & (df['num_subsets'] != 6)].copy()
+            df_copy = df[(df['num_known_cols'] != 3) & (df['num_known_cols'] != 6)].copy()
         stats[sub_key] = {'by_slice': {}, 'by_metric': {}}
-        run_stats_for_subsets(stats[sub_key], df_copy, num_subsets)
+        run_stats_for_subsets(stats[sub_key], df_copy, num_known)
     # save stats as json file
     with open(os.path.join(attack_path, 'stats.json'), 'w') as f:
         json.dump(stats, f, indent=4)
