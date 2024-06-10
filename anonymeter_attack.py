@@ -526,19 +526,23 @@ def gather(instances_path):
                 if i % 100 == 0:
                     print(f"Reading {i+1} of {len(all_files)} {filename}")
                 res = json.load(f)
+                if 'num_known_cols' not in res[0]:
+                    print("old format")
+                    pp.pprint(res[0])
+                    print(filename)
+                    continue
                 for record in res:
                     record['dataset'] = table
                 attacks += res
                 if 'num_known_cols' not in res[0]:
                     pp.pprint(res[0])
                     print(filename)
+                if res[0]['num_known_cols'] == 3:
+                    num_files_with_num_known[3] += len(res)
+                elif res[0]['num_known_cols'] == 6:
+                    num_files_with_num_known[6] += len(res)
                 else:
-                    if res[0]['num_known_cols'] == 3:
-                        num_files_with_num_known[3] += 1
-                    elif res[0]['num_known_cols'] == 6:
-                        num_files_with_num_known[6] += 1
-                    else:
-                        num_files_with_num_known[-1] += 1
+                    num_files_with_num_known[-1] += len(res)
         print(f"Total attacks: {len(attacks)}")
         pp.pprint(num_files_with_num_known)
         # convert attacks to a DataFrame
