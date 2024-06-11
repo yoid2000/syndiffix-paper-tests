@@ -21,8 +21,7 @@ for dir in os.listdir(synDataPath):
     thisDataPath = Path(synDataPath, dir)
     tm = TablesManager(dir_path=thisDataPath)
     pid_cols = tm.get_pid_cols()
-    if tm.orig_meta_data['column_classes'][job['secret']] == 'continuous':
-        pass
+    pp.pprint(tm.orig_meta_data)
 
 def main():
     parser = argparse.ArgumentParser()
