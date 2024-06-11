@@ -133,6 +133,21 @@ def build_and_train_model(df, target_col, target_type):
     model.fit(X, y)
     return model
 
+def attack_stats():
+    with open(os.path.join(attack_path, 'attack_jobs.json'), 'r') as f:
+        jobs = json.load(f)
+    secrets = {3:{}, 6:{}, -1:{}}
+    for job in jobs:
+        nk = job['num_known']
+        if job['secret'] not in secrets[nk]:
+            secrets[nk][job['secret']] = job['num_runs']
+        else:
+            secrets[nk][job['secret']] += job['num_runs']
+    
+    for nk in [-1,3,6]:
+        print(f"Number of secrets for {nk} known columns: {len(secrets[nk])}")
+        print(f"Average count per secret: {sum(secrets[nk].values()) / len(secrets)}")
+
 def make_config():
     ''' I want to generate num_attacks attacks. Each attack will be on a given secret
     column in a given table with given known columns. I will run multiple of these
@@ -461,8 +476,9 @@ def run_attack(job_num):
     file_path = os.path.join(instances_path, file_name)
 
     if os.path.exists(file_path):
-        print(f"File already exists: {file_path}")
-        return
+        if job['num_known'] == -1:
+            print(f"File already exists: {file_path}")
+            return
     dataset_path = os.path.join(syn_path, job['dir_name'], 'anonymeter')
     control_path = os.path.join(dataset_path, 'control.parquet')
     # read the control file into a DataFrame
@@ -473,10 +489,10 @@ def run_attack(job_num):
     df_syn = tm.get_syn_df()
     print(f"df_syn has shape {df_syn.shape} and columns {df_syn.columns}")
     # set aux_cols to all columns except the secret column
-    if job['num_known'] == -1:
-        aux_cols = [col for col in df_syn.columns if col not in [job['secret']]]
-    else:
-        aux_cols = job['aux_cols']
+    aux_cols = [col for col in df_syn.columns if col not in [job['secret']]]
+    if job['num_known'] != -1:
+        # select num_known columns from aux_cols
+        aux_cols = random.sample(aux_cols, job['num_known'])
     if tm.orig_meta_data['column_classes'][job['secret']] == 'continuous':
         regression = True
         target_type = 'continuous'
@@ -499,18 +515,36 @@ def gather(instances_path):
     else:
         all_files = list(os.listdir(instances_path))
         # loop through the index and filename of all_files
+        num_files_with_num_known = {3:0, 6:0, -1:0}
         for i, filename in enumerate(all_files):
             if not filename.endswith('.json'):
+                print(f"!!!!!!!!!!!!!!! bad filename: {filename}!!!!!!!!!!!!!!!!!!!!!!!")
                 continue
             # split the filename on '.'
             table = filename.split('.')[0]
             with open(os.path.join(instances_path, filename), 'r') as f:
-                print(f"Reading {i+1} of {len(all_files)} {filename}")
+                if i % 100 == 0:
+                    print(f"Reading {i+1} of {len(all_files)} {filename}")
                 res = json.load(f)
+                if 'num_known_cols' not in res[0]:
+                    print("old format")
+                    pp.pprint(res[0])
+                    print(filename)
+                    continue
                 for record in res:
                     record['dataset'] = table
                 attacks += res
+                if 'num_known_cols' not in res[0]:
+                    pp.pprint(res[0])
+                    print(filename)
+                if res[0]['num_known_cols'] == 3:
+                    num_files_with_num_known[3] += len(res)
+                elif res[0]['num_known_cols'] == 6:
+                    num_files_with_num_known[6] += len(res)
+                else:
+                    num_files_with_num_known[-1] += len(res)
         print(f"Total attacks: {len(attacks)}")
+        pp.pprint(num_files_with_num_known)
         # convert attacks to a DataFrame
         df = pd.DataFrame(attacks)
         for col in df.columns:
@@ -530,8 +564,23 @@ def gather(instances_path):
         df.to_csv(os.path.join(attack_path, 'attacks.csv'))
     return df
 
+def update_max_improve(max_improve, max_info, label, stats):
+    improve_label = f"{label}_improve"
+    cov_label = f"{label}_coverage"
+    if stats[improve_label] > max_improve:
+        max_improve = stats[improve_label]
+        if cov_label in stats:
+            cov = stats[cov_label]
+        else:
+            cov = 1.0
+        max_info = {'label':label, 'improve':max_improve, 'coverage':cov}
+    return max_improve, max_info
+
 def get_basic_stats(stats, df):
+    max_improve = -1000
+    max_info = {}
     stats['num_attacks'] = len(df)
+    stats['avg_num_subsets'] = round(df['num_subsets'].mean(), 2)
     stats['average_percentage'] = round(df['secret_percentage'].mean(), 2)
     p_model = round(df['model_base_answer'].sum() / len(df), 6)
     stats['model_base_precision'] = p_model
@@ -547,12 +596,14 @@ def get_basic_stats(stats, df):
     p = round(df['syn_meter_answer'].sum() / len(df), 6)
     stats['meter_attack_precision'] = p
     stats['meter_attack_improve'] = round((p-p_base)/(1.0000001-p_base), 6)
+    max_improve, max_info = update_max_improve(max_improve, max_info, 'meter_attack', stats)
     for v_label in variants.keys():
         for cc_label in col_comb_thresholds.keys():
-            answer = f"syn_meter_{v_label}_{cc_label}_answer"
-            precision = f"syn_meter_{v_label}_{cc_label}_precision"
-            improve = f"syn_meter_{v_label}_{cc_label}_improve"
-            coverage = f"syn_meter_{v_label}_{cc_label}_coverage"
+            base_label = f"syn_meter_{v_label}_{cc_label}"
+            answer = f"{base_label}_answer"
+            precision = f"{base_label}_precision"
+            improve = f"{base_label}_improve"
+            coverage = f"{base_label}_coverage"
             model_base = f"model_base_{v_label}_{cc_label}_precision"
             meter_base = f"meter_base_{v_label}_{cc_label}_precision"
             # df_pred contains only the rows where predictions were made
@@ -564,6 +615,9 @@ def get_basic_stats(stats, df):
                 stats[precision] = 0
                 stats[improve] = 0
                 continue
+            # Basing the base precision on the rows where the attack happened to make predictions
+            # is not necessarily the right thing to do. What we really want is to find the best base
+            # precision given a similar coverage
             p_model_pred = round(df_pred['model_base_answer'].sum() / len(df_pred), 6)
             stats[model_base] = p_model_pred
             p_meter_pred = round(df_pred['base_meter_answer'].sum() / len(df_pred), 6)
@@ -573,6 +627,10 @@ def get_basic_stats(stats, df):
             p = df_pred[answer].sum() / len(df_pred)
             stats[precision] = round(p, 6)
             stats[improve] = round((p-p_base_pred)/(1.0000001-p_base_pred), 6)
+            max_improve, max_info = update_max_improve(max_improve, max_info, base_label, stats)
+    stats['max_improve_record'] = max_info
+    stats['max_improve'] = max_info['improve']
+    stats['max_coverage'] = max_info['coverage']	
 
 def get_by_metric_from_by_slice(stats):
     problem_cases = []
@@ -580,11 +638,22 @@ def get_by_metric_from_by_slice(stats):
         stats['by_metric'][metric] = {}	
         for slice_key, result in stats['by_slice'].items():
             stats['by_metric'][metric][slice_key] = result[metric]
-            if metric[-7:] == 'improve' and metric != 'model_original_improve':
+            if metric[-7:] == 'improve' and metric not in ['model_original_improve', 'max_improve']:
                 if result[metric] > 0.5:
                     problem_cases.append(str((slice_key, metric, result[metric])))
-                    new_metric = metric[:-7] + 'coverage'
-                    problem_cases.append(str((slice_key, new_metric, stats['by_metric'][new_metric][slice_key])))
+                    cov_metric = metric[:-7] + 'coverage'
+                    coverage = stats['by_metric'][cov_metric][slice_key]
+                    problem_cases.append(str((slice_key, cov_metric, coverage)))
+                    prec_metric = metric[:-7] + 'precision'
+                    precision = stats['by_metric'][prec_metric][slice_key]
+                    problem_cases.append(str((slice_key, prec_metric, precision)))
+                    meter_base_metric = 'meter_base' + prec_metric[9:]
+                    meter_base_precision = stats['by_metric'][meter_base_metric][slice_key]
+                    model_base_metric = 'model_base' + prec_metric[9:]
+                    model_base_precision = stats['by_metric'][model_base_metric][slice_key]
+                    base_precision = max(meter_base_precision, model_base_precision)
+                    num_predictions = int(round(coverage * stats['by_metric']['num_attacks'][slice_key]))
+                    problem_cases.append(str(('base_precision', base_precision, 'num_predictions', num_predictions)))
     stats['problem_cases'] = problem_cases
 
 def digin(df):
@@ -636,24 +705,7 @@ def set_model_base_predictions(df, thresh):
                 df_copy.at[index, 'model_base_answer'] = 0
     return df_copy
 
-def do_plots():
-    df = gather(instances_path=os.path.join(attack_path, 'instances'))
-
-    print(f"df has shape {df.shape} and columns:")
-    print(df.head())
-    for col in df.columns:
-        if df[col].dtype == object:
-            try:
-                df[col] = df[col].astype(int)
-            except ValueError:
-                try:
-                    df[col] = df[col].astype(float)
-                except ValueError:
-                    pass
-    # print the columns and dtypes of df
-    print(df.dtypes)
-    # print the distinct values in modal_value, secret_value, and model_base_pred_value
-    stats = {'by_slice': {}, 'by_metric': {}}
+def run_stats_for_subsets(stats, df, num_subsets):
     stats['by_slice']['all_results'] = {}
     get_basic_stats(stats['by_slice']['all_results'], df)
     # make a new df that contains only rows where 'secret_col_type' is 'categorical'
@@ -690,7 +742,35 @@ def do_plots():
     get_by_metric_from_by_slice(stats)
     #pp.pprint(stats)
 
+def do_plots():
+    df = gather(instances_path=os.path.join(attack_path, 'instances'))
+
+    print(f"df has shape {df.shape} and columns:")
+    print(df.head())
+    for col in df.columns:
+        if df[col].dtype == object:
+            try:
+                df[col] = df[col].astype(int)
+            except ValueError:
+                try:
+                    df[col] = df[col].astype(float)
+                except ValueError:
+                    pass
+    # print the columns and dtypes of df
+    print(df.dtypes)
+    # print the distinct values in modal_value, secret_value, and model_base_pred_value
+    stats = {}
+    # print the count of each distinct value in num_known_cols
+    print(df['num_known_cols'].value_counts())
+    for sub_key, num_known in [('num_known_all', -1), ('num_known_3', 3), ('num_known_6', 6)]:
+        if num_known != -1:
+            df_copy = df[df['num_known_cols'] == num_known].copy()
+        else:
+            df_copy = df[(df['num_known_cols'] != 3) & (df['num_known_cols'] != 6)].copy()
+        stats[sub_key] = {'by_slice': {}, 'by_metric': {}}
+        run_stats_for_subsets(stats[sub_key], df_copy, num_known)
     # save stats as json file
+    print(f"Writing stats to {os.path.join(attack_path, 'stats.json')}")
     with open(os.path.join(attack_path, 'stats.json'), 'w') as f:
         json.dump(stats, f, indent=4)
 
@@ -711,6 +791,8 @@ def main():
 
     if args.command == 'config':
         make_config()
+    if args.command == 'stats':
+        attack_stats()
     if args.command == 'test':
         do_tests()
     elif args.command == 'plots':
