@@ -13,6 +13,9 @@ Split the datasets into control and training parts
 
 baseDir = os.environ['SDX_TEST_DIR']
 synDataPath = Path(baseDir, 'synDatasets')
+tablesPath = Path(baseDir, 'paper_tables')
+if not tablesPath.exists():
+    tablesPath.mkdir()
 
 for dir in os.listdir(synDataPath):
     thisDataPath = Path(synDataPath, dir)
