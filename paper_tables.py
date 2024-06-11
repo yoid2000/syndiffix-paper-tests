@@ -1,11 +1,11 @@
-import pandas as pd
-import itertools
 import json
-import my_utilities as mu
 import os
 import sys
 from syndiffix_tools.tables_manager import TablesManager
 from pathlib import Path
+import pprint
+
+pp = pprint.PrettyPrinter(indent=4)
 
 '''
 Split the datasets into control and training parts
