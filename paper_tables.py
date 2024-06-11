@@ -43,9 +43,9 @@ Dataset & Rows & \\multicolumn{3}{c}{Columns} & Time \\\\
         table_name = table_name.replace('_', ' ')
         print(f"Table: {table_name}")
         if len(pid_cols) > 0:
-            time_series = 'yes'
+            time_series = 'X'
         else:
-            time_series = 'no'
+            time_series = ' '
         num_rows = omd['num_rows']
         print(f"Number of rows: {num_rows}")
         num_cols = omd['num_cols']
@@ -60,7 +60,7 @@ Dataset & Rows & \\multicolumn{3}{c}{Columns} & Time \\\\
         print(f"Number of categorical columns: {num_cat}")
         print(f"Number of continuous columns: {num_con}")
         print(f"Time series: {time_series}")
-        if time_series == 'yes':
+        if time_series == 'X':
             timeseries.append({'table_name': table_name, 'num_rows': num_rows, 'num_cols': num_cols, 'num_cat': num_cat, 'num_con': num_con, 'time_series': time_series})
         else:
             nontimeseries.append({'table_name': table_name, 'num_rows': num_rows, 'num_cols': num_cols, 'num_cat': num_cat, 'num_con': num_con, 'time_series': time_series})
