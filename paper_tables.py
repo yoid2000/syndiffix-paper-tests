@@ -66,6 +66,7 @@ Dataset & Rows & \\multirow{2}{*}{Columns} & Time Series  \\\\
 \\label{tab:syn_datasets}
 \\end{table}
 '''
+    print(f"Writing table to {Path(tablesPath, 'syn_datasets.tex')}")
     with open(Path(tablesPath, 'syn_datasets.tex'), 'w') as f:
         f.write(table)
 
