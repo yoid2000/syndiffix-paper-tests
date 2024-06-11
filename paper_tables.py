@@ -15,6 +15,19 @@ if not tablesPath.exists():
     tablesPath.mkdir()
 
 def make_datasets():
+    name_swaps = {
+        'BankChurnersNoId': 'BankChurners',
+    }
+    table = '''
+\\begin{table}
+\\begin{center}
+\\begin{small}
+\\begin{tabular}{rllll}
+\\toprule
+Dataset & Rows & \\multirow{2}{*}{Columns} & Time Series  \\\\
+  &  & Cat & Con &  \\\\
+\\midrule
+'''
     for dir in os.listdir(synDataPath):
         thisDataPath = Path(synDataPath, dir)
         tm = TablesManager(dir_path=thisDataPath)
@@ -22,6 +35,8 @@ def make_datasets():
         print("--------------------------------------------------------")
         omd = tm.orig_meta_data
         table_name = omd['orig_file_name'][:-8]
+        if table_name in name_swaps:
+            table_name = name_swaps[table_name]
         print(f"Table: {table_name}")
         if len(pid_cols) > 0:
             time_series = 'yes'
@@ -41,6 +56,18 @@ def make_datasets():
         print(f"Number of categorical columns: {num_cat}")
         print(f"Number of continuous columns: {num_con}")
         print(f"Time series: {time_series}")
+        table += f"{table_name} & {num_rows} & {num_cat} & {num_con} & {time_series} \\\\ \n"
+    table += '''
+\\bottomrule
+\\end{tabular}
+\\end{small}
+\\end{center}
+\\caption{Synthetic datasets used in the experiments.}
+\\label{tab:syn_datasets}
+\\end{table}
+'''
+    with open(Path(tablesPath, 'syn_datasets.tex'), 'w') as f:
+        f.write(table)
 
 def main():
     parser = argparse.ArgumentParser()
