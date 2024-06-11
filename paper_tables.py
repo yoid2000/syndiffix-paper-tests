@@ -29,6 +29,8 @@ Dataset & Rows & \\multicolumn{3}{c}{Columns} & Time \\\\
   &  & Tot & Cat & Con & Series \\\\
 \\midrule
 '''
+    timeseries = []
+    nontimeseries = []
     for dir in os.listdir(synDataPath):
         thisDataPath = Path(synDataPath, dir)
         tm = TablesManager(dir_path=thisDataPath)
@@ -58,7 +60,18 @@ Dataset & Rows & \\multicolumn{3}{c}{Columns} & Time \\\\
         print(f"Number of categorical columns: {num_cat}")
         print(f"Number of continuous columns: {num_con}")
         print(f"Time series: {time_series}")
-        table += f"    {table_name} & {num_rows} & {num_cols} & {num_cat} & {num_con} & {time_series} \\\\ \n"
+        if time_series == 'yes':
+            timeseries.append({'table_name': table_name, 'num_rows': num_rows, 'num_cols': num_cols, 'num_cat': num_cat, 'num_con': num_con, 'time_series': time_series})
+        else:
+            nontimeseries.append({'table_name': table_name, 'num_rows': num_rows, 'num_cols': num_cols, 'num_cat': num_cat, 'num_con': num_con, 'time_series': time_series})
+    # reorder timeseries by num_rows
+    timeseries = sorted(timeseries, key=lambda x: x['num_rows'])
+    # reorder nontimeseries by num_rows
+    nontimeseries = sorted(nontimeseries, key=lambda x: x['num_rows'])
+    for row in nontimeseries:
+        table += f"    {row['table_name']} & {row['num_rows']} & {row['num_cols']} & {row['num_cat']} & {row['num_con']} & {row['time_series']} \\\\ \n"
+    for row in timeseries:
+        table += f"    {row['table_name']} & {row['num_rows']} & {row['num_cols']} & {row['num_cat']} & {row['num_con']} & {row['time_series']} \\\\ \n"
     table += '''
 \\bottomrule
 \\end{tabular}
