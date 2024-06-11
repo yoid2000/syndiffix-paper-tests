@@ -23,7 +23,7 @@ def make_datasets():
 \\begin{table}
 \\begin{center}
 \\begin{small}
-\\begin{tabular}{rlllll}
+\\begin{tabular}{rrllll}
 \\toprule
 Dataset & Rows & \\multicolumn{3}{c}{Columns} & Time \\\\
   &  & Tot & Cat & Con & Series \\\\
