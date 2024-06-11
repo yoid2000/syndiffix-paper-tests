@@ -16,7 +16,8 @@ if not tablesPath.exists():
 
 def make_datasets():
     name_swaps = {
-        'BankChurnersNoId': 'BankChurners',
+        'BankChurnersNoId': 'bank churners',
+        'trans_account_card_clients': 'Czech banking',
     }
     table = '''
 \\begin{table}
@@ -24,7 +25,7 @@ def make_datasets():
 \\begin{small}
 \\begin{tabular}{rllll}
 \\toprule
-Dataset & Rows & \\multirow{2}{*}{Columns} & Time Series  \\\\
+Dataset & Rows & \\multicolumn{2}{c}{Columns} & Time Series  \\\\
   &  & Cat & Con &  \\\\
 \\midrule
 '''
@@ -37,7 +38,7 @@ Dataset & Rows & \\multirow{2}{*}{Columns} & Time Series  \\\\
         table_name = omd['orig_file_name'][:-8]
         if table_name in name_swaps:
             table_name = name_swaps[table_name]
-        table_name = table_name.replace('_', '\\_')
+        table_name = table_name.replace('_', ' ')
         print(f"Table: {table_name}")
         if len(pid_cols) > 0:
             time_series = 'yes'
