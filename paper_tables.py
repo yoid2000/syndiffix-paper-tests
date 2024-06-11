@@ -3,13 +3,10 @@ import os
 import sys
 from syndiffix_tools.tables_manager import TablesManager
 from pathlib import Path
+import argparse
 import pprint
 
 pp = pprint.PrettyPrinter(indent=4)
-
-'''
-Split the datasets into control and training parts
-'''
 
 baseDir = os.environ['SDX_TEST_DIR']
 synDataPath = Path(baseDir, 'synDatasets')
@@ -21,6 +18,7 @@ for dir in os.listdir(synDataPath):
     thisDataPath = Path(synDataPath, dir)
     tm = TablesManager(dir_path=thisDataPath)
     pid_cols = tm.get_pid_cols()
+    print("--------------------------------------------------------")
     pp.pprint(tm.orig_meta_data)
 
 def main():
