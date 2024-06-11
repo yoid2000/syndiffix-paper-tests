@@ -14,12 +14,33 @@ tablesPath = Path(baseDir, 'paper_tables')
 if not tablesPath.exists():
     tablesPath.mkdir()
 
-for dir in os.listdir(synDataPath):
-    thisDataPath = Path(synDataPath, dir)
-    tm = TablesManager(dir_path=thisDataPath)
-    pid_cols = tm.get_pid_cols()
-    print("--------------------------------------------------------")
-    pp.pprint(tm.orig_meta_data)
+def make_datasets():
+    for dir in os.listdir(synDataPath):
+        thisDataPath = Path(synDataPath, dir)
+        tm = TablesManager(dir_path=thisDataPath)
+        pid_cols = tm.get_pid_cols()
+        print("--------------------------------------------------------")
+        omd = tm.orig_meta_data
+        table_name = omd['orig_file_name'][:-8]
+        print(f"Table: {table_name}")
+        if len(pid_cols) > 0:
+            time_series = 'yes'
+        else:
+            time_series = 'no'
+        num_rows = omd['num_rows']
+        print(f"Number of rows: {num_rows}")
+        num_cols = omd['num_cols']
+        print(f"Number of columns: {num_cols}")
+        num_cat = 0
+        num_con = 0
+        for val in omd['column_classes'].values():
+            if val == 'categorical':
+                num_cat += 1
+            else:
+                num_con += 1
+        print(f"Number of categorical columns: {num_cat}")
+        print(f"Number of continuous columns: {num_con}")
+        print(f"Time series: {time_series}")
 
 def main():
     parser = argparse.ArgumentParser()
