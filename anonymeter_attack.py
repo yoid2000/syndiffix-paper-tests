@@ -615,6 +615,9 @@ def get_basic_stats(stats, df):
                 stats[precision] = 0
                 stats[improve] = 0
                 continue
+            # Basing the base precision on the rows where the attack happened to make predictions
+            # is not necessarily the right thing to do. What we really want is to find the best base
+            # precision given a similar coverage
             p_model_pred = round(df_pred['model_base_answer'].sum() / len(df_pred), 6)
             stats[model_base] = p_model_pred
             p_meter_pred = round(df_pred['base_meter_answer'].sum() / len(df_pred), 6)
@@ -638,8 +641,19 @@ def get_by_metric_from_by_slice(stats):
             if metric[-7:] == 'improve' and metric not in ['model_original_improve', 'max_improve']:
                 if result[metric] > 0.5:
                     problem_cases.append(str((slice_key, metric, result[metric])))
-                    new_metric = metric[:-7] + 'coverage'
-                    problem_cases.append(str((slice_key, new_metric, stats['by_metric'][new_metric][slice_key])))
+                    cov_metric = metric[:-7] + 'coverage'
+                    coverage = stats['by_metric'][cov_metric][slice_key]
+                    problem_cases.append(str((slice_key, cov_metric, coverage)))
+                    prec_metric = metric[:-7] + 'precision'
+                    precision = stats['by_metric'][prec_metric][slice_key]
+                    problem_cases.append(str((slice_key, prec_metric, precision)))
+                    meter_base_metric = 'meter_base' + prec_metric[9:]
+                    meter_base_precision = stats['by_metric'][meter_base_metric][slice_key]
+                    model_base_metric = 'model_base' + prec_metric[9:]
+                    model_base_precision = stats['by_metric'][model_base_metric][slice_key]
+                    base_precision = max(meter_base_precision, model_base_precision)
+                    num_predictions = int(round(coverage * stats['by_metric']['num_attacks'][slice_key]))
+                    problem_cases.append(str(('base_precision', base_precision, 'num_predictions', num_predictions)))
     stats['problem_cases'] = problem_cases
 
 def digin(df):
