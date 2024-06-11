@@ -440,18 +440,18 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             # Compute an answer based on the vanilla anonymeter attack
             pred_value_series = ans_base['guess_series']
             pred_value = pred_value_series.iloc[0]
-            variants['syn_meter_vanilla'].append(pred_value)
+            variants['base_meter_vanilla'].append(pred_value)
 
             # Compute an answer based on the modal anonymeter attack
-            variants['syn_meter_modal'].append(ans_base['match_modal_value'])	
+            variants['base_meter_modal'].append(ans_base['match_modal_value'])	
 
             # Compute an answer only if the modal value is more than 50% of the possible answers
             if ans_base['match_modal_percentage'] > 50:
-                variants['syn_meter_modal_50'].append(ans_base['match_modal_value'])
+                variants['base_meter_modal_50'].append(ans_base['match_modal_value'])
 
             # Compute an answer only if the modal value is more than 90% of the possible answers
             if ans_base['match_modal_percentage'] > 90:
-                variants['syn_meter_modal_90'].append(ans_base['match_modal_value'])
+                variants['base_meter_modal_90'].append(ans_base['match_modal_value'])
 
         if debug:
             print(f"variants:")
