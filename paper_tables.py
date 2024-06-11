@@ -77,8 +77,8 @@ Dataset & Rows & \\multicolumn{3}{c}{Columns} & Time \\\\
 \\end{tabular}
 \\end{small}
 \\end{center}
-\\caption{Synthetic datasets used in the experiments.}
-\\label{tab:syn_datasets}
+\\caption{Datasets used in the attacks.}
+\\label{tab:datasets}
 \\end{table}
 '''
     print(f"Writing table to {Path(tablesPath, 'syn_datasets.tex')}")
