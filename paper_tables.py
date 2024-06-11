@@ -23,10 +23,10 @@ def make_datasets():
 \\begin{table}
 \\begin{center}
 \\begin{small}
-\\begin{tabular}{rllll}
+\\begin{tabular}{rlllll}
 \\toprule
-Dataset & Rows & \\multicolumn{2}{c}{Columns} & Time Series  \\\\
-  &  & Cat & Con &  \\\\
+Dataset & Rows & \\multicolumn{3}{c}{Columns} & Time \\\\
+  &  & Tot & Cat & Con & Series \\\\
 \\midrule
 '''
     for dir in os.listdir(synDataPath):
@@ -58,7 +58,7 @@ Dataset & Rows & \\multicolumn{2}{c}{Columns} & Time Series  \\\\
         print(f"Number of categorical columns: {num_cat}")
         print(f"Number of continuous columns: {num_con}")
         print(f"Time series: {time_series}")
-        table += f"{table_name} & {num_rows} & {num_cat} & {num_con} & {time_series} \\\\ \n"
+        table += f"    {table_name} & {num_rows} & {num_cols} & {num_cat} & {num_con} & {time_series} \\\\ \n"
     table += '''
 \\bottomrule
 \\end{tabular}
