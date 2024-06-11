@@ -35,13 +35,18 @@ num_attacks = 500000
 # This is the number of attacks per slurm job, and determines how many slurm jobs are created
 num_attacks_per_job = 100
 max_subsets = 200
-debug = False
+debug = True
 
 # These are the variants of the attack that exploits sub-tables
-variants = {'vanilla':[],
-            'modal':[],
-            'modal_50':[],
-            'modal_90':[],
+variants = {
+            'syn_meter_vanilla':[],
+            'syn_meter_modal':[],
+            'syn_meter_modal_50':[],
+            'syn_meter_modal_90':[],
+            'base_meter_vanilla':[],
+            'base_meter_modal':[],
+            'base_meter_modal_50':[],
+            'base_meter_modal_90':[],
 }
 # These are the thresholds we use to decide whether to use a prediction
 col_comb_thresholds = {
@@ -49,7 +54,10 @@ col_comb_thresholds = {
                             'thresh_50':50,
                             'thresh_90':90,
 }
-from sklearn.preprocessing import LabelEncoder
+
+def init_variants():
+    for v_label in variants.keys():
+        variants[v_label] = []
 
 def convert_datetime_to_timestamp(df):
     for col in df.columns:
@@ -278,10 +286,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
     modal_percentage = round(100*(num_modal_rows / len(df_original)), 2)
     print(f"start {num_runs} runs")
     for i in range(num_runs):
-        variants['vanilla'] = []
-        variants['modal'] = []
-        variants['modal_50'] = []
-        variants['modal_90'] = []
+        init_variants()
         print(".", end='', flush=True)
         # There is a chance of replicas here, but small enough that we ignore it
         targets = df_original[attack_cols].sample(1)
@@ -397,32 +402,56 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             col_combs = random.sample(col_combs, max_subsets)
         this_attack['num_subsets'] = len(col_combs)
         for col_comb in col_combs:
+            # First run attack on synthetic data
             df_syn_subset = tm.get_syn_df(col_comb)
             df_syn_subset = convert_datetime_to_timestamp(df_syn_subset)
             df_syn_subset = transform_df_with_update(df_syn_subset, encoders)
             subset_aux_cols = col_comb.copy()
             subset_aux_cols.remove(secret_col)
-            ans = anonymeter_mods.run_anonymeter_attack(
+            ans_syn = anonymeter_mods.run_anonymeter_attack(
                                             targets=targets[col_comb],
                                             basis=df_syn_subset[col_comb],
                                             aux_cols=subset_aux_cols,
                                             secret=secret_col,
                                             regression=regression)
             # Compute an answer based on the vanilla anonymeter attack
-            pred_value_series = ans['guess_series']
+            pred_value_series = ans_syn['guess_series']
             pred_value = pred_value_series.iloc[0]
-            variants['vanilla'].append(pred_value)
+            variants['syn_meter_vanilla'].append(pred_value)
 
             # Compute an answer based on the modal anonymeter attack
-            variants['modal'].append(ans['match_modal_value'])	
+            variants['syn_meter_modal'].append(ans_syn['match_modal_value'])	
 
             # Compute an answer only if the modal value is more than 50% of the possible answers
-            if ans['match_modal_percentage'] > 50:
-                variants['modal_50'].append(ans['match_modal_value'])
+            if ans_syn['match_modal_percentage'] > 50:
+                variants['syn_meter_modal_50'].append(ans_syn['match_modal_value'])
 
             # Compute an answer only if the modal value is more than 90% of the possible answers
-            if ans['match_modal_percentage'] > 90:
-                variants['modal_90'].append(ans['match_modal_value'])
+            if ans_syn['match_modal_percentage'] > 90:
+                variants['syn_meter_modal_90'].append(ans_syn['match_modal_value'])
+
+            # Then run attack on control data for the baseline
+            ans_base = anonymeter_mods.run_anonymeter_attack(
+                                            targets=targets[col_comb],
+                                            basis=df_control[col_comb],
+                                            aux_cols=subset_aux_cols,
+                                            secret=secret_col,
+                                            regression=regression)
+            # Compute an answer based on the vanilla anonymeter attack
+            pred_value_series = ans_base['guess_series']
+            pred_value = pred_value_series.iloc[0]
+            variants['syn_meter_vanilla'].append(pred_value)
+
+            # Compute an answer based on the modal anonymeter attack
+            variants['syn_meter_modal'].append(ans_base['match_modal_value'])	
+
+            # Compute an answer only if the modal value is more than 50% of the possible answers
+            if ans_base['match_modal_percentage'] > 50:
+                variants['syn_meter_modal_50'].append(ans_base['match_modal_value'])
+
+            # Compute an answer only if the modal value is more than 90% of the possible answers
+            if ans_base['match_modal_percentage'] > 90:
+                variants['syn_meter_modal_90'].append(ans_base['match_modal_value'])
 
         if debug:
             print(f"variants:")
@@ -434,7 +463,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
                 print(f"v_label: {v_label}")
                 print(f"pred_values: {pred_values}")
             for cc_label, cc_thresh in col_comb_thresholds.items():
-                label = f"syn_meter_{v_label}_{cc_label}"
+                label = f"{v_label}_{cc_label}"
                 pred_value = find_most_frequent_value(pred_values, cc_thresh/100)
                 if pred_value is not None:
                     pred_value_series = pd.Series(pred_value, index=targets.index)
