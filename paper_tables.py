@@ -37,6 +37,7 @@ Dataset & Rows & \\multirow{2}{*}{Columns} & Time Series  \\\\
         table_name = omd['orig_file_name'][:-8]
         if table_name in name_swaps:
             table_name = name_swaps[table_name]
+        table_name = table_name.replace('_', '\\_')
         print(f"Table: {table_name}")
         if len(pid_cols) > 0:
             time_series = 'yes'
