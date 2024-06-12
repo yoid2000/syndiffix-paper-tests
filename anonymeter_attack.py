@@ -679,13 +679,8 @@ def get_by_metric_from_by_slice(stats):
                     prec_metric = metric[:-7] + 'precision'
                     precision = stats['by_metric'][prec_metric][slice_key]
                     problem_cases.append(str((slice_key, prec_metric, precision)))
-                    meter_base_metric = 'meter_base' + prec_metric[9:]
-                    meter_base_precision = stats['by_metric'][meter_base_metric][slice_key]
-                    model_base_metric = 'model_base' + prec_metric[9:]
-                    model_base_precision = stats['by_metric'][model_base_metric][slice_key]
-                    base_precision = max(meter_base_precision, model_base_precision)
                     num_predictions = int(round(coverage * stats['by_metric']['num_attacks'][slice_key]))
-                    problem_cases.append(str(('base_precision', base_precision, 'num_predictions', num_predictions)))
+                    problem_cases.append(str(('num_predictions', num_predictions)))
     stats['problem_cases'] = problem_cases
 
 def digin(df):
