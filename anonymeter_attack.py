@@ -771,7 +771,6 @@ def run_stats_for_subsets(stats, df, num_subsets):
             stats['by_slice'][slice_name] = {}
             get_basic_stats(stats['by_slice'][slice_name], df_bin)
     #digin(df_cat)
-    get_by_metric_from_by_slice(stats)
     #pp.pprint(stats)
 
 def do_plots():
@@ -801,6 +800,10 @@ def do_plots():
             df_copy = df[(df['num_known_cols'] != 3) & (df['num_known_cols'] != 6)].copy()
         stats[sub_key] = {'by_slice': {}, 'by_metric': {}}
         run_stats_for_subsets(stats[sub_key], df_copy, num_known)
+        print(f"Writing interim copy of stats to {os.path.join(attack_path, 'stats.json')}")
+        with open(os.path.join(attack_path, 'stats.json'), 'w') as f:
+            json.dump(stats, f, indent=4)
+        get_by_metric_from_by_slice(stats)
     # save stats as json file
     print(f"Writing stats to {os.path.join(attack_path, 'stats.json')}")
     with open(os.path.join(attack_path, 'stats.json'), 'w') as f:
