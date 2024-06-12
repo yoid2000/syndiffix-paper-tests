@@ -310,7 +310,6 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
             model_base_pred_value = model_base.predict(targets.drop(secret_col, axis=1))
             # proba[0] is a list of probability values, indexed by the column values
             proba = model_base.predict_proba(targets.drop(secret_col, axis=1))
-            print(f"proba: {proba}")
             model_base_pred_value = model_base_pred_value[0]
         except Exception as e:
             print(f"A model.predict() Error occurred: {e}")

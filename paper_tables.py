@@ -81,8 +81,8 @@ Dataset & Rows & \\multicolumn{3}{c}{Columns} & Time \\\\
 \\label{tab:datasets}
 \\end{table}
 '''
-    print(f"Writing table to {Path(tablesPath, 'syn_datasets.tex')}")
-    with open(Path(tablesPath, 'syn_datasets.tex'), 'w') as f:
+    print(f"Writing table to {Path(tablesPath, 'tab_datasets.tex')}")
+    with open(Path(tablesPath, 'tab_datasets.tex'), 'w') as f:
         f.write(table)
 
 def main():
