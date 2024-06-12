@@ -641,7 +641,6 @@ def get_basic_stats(stats, df):
             # df_pred contains only the rows where predictions were made
             df_syn_pred = df[df[syn_answer] != -1]
             df_base_pred = df[df[base_answer] != -1]
-            print(f"df_syn_pred has shape {df_syn_pred.shape}")
             if len(df_syn_pred) == 0:
                 stats[base_coverage] = 0
                 stats[base_precision] = 0
@@ -653,7 +652,10 @@ def get_basic_stats(stats, df):
             # is not necessarily the right thing to do. What we really want is to find the best base
             # precision given a similar coverage
             stats[base_coverage] = len(df_base_pred) / len(df)
-            p_base = df_base_pred[base_answer].sum() / len(df_base_pred)
+            if len(df_base_pred) > 0:
+                p_base = df_base_pred[base_answer].sum() / len(df_base_pred)
+            else:
+                p_base = 0
             stats[base_precision] = round(p_base, 6)
 
             stats[syn_coverage] = len(df_syn_pred) / len(df)
