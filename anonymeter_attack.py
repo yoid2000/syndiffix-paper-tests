@@ -308,8 +308,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         # Now get the model baseline prediction
         try:
             model_base_pred_value = model_base.predict(targets.drop(secret_col, axis=1))
-            print(f"secret_val {secret_value}")
-            print("model_base_pred_value:", model_base_pred_value)
+            # proba[0] is a list of probability values, indexed by the column values
             proba = model_base.predict_proba(targets.drop(secret_col, axis=1))
             print(f"proba: {proba}")
             model_base_pred_value = model_base_pred_value[0]
@@ -325,6 +324,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         num_model_base_correct += model_base_answer
         this_attack['model_base_pred_value'] = str(model_base_pred_value)
         this_attack['model_base_answer'] = int(model_base_answer)
+        this_attack['model_base_probability'] = float(proba[0][int(model_base_pred_value)])
 
         # Now run the model attack
         try:
