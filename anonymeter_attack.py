@@ -308,6 +308,10 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         # Now get the model baseline prediction
         try:
             model_base_pred_value = model_base.predict(targets.drop(secret_col, axis=1))
+            print(f"secret_val {secret_value}")
+            print("model_base_pred_value:", model_base_pred_value)
+            proba = model_base.predict_proba(targets.drop(secret_col, axis=1))
+            print(f"proba: {proba}")
             model_base_pred_value = model_base_pred_value[0]
         except Exception as e:
             print(f"A model.predict() Error occurred: {e}")
@@ -606,7 +610,7 @@ def update_max_improve(max_improve, max_info, label, stats):
         max_info = {'label':label, 'improve':max_improve, 'coverage':cov}
     return max_improve, max_info
 
-def get_basic_stats(stats, df):
+def get_basic_stats(stats, df, info):
     max_improve = -1000
     max_info = {}
     stats['num_attacks'] = len(df)
@@ -653,38 +657,48 @@ def get_basic_stats(stats, df):
             # precision given a similar coverage
             stats[base_coverage] = len(df_base_pred) / len(df)
             if len(df_base_pred) > 0:
-                p_base = df_base_pred[base_answer].sum() / len(df_base_pred)
+                p_base_subset = df_base_pred[base_answer].sum() / len(df_base_pred)
             else:
-                p_base = 0
-            stats[base_precision] = round(p_base, 6)
+                p_base_subset = 0
+            p_base_use = max(p_base, p_base_subset)
+            # find the index of p_base_use in
+            p_index = [p_meter, p_model, p_base_subset].index(p_base_use)
+            p_name = ['num_model_base', 'num_meter_base', 'num_subset_base',][p_index]
+            info[p_name] += 1
+            stats[base_precision] = round(p_base_use, 6)
 
             stats[syn_coverage] = len(df_syn_pred) / len(df)
             p = df_syn_pred[syn_answer].sum() / len(df_syn_pred)
             stats[syn_precision] = round(p, 6)
-            stats[syn_improve] = round((p-p_base)/(1.0000001-p_base), 6)
+            stats[syn_improve] = round((p-p_base_use)/(1.0000001-p_base_use), 6)
             max_improve, max_info = update_max_improve(max_improve, max_info, syn_base_label, stats)
     stats['max_improve_record'] = max_info
     stats['max_improve'] = max_info['improve']
     stats['max_coverage'] = max_info['coverage']	
 
 def get_by_metric_from_by_slice(stats):
-    problem_cases = []
+    problem_cases = {}
+    num_problem_cases = 0
     for metric in stats['by_slice']['all_results'].keys():
         stats['by_metric'][metric] = {}	
         for slice_key, result in stats['by_slice'].items():
             stats['by_metric'][metric][slice_key] = result[metric]
             if metric[-7:] == 'improve' and metric not in ['model_original_improve', 'max_improve']:
                 if result[metric] > 0.5:
-                    problem_cases.append(str((slice_key, metric, result[metric])))
+                    num_problem_cases += 1
+                    if metric[:-7] not in problem_cases:
+                        problem_cases[metric[:-7]] = []
+                    problem_cases[metric[:-7]].append(str((slice_key, metric, result[metric])))
                     cov_metric = metric[:-7] + 'coverage'
                     coverage = stats['by_metric'][cov_metric][slice_key]
-                    problem_cases.append(str((slice_key, cov_metric, coverage)))
+                    problem_cases[metric[:-7]].append(str((slice_key, cov_metric, coverage)))
                     prec_metric = metric[:-7] + 'precision'
                     precision = stats['by_metric'][prec_metric][slice_key]
-                    problem_cases.append(str((slice_key, prec_metric, precision)))
+                    problem_cases[metric[:-7]].append(str((slice_key, prec_metric, precision)))
                     num_predictions = int(round(coverage * stats['by_metric']['num_attacks'][slice_key]))
-                    problem_cases.append(str(('num_predictions', num_predictions)))
+                    problem_cases[metric[:-7]].append(str(('num_predictions', num_predictions)))
     stats['problem_cases'] = problem_cases
+    stats['info']['num_problem_cases'] = num_problem_cases
 
 def digin(df):
     df = df.copy()
@@ -735,41 +749,42 @@ def set_model_base_predictions(df, thresh):
                 df_copy.at[index, 'model_base_answer'] = 0
     return df_copy
 
-def run_stats_for_subsets(stats, df, num_subsets):
+def run_stats_for_subsets(stats, df):
     stats['by_slice']['all_results'] = {}
-    get_basic_stats(stats['by_slice']['all_results'], df)
+    get_basic_stats(stats['by_slice']['all_results'], df, stats['info'])
     # make a new df that contains only rows where 'secret_col_type' is 'categorical'
     df_cat = df[df['secret_col_type'] == 'categorical']
     df_cat_copy = df_cat.copy()
     stats['by_slice']['categorical_results'] = {}
-    get_basic_stats(stats['by_slice']['categorical_results'], df_cat_copy)
+    get_basic_stats(stats['by_slice']['categorical_results'], df_cat_copy, stats['info'])
     #df_cat_copy['percentile_bin'] = pd.qcut(df_cat_copy['secret_percentage'], q=10, labels=False)
     df_cat_copy['percentile_bin'] = pd.cut(df_cat_copy['modal_percentage'], bins=10, labels=False)
     for bin_value, df_bin in df_cat_copy.groupby('percentile_bin'):
         average_percentage = round(df_bin['secret_percentage'].mean(), 2)
         slice_name = f"cat_modal_percentage_{average_percentage}"
         stats['by_slice'][slice_name] = {}
-        get_basic_stats(stats['by_slice'][slice_name], df_bin)
+        get_basic_stats(stats['by_slice'][slice_name], df_bin, stats['info'])
     for bin_value, df_bin in df_cat_copy.groupby('dataset'):
         slice_name = f"cat_dataset_{bin_value}"
         stats['by_slice'][slice_name] = {}
-        get_basic_stats(stats['by_slice'][slice_name], df_bin)
+        get_basic_stats(stats['by_slice'][slice_name], df_bin, stats['info'])
     if False:
         df_70 = set_model_base_predictions(df_cat, 70)
         stats['by_slice']['categorical_results_70'] = {}
-        get_basic_stats(stats['by_slice']['categorical_results_70'], df_70)
+        get_basic_stats(stats['by_slice']['categorical_results_70'], df_70, stats['info'])
         df_70['percentile_bin'] = pd.cut(df_70['modal_percentage'], bins=10, labels=False)
         for bin_value, df_bin in df_70.groupby('percentile_bin'):
             average_percentage = round(df_bin['secret_percentage'].mean(), 2)
             slice_name = f"cat_70_modal_percentage_{average_percentage}"
             stats['by_slice'][slice_name] = {}
-            get_basic_stats(stats['by_slice'][slice_name], df_bin)
+            get_basic_stats(stats['by_slice'][slice_name], df_bin, stats['info'])
         for bin_value, df_bin in df_70.groupby('dataset'):
             slice_name = f"cat_70_dataset_{bin_value}"
             stats['by_slice'][slice_name] = {}
-            get_basic_stats(stats['by_slice'][slice_name], df_bin)
+            get_basic_stats(stats['by_slice'][slice_name], df_bin, stats['info'])
     #digin(df_cat)
     #pp.pprint(stats)
+    get_by_metric_from_by_slice(stats)
 
 def do_plots():
     df = gather(instances_path=os.path.join(attack_path, 'instances'))
@@ -796,16 +811,14 @@ def do_plots():
             df_copy = df[df['num_known_cols'] == num_known].copy()
         else:
             df_copy = df[(df['num_known_cols'] != 3) & (df['num_known_cols'] != 6)].copy()
-        stats[sub_key] = {'by_slice': {}, 'by_metric': {}}
-        run_stats_for_subsets(stats[sub_key], df_copy, num_known)
-        print(f"Writing interim copy of stats to {os.path.join(attack_path, 'stats.json')}")
+        stats[sub_key] = {'by_slice': {}, 'by_metric': {},
+                          'info': {'num_model_base': 0,
+                                   'num_meter_base': 0,
+                                   'num_subset_base': 0,}}
+        run_stats_for_subsets(stats[sub_key], df_copy)
+        print(f"Writing stats {sub_key} to {os.path.join(attack_path, 'stats.json')}")
         with open(os.path.join(attack_path, 'stats.json'), 'w') as f:
             json.dump(stats, f, indent=4)
-        get_by_metric_from_by_slice(stats[sub_key])
-    # save stats as json file
-    print(f"Writing stats to {os.path.join(attack_path, 'stats.json')}")
-    with open(os.path.join(attack_path, 'stats.json'), 'w') as f:
-        json.dump(stats, f, indent=4)
 
 def do_tests():
     if find_most_frequent_value([1, 2, 2, 3, 3, 3], 0.5) != 3:
