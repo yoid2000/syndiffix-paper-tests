@@ -641,6 +641,7 @@ def get_basic_stats(stats, df):
             # df_pred contains only the rows where predictions were made
             df_syn_pred = df[df[syn_answer] != -1]
             df_base_pred = df[df[base_answer] != -1]
+            print(f"df_syn_pred has shape {df_syn_pred.shape}")
             if len(df_syn_pred) == 0:
                 stats[base_coverage] = 0
                 stats[base_precision] = 0
