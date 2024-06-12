@@ -48,6 +48,7 @@ variants = {
             'base_meter_modal_50':[],
             'base_meter_modal_90':[],
 }
+variant_labels = [ 'vanilla', 'modal', 'modal_50', 'modal_90', ]
 # These are the thresholds we use to decide whether to use a prediction
 col_comb_thresholds = {
                             'thresh_0':0,
@@ -626,7 +627,7 @@ def get_basic_stats(stats, df):
     stats['meter_attack_precision'] = p
     stats['meter_attack_improve'] = round((p-p_base)/(1.0000001-p_base), 6)
     max_improve, max_info = update_max_improve(max_improve, max_info, 'meter_attack', stats)
-    for v_label in variants.keys():
+    for v_label in variant_labels:
         for cc_label in col_comb_thresholds.keys():
             syn_base_label = f"syn_meter_{v_label}_{cc_label}"
             syn_answer = f"{syn_base_label}_answer"
