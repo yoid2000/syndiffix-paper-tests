@@ -628,35 +628,37 @@ def get_basic_stats(stats, df):
     max_improve, max_info = update_max_improve(max_improve, max_info, 'meter_attack', stats)
     for v_label in variants.keys():
         for cc_label in col_comb_thresholds.keys():
-            base_label = f"syn_meter_{v_label}_{cc_label}"
-            answer = f"{base_label}_answer"
-            precision = f"{base_label}_precision"
-            improve = f"{base_label}_improve"
-            coverage = f"{base_label}_coverage"
-            model_base = f"model_base_{v_label}_{cc_label}_precision"
-            meter_base = f"meter_base_{v_label}_{cc_label}_precision"
+            syn_base_label = f"syn_meter_{v_label}_{cc_label}"
+            syn_answer = f"{syn_base_label}_answer"
+            syn_precision = f"{syn_base_label}_precision"
+            syn_improve = f"{syn_base_label}_improve"
+            syn_coverage = f"{syn_base_label}_coverage"
+            base_base_label = f"base_meter_{v_label}_{cc_label}"
+            base_answer = f"{base_base_label}_answer"
+            base_precision = f"{base_base_label}_precision"
+            base_coverage = f"{base_base_label}_coverage"
             # df_pred contains only the rows where predictions were made
-            df_pred = df[df[answer] != -1]
-            if len(df_pred) == 0:
-                stats[model_base] = 0
-                stats[meter_base] = 0
-                stats[coverage] = 0
-                stats[precision] = 0
-                stats[improve] = 0
+            df_syn_pred = df[df[syn_answer] != -1]
+            df_base_pred = df[df[base_answer] != -1]
+            if len(df_syn_pred) == 0:
+                stats[base_coverage] = 0
+                stats[base_precision] = 0
+                stats[syn_coverage] = 0
+                stats[syn_precision] = 0
+                stats[syn_improve] = 0
                 continue
             # Basing the base precision on the rows where the attack happened to make predictions
             # is not necessarily the right thing to do. What we really want is to find the best base
             # precision given a similar coverage
-            p_model_pred = round(df_pred['model_base_answer'].sum() / len(df_pred), 6)
-            stats[model_base] = p_model_pred
-            p_meter_pred = round(df_pred['base_meter_answer'].sum() / len(df_pred), 6)
-            stats[meter_base] = p_meter_pred
-            p_base_pred = max(p_model_pred, p_meter_pred)
-            stats[coverage] = len(df_pred) / len(df)
-            p = df_pred[answer].sum() / len(df_pred)
-            stats[precision] = round(p, 6)
-            stats[improve] = round((p-p_base_pred)/(1.0000001-p_base_pred), 6)
-            max_improve, max_info = update_max_improve(max_improve, max_info, base_label, stats)
+            stats[base_coverage] = len(df_base_pred) / len(df)
+            p_base = df_base_pred[base_answer].sum() / len(df_base_pred)
+            stats[base_precision] = round(p_base, 6)
+
+            stats[syn_coverage] = len(df_syn_pred) / len(df)
+            p = df_syn_pred[syn_answer].sum() / len(df_syn_pred)
+            stats[syn_precision] = round(p, 6)
+            stats[syn_improve] = round((p-p_base)/(1.0000001-p_base), 6)
+            max_improve, max_info = update_max_improve(max_improve, max_info, syn_base_label, stats)
     stats['max_improve_record'] = max_info
     stats['max_improve'] = max_info['improve']
     stats['max_coverage'] = max_info['coverage']	
