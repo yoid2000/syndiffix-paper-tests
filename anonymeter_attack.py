@@ -803,7 +803,7 @@ def do_plots():
         print(f"Writing interim copy of stats to {os.path.join(attack_path, 'stats.json')}")
         with open(os.path.join(attack_path, 'stats.json'), 'w') as f:
             json.dump(stats, f, indent=4)
-        get_by_metric_from_by_slice(stats)
+        get_by_metric_from_by_slice(stats[sub_key])
     # save stats as json file
     print(f"Writing stats to {os.path.join(attack_path, 'stats.json')}")
     with open(os.path.join(attack_path, 'stats.json'), 'w') as f:
