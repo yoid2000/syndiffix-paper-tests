@@ -56,6 +56,8 @@ col_comb_thresholds = {
                             'thresh_90':90,
 }
 
+num_known_config = {'num_known_all': -1, 'num_known_3': 3, 'num_known_6': 6}
+
 def init_variants():
     for v_label in variants.keys():
         variants[v_label] = []
@@ -614,18 +616,18 @@ import numpy as np
 def get_base_pred(df, target_coverage):
     df_copy = df.copy()
     df_copy = df_copy.sort_values(by='model_base_probability', ascending=False)
-    print(df_copy.head().to_string())
-    print(df_copy.tail().to_string())
-    quit()
     num_rows = int(round(target_coverage * len(df)))
     return df_copy.head(num_rows)
 
-def get_basic_stats(stats, df, info):
+def get_basic_stats(stats, df, info, cov_basis, stripe_type, dataset):
     max_improve = -1000
     max_info = {}
     stats['num_attacks'] = len(df)
+    stats['strip_type'] = stripe_type
+    stats['dataset'] = dataset
     stats['avg_num_subsets'] = round(df['num_subsets'].mean(), 2)
-    stats['average_percentage'] = round(df['secret_percentage'].mean(), 2)
+    stats['avg_secret_percentage'] = round(df['secret_percentage'].mean(), 2)
+    stats['avg_modal_percentage'] = round(df['modal_percentage'].mean(), 2)
     p_model = round(df['model_base_answer'].sum() / len(df), 6)
     stats['model_base_precision'] = p_model
     p_meter = round(df['base_meter_answer'].sum() / len(df), 6)
@@ -668,7 +670,6 @@ def get_basic_stats(stats, df, info):
             # Basing the base precision on the rows where the attack happened to make predictions
             # is not necessarily the right thing to do. What we really want is to find the best base
             # precision given a similar coverage
-            stats[base_coverage] = len(df_base_pred) / len(df)
             if len(df_base_pred) > 0:
                 p_base_subset = df_base_pred[base_answer].sum() / len(df_base_pred)
             else:
@@ -679,8 +680,9 @@ def get_basic_stats(stats, df, info):
             p_name = ['num_model_base', 'num_meter_base', 'num_subset_base',][p_index]
             info[p_name] += 1
             stats[base_precision] = round(p_base_use, 6)
+            stats[base_coverage] = len(df_base_pred) / cov_basis
 
-            stats[syn_coverage] = len(df_syn_pred) / len(df)
+            stats[syn_coverage] = len(df_syn_pred) / cov_basis
             p = df_syn_pred[syn_answer].sum() / len(df_syn_pred)
             stats[syn_precision] = round(p, 6)
             stats[syn_improve] = round((p-p_base_use)/(1.0000001-p_base_use), 6)
@@ -692,10 +694,12 @@ def get_basic_stats(stats, df, info):
 def get_by_metric_from_by_slice(stats):
     problem_cases = {}
     num_problem_cases = 0
+    to_df = []
     for metric in stats['by_slice']['all_results'].keys():
         stats['by_metric'][metric] = {}	
         for slice_key, result in stats['by_slice'].items():
             stats['by_metric'][metric][slice_key] = result[metric]
+            df_row = {}
             if metric[-7:] == 'improve' and metric not in ['model_original_improve', 'max_improve']:
                 if result[metric] > 0.5:
                     num_problem_cases += 1
@@ -764,42 +768,28 @@ def set_model_base_predictions(df, thresh):
 
 def run_stats_for_subsets(stats, df):
     stats['by_slice']['all_results'] = {}
-    get_basic_stats(stats['by_slice']['all_results'], df, stats['info'])
+    get_basic_stats(stats['by_slice']['all_results'], df, stats['info'], len(df), 'all', 'all')
     # make a new df that contains only rows where 'secret_col_type' is 'categorical'
     df_cat = df[df['secret_col_type'] == 'categorical']
     df_cat_copy = df_cat.copy()
     stats['by_slice']['categorical_results'] = {}
-    get_basic_stats(stats['by_slice']['categorical_results'], df_cat_copy, stats['info'])
+    get_basic_stats(stats['by_slice']['categorical_results'], df_cat_copy, stats['info'], len(df_cat_copy), 'all', 'all')
     #df_cat_copy['percentile_bin'] = pd.qcut(df_cat_copy['secret_percentage'], q=10, labels=False)
     df_cat_copy['percentile_bin'] = pd.cut(df_cat_copy['modal_percentage'], bins=10, labels=False)
     for bin_value, df_bin in df_cat_copy.groupby('percentile_bin'):
-        average_percentage = round(df_bin['secret_percentage'].mean(), 2)
-        slice_name = f"cat_modal_percentage_{average_percentage}"
+        average_modal_percentage = round(df_bin['modal_percentage'].mean(), 2)
+        slice_name = f"cat_modal_percentage_{average_modal_percentage}"
         stats['by_slice'][slice_name] = {}
-        get_basic_stats(stats['by_slice'][slice_name], df_bin, stats['info'])
+        get_basic_stats(stats['by_slice'][slice_name], df_bin, stats['info'], len(df_cat_copy), 'modal_percentage', 'all')
     for bin_value, df_bin in df_cat_copy.groupby('dataset'):
         slice_name = f"cat_dataset_{bin_value}"
         stats['by_slice'][slice_name] = {}
-        get_basic_stats(stats['by_slice'][slice_name], df_bin, stats['info'])
-    if False:
-        df_70 = set_model_base_predictions(df_cat, 70)
-        stats['by_slice']['categorical_results_70'] = {}
-        get_basic_stats(stats['by_slice']['categorical_results_70'], df_70, stats['info'])
-        df_70['percentile_bin'] = pd.cut(df_70['modal_percentage'], bins=10, labels=False)
-        for bin_value, df_bin in df_70.groupby('percentile_bin'):
-            average_percentage = round(df_bin['secret_percentage'].mean(), 2)
-            slice_name = f"cat_70_modal_percentage_{average_percentage}"
-            stats['by_slice'][slice_name] = {}
-            get_basic_stats(stats['by_slice'][slice_name], df_bin, stats['info'])
-        for bin_value, df_bin in df_70.groupby('dataset'):
-            slice_name = f"cat_70_dataset_{bin_value}"
-            stats['by_slice'][slice_name] = {}
-            get_basic_stats(stats['by_slice'][slice_name], df_bin, stats['info'])
+        get_basic_stats(stats['by_slice'][slice_name], df_bin, stats['info'], len(df_bin), 'dataset', bin_value)
     #digin(df_cat)
     #pp.pprint(stats)
     get_by_metric_from_by_slice(stats)
 
-def do_plots():
+def do_stats_dict(stats_path):
     df = gather(instances_path=os.path.join(attack_path, 'instances'))
 
     print(f"df has shape {df.shape} and columns:")
@@ -819,7 +809,7 @@ def do_plots():
     stats = {}
     # print the count of each distinct value in num_known_cols
     print(df['num_known_cols'].value_counts())
-    for sub_key, num_known in [('num_known_all', -1), ('num_known_3', 3), ('num_known_6', 6)]:
+    for sub_key, num_known in num_known_config.items():
         if num_known != -1:
             df_copy = df[df['num_known_cols'] == num_known].copy()
         else:
@@ -829,9 +819,82 @@ def do_plots():
                                    'num_meter_base': 0,
                                    'num_subset_base': 0,}}
         run_stats_for_subsets(stats[sub_key], df_copy)
-        print(f"Writing stats {sub_key} to {os.path.join(attack_path, 'stats.json')}")
-        with open(os.path.join(attack_path, 'stats.json'), 'w') as f:
+        print(f"Writing stats {sub_key} to {stats_path}")
+        with open(stats_path, 'w') as f:
             json.dump(stats, f, indent=4)
+    return stats
+
+def make_df_from_stats(stats):
+    collects = [
+                'model_base',
+                'meter_base',
+                'model_attack',
+                'model_original',
+                'meter_attack',
+                'base_meter_vanilla_thresh_0',
+                'syn_meter_vanilla_thresh_0',
+                'base_meter_vanilla_thresh_50',
+                'syn_meter_vanilla_thresh_50',
+                'base_meter_vanilla_thresh_90',
+                'syn_meter_vanilla_thresh_90',
+                'base_meter_modal_thresh_0',
+                'syn_meter_modal_thresh_0',
+                'base_meter_modal_thresh_50',
+                'syn_meter_modal_thresh_50',
+                'base_meter_modal_thresh_90',
+                'syn_meter_modal_thresh_90',
+                'base_meter_modal_50_thresh_0',
+                'syn_meter_modal_50_thresh_0',
+                'base_meter_modal_50_thresh_50',
+                'syn_meter_modal_50_thresh_50',
+                'base_meter_modal_50_thresh_90',
+                'syn_meter_modal_50_thresh_90',
+                'base_meter_modal_90_thresh_0',
+                'syn_meter_modal_90_thresh_0',
+                'base_meter_modal_90_thresh_50',
+                'syn_meter_modal_90_thresh_50',
+                'base_meter_modal_90_thresh_90',
+                'syn_meter_modal_90_thresh_90',
+        ]
+    dat = []
+    for num_known_key, stuff in stats.items():
+        num_known = num_known_config[num_known_key]
+        for slice_key, slice_results in stuff['by_slice'].items():
+            for collect in collects:
+                row = {
+                        'num_known': num_known,
+                        'num_attacks': slice_results['num_attacks'],
+                        'strip_type': slice_results['strip_type'], 
+                        'dataset': slice_results['dataset'], 
+                        'avg_num_subsets': slice_results['avg_num_subsets'], 
+                        'avg_secret_percentage': slice_results['avg_secret_percentage'], 
+                        'avg_modal_percentage': slice_results['avg_modal_percentage'], 
+                }
+                row['metric'] = collect
+                col_prec = f"{collect}_precision"
+                col_improve = f"{collect}_improve"
+                col_coverage = f"{collect}_coverage"
+                row['precision'] = slice_results[col_prec]
+                row['improve'] = 0.0
+                row['coverage'] = 1.0
+                if col_improve in slice_results:
+                    row['improve'] = slice_results[col_improve]
+                if col_coverage in slice_results:
+                    row['coverage'] = slice_results[col_coverage]
+                dat.append(row)
+    df = pd.DataFrame(dat)
+    return df
+
+def do_plots():
+    stats_path = os.path.join(attack_path, 'stats.json')
+    if os.path.exists(stats_path):
+        print(f"read stats from {stats_path}")
+        with open(stats_path, 'r') as f:
+            stats = json.load(f)
+    else:
+        # make a json file with the collected stats
+        stats = do_stats_dict(stats_path)
+    df = make_df_from_stats(stats)
 
 def do_tests():
     if find_most_frequent_value([1, 2, 2, 3, 3, 3], 0.5) != 3:
