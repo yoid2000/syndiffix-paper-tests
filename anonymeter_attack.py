@@ -608,6 +608,17 @@ def update_max_improve(max_improve, max_info, label, stats):
             cov = 1.0
         max_info = {'label':label, 'improve':max_improve, 'coverage':cov}
     return max_improve, max_info
+import pandas as pd
+import numpy as np
+
+def get_base_pred(df, target_coverage):
+    df_copy = df.copy()
+    df_copy = df_copy.sort_values(by='model_base_probability', ascending=False)
+    print(df_copy.head().to_string())
+    print(df_copy.tail().to_string())
+    quit()
+    num_rows = int(round(target_coverage * len(df)))
+    return df_copy.head(num_rows)
 
 def get_basic_stats(stats, df, info):
     max_improve = -1000
@@ -643,7 +654,10 @@ def get_basic_stats(stats, df, info):
             base_coverage = f"{base_base_label}_coverage"
             # df_pred contains only the rows where predictions were made
             df_syn_pred = df[df[syn_answer] != -1]
-            df_base_pred = df[df[base_answer] != -1]
+            # target_coverage is the coverage we'd like to match from the base model
+            target_coverage = len(df_syn_pred) / len(df)
+            df_base_pred = get_base_pred(df, target_coverage)
+            #df_base_pred = df[df[base_answer] != -1]
             if len(df_syn_pred) == 0:
                 stats[base_coverage] = 0
                 stats[base_precision] = 0
