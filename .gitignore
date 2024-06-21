@@ -167,3 +167,4 @@ anonymeter_attacks/*.parquet
 anonymeter_attacks/*.json
 anonymeter_attacks/*.csv
 *.png
+anonymeter_attacks/dumps/*

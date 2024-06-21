@@ -15,6 +15,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from collections import Counter
+from alscore import ALScore
 import pprint
 
 pp = pprint.PrettyPrinter(indent=4)
@@ -602,19 +603,18 @@ def gather(instances_path):
         df.to_csv(os.path.join(attack_path, 'attacks.csv'))
     return df
 
-def update_max_improve(max_improve, max_info, label, stats):
-    improve_label = f"{label}_improve"
+def update_max_als(max_als, max_info, label, stats):
+    als_label = f"{label}_als"
+    prec_label = f"{label}_precision"
     cov_label = f"{label}_coverage"
-    if stats[improve_label] > max_improve:
-        max_improve = stats[improve_label]
+    if stats[als_label] > max_als:
+        max_als = stats[als_label]
         if cov_label in stats:
             cov = stats[cov_label]
         else:
             cov = 1.0
-        max_info = {'label':label, 'improve':max_improve, 'coverage':cov}
-    return max_improve, max_info
-import pandas as pd
-import numpy as np
+        max_info = {'label':label, 'als':max_als, 'precision':stats[prec_label], 'coverage':cov}
+    return max_als, max_info
 
 def get_base_pred(df, target_coverage):
     df_copy = df.copy()
@@ -622,8 +622,24 @@ def get_base_pred(df, target_coverage):
     num_rows = int(round(target_coverage * len(df)))
     return df_copy.head(num_rows)
 
-def get_basic_stats(stats, df, df_all, info, cov_basis, slice_type, dataset):
-    max_improve = -1000
+def add_to_dump(df, label, slice_name):
+    cols = ['secret_value', 'secret_percentage', 'secret_col_type', 'modal_value', 'modal_percentage', 'num_known_cols', 'dataset',]
+    val_col = f"{label}_value"
+    ans_col = f"{label}_answer"
+    cols += [val_col, ans_col]
+    df_filtered_1 = df[df[ans_col] == 1]
+    path = os.path.join(attack_path, 'dumps')
+    os.makedirs(path, exist_ok=True)
+    file_path = os.path.join(path, f"{slice_name}.{label}.csv")
+    # check if file_path already exists
+    if os.path.exists(file_path):
+        return
+    df_filtered_1[cols].to_csv(file_path)
+
+def get_basic_stats(stats, df, df_all, info, cov_basis, slice_type, dataset, slice_name = None):
+    als = ALScore()
+    als_threshold = 0.5
+    max_als = -1000
     max_info = {}
     stats['num_attacks'] = len(df)
     stats['slice_type'] = slice_type
@@ -631,89 +647,149 @@ def get_basic_stats(stats, df, df_all, info, cov_basis, slice_type, dataset):
     stats['avg_num_subsets'] = round(df['num_subsets'].mean(), 2)
     stats['avg_secret_percentage'] = round(df['secret_percentage'].mean(), 2)
     stats['avg_modal_percentage'] = round(df['modal_percentage'].mean(), 2)
+    # All of these initial measures have coverage of 1.0
     # The base model prediction needs to be based on a model built from all of the columns,
-    # not just the columns known to the attacker
-    p_model = round(df_all['model_base_answer'].sum() / len(df_all), 6)
-    stats['model_base_precision'] = p_model
+    # not just the columns known to the attacker.
+    stats['model_base_precision'] = round(df_all['model_base_answer'].sum() / len(df_all), 6)
+    stats['model_base_coverage'] = 1.0
+    stats['model_base_pcc'] = als.pcc(stats['model_base_precision'], stats['model_base_coverage'])
     # Same thing applies to the base meter prediction
-    p_meter = round(df_all['base_meter_answer'].sum() / len(df_all), 6)
-    stats['meter_base_precision'] = p_meter
-    p_base = max(p_model, p_meter)
-    p = round(df['model_attack_answer'].sum() / len(df), 6)
-    stats['model_attack_precision'] = p
-    stats['model_attack_improve'] = round((p-p_base)/(1.0000001-p_base), 6)
-    stats['model_attack_base_precision'] = p_base
-    p = round(df['model_original_answer'].sum() / len(df), 6)
-    stats['model_original_precision'] = p
-    stats['model_original_improve'] = round((p-p_base)/(1.0000001-p_base), 6)
-    stats['model_original_base_precision'] = p_base
-    p = round(df['syn_meter_answer'].sum() / len(df), 6)
-    stats['meter_attack_precision'] = p
-    stats['meter_attack_base_precision'] = p_base
-    stats['meter_attack_improve'] = round((p-p_base)/(1.0000001-p_base), 6)
-    max_improve, max_info = update_max_improve(max_improve, max_info, 'meter_attack', stats)
+    stats['meter_base_precision'] = round(df_all['base_meter_answer'].sum() / len(df_all), 6)
+    stats['meter_base_coverage'] = 1.0
+    stats['meter_base_pcc'] = als.pcc(stats['meter_base_precision'], stats['meter_base_coverage'])
+    # We want to select the best precision-coverage-coefficient between the two baselines, the model
+    # baseline and the anonymeter-style baseline (since in any event at this point the coverage is 1.0,
+    # this is equivalent to selecting the best precision, but still....)
+    stats['model_meter_best_pcc'] = max(stats['model_base_pcc'], stats['meter_base_pcc'])
+    # Compute the ALS for the model attack on syndiffix. This is the attack based on the
+    # groundhog method part 2
+    stats['model_attack_precision'] = round(df['model_attack_answer'].sum() / len(df), 6)
+    stats['model_attack_coverage'] = 1.0
+    stats['model_attack_als'] = als.alscore(pcc_base=stats['model_meter_best_pcc'],
+                                            p_attack=stats['model_attack_precision'],
+                                            c_attack=stats['model_attack_coverage'])
+    if stats['model_attack_als'] > als_threshold:
+        stats['model_attack_problem'] = True
+    else:
+        stats['model_attack_problem'] = False
+
+    # Compute the ALS for the model attack run over the original data. This has nothing
+    # to do with syndiffix, rather we just want to show how ineffective the model attack is
+    # We also ignore the meter_base when doing this measure
+    stats['model_original_precision'] = round(df['model_original_answer'].sum() / len(df), 6)
+    stats['model_original_coverage'] = 1.0
+    stats['model_original_als'] = als.alscore(p_base=stats['model_base_precision'],
+                                              c_base=stats['model_base_coverage'],
+                                              p_attack=stats['model_original_precision'],
+                                              c_attack=stats['model_original_coverage'])
+    if stats['model_original_als'] > als_threshold:
+        stats['model_original_problem'] = True
+    else:
+        stats['model_original_problem'] = False
+    # Now measure the anonymeter-style attack on syndiffix.
+    stats['meter_attack_precision'] = round(df['syn_meter_answer'].sum() / len(df), 6)
+    stats['meter_attack_coverage'] = 1.0
+    stats['meter_attack_als'] = als.alscore(pcc_base=stats['model_meter_best_pcc'],
+                                            p_attack=stats['meter_attack_precision'],
+                                            c_attack=stats['meter_attack_coverage'])
+    if stats['meter_attack_als'] > als_threshold:
+        stats['meter_attack_problem'] = True
+    else:
+        stats['meter_attack_problem'] = False
+    max_als, max_info = update_max_als(max_als, max_info, 'meter_attack', stats)
     for v_label in variant_labels:
         for cc_label in col_comb_thresholds.keys():
-            syn_base_label = f"syn_meter_{v_label}_{cc_label}"
-            syn_answer = f"{syn_base_label}_answer"
-            syn_precision = f"{syn_base_label}_precision"
-            syn_base_precision = f"{syn_base_label}_base_precision"
-            syn_base_coverage = f"{syn_base_label}_base_coverage"
-            syn_improve = f"{syn_base_label}_improve"
-            syn_coverage = f"{syn_base_label}_coverage"
-            base_base_label = f"base_meter_{v_label}_{cc_label}"
-            base_answer = f"{base_base_label}_answer"
-            base_precision = f"{base_base_label}_precision"
-            base_coverage = f"{base_base_label}_coverage"
+            syn_meter_label = f"syn_meter_{v_label}_{cc_label}"
+            syn_answer = f"{syn_meter_label}_answer"
+            syn_precision = f"{syn_meter_label}_precision"
+            syn_coverage = f"{syn_meter_label}_coverage"
+            syn_pcc = f"{syn_meter_label}_pcc"
+            syn_base_used = f"{syn_meter_label}_base_used"
+            syn_base_precision = f"{syn_meter_label}_used_base_precision"
+            syn_base_coverage = f"{syn_meter_label}_used_base_coverage"
+            syn_base_pcc = f"{syn_meter_label}_used_base_pcc"
+            syn_als = f"{syn_meter_label}_als"
+            syn_problem = f"{syn_meter_label}_problem"
+            base_meter_label = f"base_meter_{v_label}_{cc_label}"
+            base_meter_answer = f"{base_meter_label}_answer"
+            base_meter_precision = f"{base_meter_label}_precision"
+            base_meter_coverage = f"{base_meter_label}_coverage"
+            base_meter_pcc = f"{base_meter_label}_pcc"
+            base_model_label = f"base_model_{v_label}_{cc_label}"
+            base_model_precision = f"{base_model_label}_precision"
+            base_model_coverage = f"{base_model_label}_coverage"
+            base_model_pcc = f"{base_model_label}_pcc"
             # df_pred contains only the rows where predictions were made
             df_syn_pred = df[df[syn_answer] != -1]
             # target_coverage is the coverage we'd like to match from the base model
             target_coverage = len(df_syn_pred) / len(df)
             df_base_model_pred = get_base_pred(df_all, target_coverage)
-            df_base_meter_pred = df_all[df_all[base_answer] != -1]
+            df_base_meter_pred = df_all[df_all[base_meter_answer] != -1]
+            stats[base_meter_coverage] = 0
+            stats[base_meter_precision] = 0
+            stats[base_meter_pcc] = 0
+            stats[base_model_coverage] = 0
+            stats[base_model_precision] = 0
+            stats[base_model_pcc] = 0
+            stats[syn_base_coverage] = 0
+            stats[syn_base_precision] = 0
+            stats[syn_base_pcc] = 0
+            stats[syn_coverage] = 0
+            stats[syn_precision] = 0
+            stats[syn_pcc] = 0
+            stats[syn_als] = 0
+            stats[syn_problem] = False
             if len(df_syn_pred) == 0:
-                stats[base_coverage] = 0
-                stats[base_precision] = 0
-                stats[syn_base_coverage] = 0
-                stats[syn_base_precision] = 0
-                stats[syn_coverage] = 0
-                stats[syn_precision] = 0
-                stats[syn_improve] = 0
                 continue
             # Basing the base precision on the rows where the attack happened to make predictions
             # is not necessarily the right thing to do. What we really want is to find the best base
             # precision given a similar coverage
             if len(df_base_model_pred) > 0:
-                p_base_model_subset = df_base_model_pred[base_answer].sum() / len(df_base_model_pred)
-            else:
-                p_base_model_subset = 0
+                stats[base_model_precision] = df_base_model_pred[base_meter_answer].sum() / len(df_base_model_pred)
+                stats[base_model_coverage] = len(df_base_model_pred) / cov_basis
+                stats[base_model_pcc] = als.pcc(stats[base_model_precision], stats[base_model_coverage])
             if len(df_base_meter_pred) > 0:
-                p_base_meter_subset = df_base_meter_pred[base_answer].sum() / len(df_base_meter_pred)
-            else:
-                p_base_meter_subset = 0
-            p_base_use = max(p_base, p_base_model_subset, p_base_meter_subset)
-            # find the index of p_base_use in
-            p_index = [p_meter, p_model, p_base_model_subset, p_base_meter_subset].index(p_base_use)
-            p_name = ['num_model_base', 'num_meter_base', 'num_subset_model_base', 'num_subset_meter_base'][p_index]
-            info[p_name] += 1
-            stats[base_precision] = round(p_base_use, 6)
-            stats[base_coverage] = len(df_base_model_pred) / cov_basis
-            stats[syn_base_precision] = round(p_base_use, 6)
-            stats[syn_base_coverage] = len(df_base_model_pred) / cov_basis
+                stats[base_meter_precision] = df_base_meter_pred[base_meter_answer].sum() / len(df_base_meter_pred)
+                stats[base_meter_coverage] = len(df_base_meter_pred) / cov_basis
+                stats[base_meter_pcc] = als.pcc(stats[base_meter_precision], stats[base_meter_coverage])
+            pcc_base_use = max(stats['model_meter_best_pcc'], stats[base_model_pcc], stats[base_meter_pcc])
+            # We want to record how often each type of base measure was used
+            pcc_index = [stats['model_base_pcc'], stats['meter_base_pcc'],
+                       stats[base_model_pcc], stats[base_meter_pcc]].index(pcc_base_use)
+            pcc_name = ['num_model_base', 'num_meter_base', 'num_subset_model_base', 'num_subset_meter_base'][pcc_index]
+            info[pcc_name] += 1
 
+            # We want to record the base precision and coverage associated with the best
+            # base pcc (pcc_base_use)
+            p_base_use = [stats['model_base_precision'], stats['meter_base_precision'],
+                          stats[base_model_precision], stats[base_meter_precision]][pcc_index]
+            c_base_use = [stats['model_base_coverage'], stats['meter_base_coverage'],
+                          stats[base_model_coverage], stats[base_meter_coverage]][pcc_index]
+            stats[syn_base_precision] = round(p_base_use, 4)
+            stats[syn_base_coverage] = round(c_base_use, 6)
+            stats[syn_base_pcc] = round(pcc_base_use, 4)
+
+            stats[syn_base_used] = pcc_name
+            stats[syn_precision] = df_syn_pred[syn_answer].sum() / len(df_syn_pred)
             stats[syn_coverage] = len(df_syn_pred) / cov_basis
-            p = df_syn_pred[syn_answer].sum() / len(df_syn_pred)
-            stats[syn_precision] = round(p, 6)
-            stats[syn_improve] = round((p-p_base_use)/(1.0000001-p_base_use), 6)
-            max_improve, max_info = update_max_improve(max_improve, max_info, syn_base_label, stats)
-    stats['max_improve_record'] = max_info
-    stats['max_improve'] = max_info['improve']
+            stats[syn_pcc] = als.pcc(stats[syn_precision], stats[syn_coverage])
+            stats[syn_als] = als.alscore(pcc_base=pcc_base_use,
+                                            p_attack=stats[syn_precision],
+                                            c_attack=stats[syn_coverage])
+            if stats[syn_als] > als_threshold:
+                stats[syn_problem] = True
+                add_to_dump(df_syn_pred, syn_meter_label, slice_name)
+            else:
+                stats[syn_problem] = False
+            max_als, max_info = update_max_als(max_als, max_info, syn_meter_label, stats)
+    stats['max_als_record'] = max_info
+    stats['max_als'] = max_info['als']
+    stats['max_precision'] = max_info['precision']	
     stats['max_coverage'] = max_info['coverage']	
 
 def get_by_metric_from_by_slice(stats):
     problem_cases = {}
     num_problem_cases = 0
-    to_df = []
     for metric in stats['by_slice']['all_results'].keys():
         stats['by_metric'][metric] = {}	
         for slice_key, result in stats['by_slice'].items():
@@ -721,20 +797,20 @@ def get_by_metric_from_by_slice(stats):
                 stats['by_metric'][metric][slice_key] = result[metric]
             else:
                 continue
-            if metric[-7:] == 'improve' and metric not in ['model_original_improve', 'max_improve']:
+            if metric[-3:] == 'als' and metric not in ['model_original_als', 'max_als']:
                 if result[metric] > 0.5:
                     num_problem_cases += 1
-                    if metric[:-7] not in problem_cases:
-                        problem_cases[metric[:-7]] = []
-                    problem_cases[metric[:-7]].append(str((slice_key, metric, result[metric])))
-                    cov_metric = metric[:-7] + 'coverage'
+                    if metric[:-3] not in problem_cases:
+                        problem_cases[metric[:-3]] = []
+                    problem_cases[metric[:-3]].append(str((slice_key, metric, result[metric])))
+                    cov_metric = metric[:-3] + 'coverage'
                     coverage = stats['by_metric'][cov_metric][slice_key]
-                    problem_cases[metric[:-7]].append(str((slice_key, cov_metric, coverage)))
-                    prec_metric = metric[:-7] + 'precision'
+                    problem_cases[metric[:-3]].append(str((slice_key, cov_metric, coverage)))
+                    prec_metric = metric[:-3] + 'precision'
                     precision = stats['by_metric'][prec_metric][slice_key]
-                    problem_cases[metric[:-7]].append(str((slice_key, prec_metric, precision)))
+                    problem_cases[metric[:-3]].append(str((slice_key, prec_metric, precision)))
                     num_predictions = int(round(coverage * stats['by_metric']['num_attacks'][slice_key]))
-                    problem_cases[metric[:-7]].append(str(('num_predictions', num_predictions)))
+                    problem_cases[metric[:-3]].append(str(('num_predictions', num_predictions)))
     stats['problem_cases'] = problem_cases
     stats['info']['num_problem_cases'] = num_problem_cases
 
@@ -803,12 +879,12 @@ def run_stats_for_subsets(stats, df, df_all):
         average_modal_percentage = round(df_bin['modal_percentage'].mean(), 2)
         slice_name = f"cat_modal_percentage_{average_modal_percentage}"
         stats['by_slice'][slice_name] = {}
-        get_basic_stats(stats['by_slice'][slice_name], df_bin, df_all_bin, stats['info'], len(df_cat_copy), 'modal_percentage', 'all')
+        get_basic_stats(stats['by_slice'][slice_name], df_bin, df_all_bin, stats['info'], len(df_cat_copy), 'modal_percentage', 'all', slice_name=slice_name)
     for bin_value, df_bin in df_cat_copy.groupby('dataset'):
         df_all_bin = df_all[df_all['dataset'] == bin_value]
         slice_name = f"cat_dataset_{bin_value}"
         stats['by_slice'][slice_name] = {}
-        get_basic_stats(stats['by_slice'][slice_name], df_bin, df_all_bin, stats['info'], len(df_bin), 'dataset', bin_value)
+        get_basic_stats(stats['by_slice'][slice_name], df_bin, df_all_bin, stats['info'], len(df_bin), 'dataset', bin_value, slice_name=slice_name)
     #digin(df_cat)
     #pp.pprint(stats)
     get_by_metric_from_by_slice(stats)
@@ -827,7 +903,7 @@ def do_stats_dict(stats_path):
                     df[col] = df[col].astype(float)
                 except ValueError:
                     pass
-    print(df.dtypes)
+    pp.pprint(df.dtypes)
     stats = {}
     # num_known_cols is the measured number of known columns (not the configuration)
     # known_cols are the actual known column names. num_subsets are the number of
@@ -898,18 +974,18 @@ def make_df_from_stats(stats):
                 }
                 row['metric'] = collect
                 col_prec = f"{collect}_precision"
-                col_improve = f"{collect}_improve"
+                col_als = f"{collect}_als"
                 col_coverage = f"{collect}_coverage"
                 col_use_prec = f"{collect}_base_precision"
                 row['precision'] = slice_results[col_prec]
-                row['improve'] = 0.0
+                row['als'] = 0.0
                 row['coverage'] = 1.0
                 if col_use_prec in slice_results:
                     row['base_precision'] = slice_results[col_use_prec]
                 else:
                     row['base_precision'] = 0.0
-                if col_improve in slice_results:
-                    row['improve'] = slice_results[col_improve]
+                if col_als in slice_results:
+                    row['als'] = slice_results[col_als]
                 if col_coverage in slice_results:
                     row['coverage'] = slice_results[col_coverage]
                 dat.append(row)

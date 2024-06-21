@@ -108,7 +108,7 @@ def plot_identical_cov(out_path, limit=1.0):
     plt.figure(figsize=((8, 5)))
     for increase in increase_values:
         p_attack_values = p_base_values + (increase * (1.0 - p_base_values))
-        scores = [als.alscore(p_base_value, cov_value, p_attack_value, cov_value) for p_base_value, cov_value, p_attack_value, cov_value in zip(p_base_values, cov_values, p_attack_values, cov_values)]
+        scores = [als.alscore(p_base=p_base_value, c_base=cov_value, p_attack=p_attack_value, c_attack=cov_value) for p_base_value, cov_value, p_attack_value, cov_value in zip(p_base_values, cov_values, p_attack_values, cov_values)]
         plt.scatter(cov_values, scores, label=f'precision increase = {increase}', s=2)
     plt.xscale('log')
     plt.grid(True)
@@ -133,7 +133,7 @@ def plot_varying_base_coverage(out_path):
     plt.figure(figsize=((8, 5)))
     for increase in increase_values:
         p_attack = p_base + (increase * (1.0 - p_base))
-        scores = [als.alscore(p_base, cov_value, p_attack, c_attack) for cov_value in cov_values]
+        scores = [als.alscore(p_base=p_base, c_base=cov_value, p_attack=p_attack, c_attack=c_attack) for cov_value in cov_values]
         plt.scatter(cov_values, scores, label=f'precision increase = {increase}', s=2)
     plt.xscale('log')
     plt.axvline(x=0.01, color='black', linestyle='dashed')
@@ -150,7 +150,7 @@ def do_als_test(als, p_base, c_base, increase, c_attack):
     p_attack = p_base + increase * (1.0 - p_base)
     print(f'Base precision: {p_base}, base coverage: {c_base}\nattack precision: {p_attack}, attack coverage: {c_attack}')
     print(f'increase: {increase}')
-    print(f'ALS: {round(als.alscore(p_base, c_base, p_attack, c_attack),3)}')
+    print(f'ALS: {round(als.alscore(p_base=p_base, c_base=c_base, p_attack=p_attack, c_attack=c_attack),3)}')
 
 als = alscore.ALScore()
 do_als_test(als, p_base=0.5, c_base=1.0, increase=0.2, c_attack=1.0)
@@ -168,4 +168,3 @@ plot_identical_cov(os.path.join(plots_path, 'identical_cov_limit.png'), limit=0.
 plot_abs_weights(os.path.join(plots_path, 'abs_weights.png'))
 plot_cov_adjust(os.path.join(plots_path, 'cov_adjust.png'))
 plot_base_adjusted_pcc(os.path.join(plots_path, 'base_adjusted_pcc.png'))
-pass
