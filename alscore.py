@@ -77,13 +77,6 @@ class ALScore:
         # COV = 10 ** ((PI ** (1/self._cov_adjust_strength) - b) / m)
         return 1 - adjust
 
-    def _pcc(self, prec, cov):
-        ''' Generates the precision-coverage-coefficient, PCC. prev is the precision
-            of the attack, and cov is the coverage.
-        '''
-        cov_adj = self._cov_adjust(cov)
-        return cov_adj * prec
-
     def _pcc_improve_absolute(self, pcc_base, pcc_attack):
         return pcc_attack - pcc_base
 
@@ -97,9 +90,29 @@ class ALScore:
         pcc_improve = (abs_weight * pcc_abs) + ((1-abs_weight) * pcc_rel)
         return pcc_improve
 
-    def alscore(self, p_base, c_base, p_attack, c_attack):
-        # Adjust the precision based on the coverage to make the
-        # precision-coverage-coefficient pcc
-        pcc_base = self._pcc(p_base, c_base)
-        pcc_attack = self._pcc(p_attack, c_attack)
-        return self._pcc_improve(pcc_base, pcc_attack)
+    def pcc(self, prec, cov):
+        ''' Generates the precision-coverage-coefficient, PCC. prev is the precision
+            of the attack, and cov is the coverage.
+        '''
+        cov_adj = self._cov_adjust(cov)
+        return cov_adj * prec
+
+    def alscore(self,
+                p_base = None,
+                c_base = None,
+                p_attack = None,
+                c_attack = None,
+                pcc_base = None,
+                pcc_attack = None
+                ):
+        ''' alscore can be called with either p_x and c_x, or pcc_x
+        '''
+        if pcc_base is None and p_base is not None and c_base is not None:
+            # Adjust the precision based on the coverage to make the
+            # precision-coverage-coefficient pcc
+            pcc_base = self.pcc(p_base, c_base)
+        if pcc_attack is None and p_attack is not None and c_attack is not None:
+            pcc_attack = self.pcc(p_attack, c_attack)
+        if pcc_base is not None and pcc_attack is not None:
+            return self._pcc_improve(pcc_base, pcc_attack)
+        return None
