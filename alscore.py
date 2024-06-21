@@ -14,11 +14,8 @@ class ALScore:
     eliminates attacker incentive.
     '''
     def __init__(self):
-        # Higher _pcc_abs_weight_strength puts less weight on the absolute PI
-        self._pcc_abs_weight_strength = 2.0
-        # _pcc_abs_weight_max is the largest possible weight for absolute PI
-        self._pcc_abs_weight_max = 0.5
-        self._set_slide_amount()
+        # _pcc_abs_weight is the weight given to the absolute PCC difference
+        self._pcc_abs_weight = 0.5
         # _cov_adjust_min_intercept is the coverage value below which the
         # effective anonymity loss becomes zero
         self._cov_adjust_min_intercept = 1/10000
@@ -26,42 +23,21 @@ class ALScore:
         self._cov_adjust_strength = 3.0
 
     def set_param(self, param, value):
-        if param == 'pcc_abs_weight_strength':
-            self._pcc_abs_weight_strength = value
-            self._set_slide_amount()
-        if param == 'pcc_abs_weight_max':
-            self._pcc_abs_weight_max = value
-            self._set_slide_amount()
+        if param == 'pcc_abs_weight':
+            self._pcc_abs_weight = value
         if param == 'cov_adjust_min_intercept':
             self._cov_adjust_min_intercept = value
         if param == 'cov_adjust_strength':
             self._cov_adjust_strength = value
 
     def get_param(self, param):
-        if param == 'pcc_abs_weight_strength':
-            return self._pcc_abs_weight_strength
-        if param == 'pcc_abs_weight_max':
-            return self._pcc_abs_weight_max
+        if param == 'pcc_abs_weight':
+            return self._pcc_abs_weight
         if param == 'cov_adjust_min_intercept':
             return self._cov_adjust_min_intercept
         if param == 'cov_adjust_strength':
             return self._cov_adjust_strength
         return None
-
-    def _set_slide_amount(self):
-        '''
-        0.01 = x * (1 - (pb ** strength))
-        0.01 / x = 1 - (pb ** strength)
-        (pb ** strength) = 1 - (0.01 / x)
-        pb = ((1 - (0.01 / x)) ** (1/strength))
-        '''
-        # find the value of pb that would produce diff_weight of 0.5
-        target_pb = ((1 - (0.01 / self._pcc_abs_weight_max)) ** (1/self._pcc_abs_weight_strength))
-        self._pi_abs_slide_amount = 1 - target_pb
-
-    def _get_pcc_abs_weight(self, pcc_base):
-        pb = max(0, pcc_base - self._pi_abs_slide_amount)
-        return 0.01 / max(0.01, (1 - (pb ** self._pcc_abs_weight_strength)))
 
     def _underlying_prec_cov_curve(self):
         pi1 = 1.0    # PI intercept at low coverage
@@ -86,8 +62,7 @@ class ALScore:
     def _pcc_improve(self, pcc_base, pcc_attack):
         pcc_rel = self._pcc_improve_relative(pcc_base, pcc_attack)
         pcc_abs = self._pcc_improve_absolute(pcc_base, pcc_attack)
-        abs_weight = self._get_pcc_abs_weight(pcc_base)
-        pcc_improve = (abs_weight * pcc_abs) + ((1-abs_weight) * pcc_rel)
+        pcc_improve = (self._pcc_abs_weight * pcc_abs) + ((1-self._pcc_abs_weight) * pcc_rel)
         return pcc_improve
 
     def pcc(self, prec, cov):
