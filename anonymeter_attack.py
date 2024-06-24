@@ -8,6 +8,7 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import LabelEncoder
+import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
@@ -60,7 +61,7 @@ col_comb_thresholds = {
                             'thresh_90':90,
 }
 
-num_known_config = {'num_known_all': -1, 'num_known_3': 3, 'num_known_6': 6}
+num_known_config = {'num_known_all': 'all', 'num_known_3': '3', 'num_known_6': '6'}
 
 def init_variants():
     for v_label in variants.keys():
@@ -992,39 +993,38 @@ def make_df_from_stats(stats):
     df = pd.DataFrame(dat)
     return df
 
-import seaborn as sns
-import matplotlib.pyplot as plt
-
-def plot_by_slice(df, slice, note, hue='metric', log=False):
+def plot_by_slice(df, slice, note, hue='metric'):
     df = df[df['slice_type'] == slice].copy()
     plt.figure(figsize=(8, 4))
-    scatter = sns.scatterplot(data=df, x='coverage', y='improve', hue=hue, legend="full")
-    if log:
-        plt.xscale('log')
-        plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--')
-        plt.vlines(0.001, 0.5, 1.0, colors='black', linestyles='--')
-    else:
-        plt.axhline(y=0.5, color='black', linestyle='--')
-    plt.ylim(-0.2, 1.1)
-    plt.legend(title='metric', bbox_to_anchor=(1.05, 1), loc='upper left')
-    plt.xlabel(f'Coverage (slice {slice}, {note})')
-    plt.ylabel('Improve')
+    sns.boxplot(data=df, y=hue, x='als', orient='h', hue=hue)
+    plt.xlim(-1, 1)
+    plt.axvline(x=0.0, color='black', linestyle='--')
+    plt.axvline(x=0.5, color='black', linestyle='--')
+    plt.ylabel(hue)
+    plt.xlabel(f'Anonymity Loss Score {note}')
     plt.tight_layout()
     plt.savefig(os.path.join(plots_path, f'pi_cov_by_slice_{slice}_{note}.png'))
 
 def plot_by_num_known_complete(df, note):
     plt.figure(figsize=(7, 3.5))
-    #scatter = sns.scatterplot(data=df, x='coverage', y='improve', hue='avg_num_subsets', style='num_known', palette='viridis', sizes=(20, 200), legend="full")
-    scatter = sns.scatterplot(data=df, x='coverage', y='improve', hue='num_known', legend="full")
-    plt.xscale('log')
-    plt.ylim(-0.2, 1.1)
-    plt.hlines(0.5, 0.001, 1, colors='black', linestyles='--')
-    plt.vlines(0.001, 0.5, 1.0, colors='black', linestyles='--')
-    plt.legend(title='num_known')
-    plt.xlabel(f'Coverage ({note})')
-    plt.ylabel('Improve')
+    sns.boxplot(data=df, y='num_known', x='als', orient='h', hue='num_known')
+    plt.xlim(-1, 1)
+    plt.axvline(x=0.0, color='black', linestyle='--')
+    plt.axvline(x=0.5, color='black', linestyle='--')
+    plt.ylabel(f'Num attributes known by attacker {note}')
+    plt.xlabel('Anonymity Loss Score (ALS)')
     plt.tight_layout()
-    plt.savefig(os.path.join(plots_path, f'pi_cov_by_num_known_{note}.png'))
+    plt.savefig(os.path.join(plots_path, f'als_by_num_known_{note}.png'))
+
+def plot_prec_cov(df):
+    plt.figure(figsize=(6, 4))
+
+    plt.scatter(df['coverage'], df['precision'], marker='o', s=4)
+    plt.xscale('log')
+    plt.xlabel('Coverage')
+    plt.ylabel('Precision')
+    plt.tight_layout()
+    plt.savefig(os.path.join(plots_path, f'pi_cov.png'))
 
 def do_plots():
     stats_path = os.path.join(attack_path, 'stats.json')
@@ -1039,18 +1039,18 @@ def do_plots():
     df_atk = df[df['info_type'] == 'attack'].copy()
     stats_summary = {}
     stats_summary['precision_by_num_known_all_slices'] = df_atk.groupby('num_known')['precision'].mean().to_dict()
-    stats_summary['improve_by_num_known_all_slices'] = df_atk.groupby('num_known')['improve'].median().to_dict()
-    stats_summary['count_by_num_known_all_slices'] = df_atk.groupby('num_known')['improve'].count().to_dict()
+    stats_summary['als_by_num_known_all_slices'] = df_atk.groupby('num_known')['als'].median().to_dict()
+    stats_summary['count_by_num_known_all_slices'] = df_atk.groupby('num_known')['als'].count().to_dict()
     stats_summary['precision_by_metric_all_slices'] = df_atk.groupby('metric')['precision'].mean().to_dict()
-    stats_summary['improve_by_metric_all_slices'] = df_atk.groupby('metric')['improve'].median().to_dict()
-    stats_summary['count_by_metric_all_slices'] = df_atk.groupby('metric')['improve'].count().to_dict()
+    stats_summary['als_by_metric_all_slices'] = df_atk.groupby('metric')['als'].median().to_dict()
+    stats_summary['count_by_metric_all_slices'] = df_atk.groupby('metric')['als'].count().to_dict()
     df_atk_slice_all = df_atk[df_atk['slice_type'] == 'all'].copy()
     stats_summary['precision_by_num_known_slice_all_only'] = df_atk_slice_all.groupby('num_known')['precision'].mean().to_dict()
-    stats_summary['improve_by_num_known_slice_all_only'] = df_atk_slice_all.groupby('num_known')['improve'].median().to_dict()
-    stats_summary['count_by_num_known_slice_all_only'] = df_atk_slice_all.groupby('num_known')['improve'].count().to_dict()
+    stats_summary['als_by_num_known_slice_all_only'] = df_atk_slice_all.groupby('num_known')['als'].median().to_dict()
+    stats_summary['count_by_num_known_slice_all_only'] = df_atk_slice_all.groupby('num_known')['als'].count().to_dict()
     stats_summary['precision_by_metric_slice_all_only'] = df_atk_slice_all.groupby('metric')['precision'].mean().to_dict()
-    stats_summary['improve_by_metric_slice_all_only'] = df_atk_slice_all.groupby('metric')['improve'].median().to_dict()
-    stats_summary['count_by_metric_slice_all_only'] = df_atk_slice_all.groupby('metric')['improve'].count().to_dict()
+    stats_summary['als_by_metric_slice_all_only'] = df_atk_slice_all.groupby('metric')['als'].median().to_dict()
+    stats_summary['count_by_metric_slice_all_only'] = df_atk_slice_all.groupby('metric')['als'].count().to_dict()
 
     df_atk_filtered = df_atk[df_atk['base_precision'] <= 0.95].copy()
     print(f"df_atk has shape {df_atk.shape}")
@@ -1059,22 +1059,19 @@ def do_plots():
     df_atk_not_filtered = df_atk[df_atk['base_precision'] > 0.95].copy()
     print("Rows in df_atk but not in df_atk_filtered:")
     print(df_atk_not_filtered.to_string())
+    for column in df_atk.columns:
+        if df_atk[column].nunique() <= 20:
+            print(f"Distinct values in {column}: {df_atk[column].unique()}")
 
-    for df_loop, loop_note in [[df_atk, ''], [df_atk_filtered, 'base_0.95']]:
+    plot_prec_cov(df_atk)
+    for df_loop, loop_note in [[df_atk, '']]:
         plot_by_num_known_complete(df_loop, loop_note)
-        plot_by_slice(df_loop, 'all', f'{loop_note}, ')
-        plot_by_slice(df_loop, 'dataset', f'{loop_note}, ')
-        plot_by_slice(df_loop, 'modal_percentage', f'{loop_note}, ', log=True)
+        plot_by_slice(df_loop, 'all', f'{loop_note}', hue='metric')
+        plot_by_slice(df_loop, 'dataset', f'{loop_note}', hue='dataset')
 
-        df_atk_num_known_all = df_loop[df_loop['num_known'] == -1].copy()
-        plot_by_slice(df_atk_num_known_all, 'all', f'{loop_note}, num_known_all')
-        plot_by_slice(df_atk_num_known_all, 'dataset', f'{loop_note}, num_known_all')
-        plot_by_slice(df_atk_num_known_all, 'modal_percentage', f'{loop_note}, num_known_all', log=True)
-
-        df_atk_m90_t90 = df_atk_num_known_all[df_atk_num_known_all['metric'] == 'syn_meter_modal_90_thresh_90'].copy()
-        plot_by_slice(df_atk_m90_t90, 'all', f'{loop_note}, m90_t90')
-        plot_by_slice(df_atk_m90_t90, 'dataset', f'{loop_note}, m90_t90', hue='dataset')
-        plot_by_slice(df_atk_m90_t90, 'modal_percentage', f'{loop_note}, m90_t90', log=True, hue='avg_modal_percentage')
+        df_atk_num_known_all = df_loop[df_loop['num_known'] == 'all'].copy()
+        plot_by_slice(df_atk_num_known_all, 'all', f'num_known_all, {loop_note}', hue='metric')
+        plot_by_slice(df_atk_num_known_all, 'dataset', f'num_known_all, {loop_note}', hue='dataset')
 
 
     pp.pprint(stats_summary)
