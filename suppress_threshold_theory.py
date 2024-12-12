@@ -3,6 +3,10 @@ import os
 import pandas as pd
 import numpy as np
 import json
+import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
+import seaborn as sns
+import alscore
 from syndiffix import Synthesizer
 from syndiffix.common import AnonymizationParams, SuppressionParams
 # from syndiffix_tools.tree_walker import *
@@ -177,16 +181,70 @@ def gather_results():
     with open(json_path, 'w') as f:
         json.dump(output, f, indent=4)
 
+
+def alc_plot(df_orig, alc_col):
+    df = df_orig.copy()
+    # Create a new DataFrame to store the filtered data for plotting
+    plot_data = pd.DataFrame()
+
+    # Iterate over each column and its distinct values
+    cases = ['sd_gap 2, single', 'sd_gap 2, multi', 'sd_gap 3, single', 'sd_gap 4, single']
+    for case in cases:
+        filtered_df = df[df['case'] == case].copy()
+        filtered_df['label'] = case
+        plot_data = pd.concat([plot_data, filtered_df])
+
+    # Create the boxplot
+    plt.figure(figsize=(7, 2))
+    sns.boxplot(data=plot_data, x=alc_col, y='label', orient='h', color='lightblue')
+    plt.xlabel('Anonymity Loss Coefficient (ALC)')
+    plt.ylabel('Simulated datasets')
+
+    plt.xlim(-0.05, 1.05)
+    plt.axvline(x=0.5, color='black', linestyle='--')
+
+    return plt
+
+
+def alc_plot_all(df_orig, alc_col):
+    df = df_orig.copy()
+    # Create a new DataFrame to store the filtered data for plotting
+    plot_data = pd.DataFrame()
+
+    # Iterate over each column and its distinct values
+    cases = ['sd_gap 2, single', 'sd_gap 2, multi', 'sd_gap 3, single', 'sd_gap 4, single']
+    for case in cases:
+        filtered_df = df[df['case'] == case].copy()
+        filtered_df['label'] = case
+        plot_data = pd.concat([plot_data, filtered_df])
+
+    # filter df for case = 'sd_gap 2, single'
+    df = df[df['case'] == 'sd_gap 2, single'].copy()
+
+    for column in ['num_targets', 'target_size']:
+        distinct_values = df[column].unique()
+        distinct_values.sort()
+        for value in distinct_values:
+            filtered_df = df[df[column] == value].copy()
+            filtered_df['label'] = f'{column}:{value}'
+            plot_data = pd.concat([plot_data, filtered_df])
+
+    # Create the boxplot
+    plt.figure(figsize=(7, 3))
+    sns.boxplot(data=plot_data, x=alc_col, y='label', orient='h')
+    plt.xlabel(alc_col)
+    plt.ylabel('Experiment parameter')
+
+    return plt
+
 def make_plot():
-    import matplotlib.pyplot as plt
-    import matplotlib.lines as mlines
-    import seaborn as sns
     # read file suppress_threshold_results.json
     supp_res_path = os.path.join(results_path, 'suppress_threshold_results.json')
     with open(supp_res_path, 'r') as f:
         results = json.load(f)
 
     data = []
+    als = alscore.ALScore()
     for datum in results['tests']:
         tar = datum['num_target_val']
         gap = datum['low_mean_gap']
@@ -211,15 +269,24 @@ def make_plot():
         tn_rate = max(1/num_tries, datum['tn'] / datum['samples'])
         fn_rate = max(1/num_tries, datum['fn'] / datum['samples'])
         all_pos = datum['tp'] + datum['fp']
+        coverage = all_pos / datum['samples']
         if all_pos == 0.0:
             precision = 0
             precision_improvement = 0.0
         else:
             precision = datum['tp'] / all_pos
             precision_improvement = (precision - stat_guess) / (1.0 - stat_guess) 
-        coverage = all_pos / datum['samples']
         # A value of 0 would screw up the log scale
         coverage = max(1/no_positives, coverage)
+        # We can make a statistical guess on every 
+        alc_cbase1 = als.alscore(p_base = stat_guess,
+                          c_base = 1.0,
+                          p_attack = precision,
+                          c_attack = coverage)
+        alc_cbase_catk = als.alscore(p_base = stat_guess,
+                          c_base = coverage,
+                          p_attack = precision,
+                          c_attack = coverage)
         data.append({
             'dim': int(datum['dim']),
             'sd_gap': int(gap),
@@ -241,6 +308,8 @@ def make_plot():
             'fp': datum['fp'],
             'tn': datum['tn'],
             'fn': datum['fn'],
+            'alc_cbase1': alc_cbase1,
+            'alc_cbase_catk': alc_cbase_catk,
         })
 
     df = pd.DataFrame(data)
@@ -317,13 +386,26 @@ def make_plot():
     # Set x-axis range to min and max 'coverage' values
     plt.xlim(1/(no_positives + 5000), 0.02)
 
-    # Create the path to suppress.png
     path_to_suppress_png = os.path.join(results_path, 'suppress.png')
-
-    # Save the plot as a PNG file
     plt.savefig(path_to_suppress_png, dpi=300, bbox_inches='tight')
+    path_to_suppress_pdf = os.path.join(results_path, 'suppress.pdf')
+    plt.savefig(path_to_suppress_pdf, dpi=300, bbox_inches='tight')
 
     plt.close()
+
+    for alc_col in ['alc_cbase1', 'alc_cbase_catk']:
+        plt_alc = alc_plot_all(df, alc_col)
+        path_to_png = os.path.join(results_path, f'{alc_col}_all.png')
+        plt_alc.savefig(path_to_png, dpi=300, bbox_inches='tight')
+        path_to_pdf = os.path.join(results_path, f'{alc_col}_all.pdf')
+        plt_alc.savefig(path_to_pdf, dpi=300, bbox_inches='tight')
+
+        plt_alc = alc_plot(df, alc_col)
+        path_to_png = os.path.join(results_path, f'{alc_col}.png')
+        plt_alc.savefig(path_to_png, dpi=300, bbox_inches='tight')
+        path_to_pdf = os.path.join(results_path, f'{alc_col}.pdf')
+        plt_alc.savefig(path_to_pdf, dpi=300, bbox_inches='tight')
+
 
 def make_slurm():
     exe_path = os.path.join(code_path, 'suppress_threshold_theory.py')

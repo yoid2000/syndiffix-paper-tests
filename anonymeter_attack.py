@@ -1004,17 +1004,20 @@ def plot_by_slice(df, slice, note, hue='metric'):
     plt.xlabel(f'Anonymity Loss Score {note}')
     plt.tight_layout()
     plt.savefig(os.path.join(plots_path, f'pi_cov_by_slice_{slice}_{note}.png'))
+    plt.savefig(os.path.join(plots_path, f'pi_cov_by_slice_{slice}_{note}.pdf'))
 
 def plot_by_num_known_complete(df, note):
-    plt.figure(figsize=(7, 3.5))
-    sns.boxplot(data=df, y='num_known', x='als', orient='h', hue='num_known')
+    df['num_known'] = pd.Categorical(df['num_known'], categories=['3', '6', 'all'], ordered=True)
+    plt.figure(figsize=(6, 2))
+    sns.boxplot(data=df, y='num_known', x='als', orient='h', color='lightblue')
     plt.xlim(-1, 1)
     plt.axvline(x=0.0, color='black', linestyle='--')
     plt.axvline(x=0.5, color='black', linestyle='--')
-    plt.ylabel(f'Num attributes known by attacker {note}')
-    plt.xlabel('Anonymity Loss Score (ALS)')
+    plt.ylabel(f'Num attributes\nknown by attacker {note}')
+    plt.xlabel('Anonymity Loss Coefficient (ALC)')
     plt.tight_layout()
     plt.savefig(os.path.join(plots_path, f'als_by_num_known_{note}.png'))
+    plt.savefig(os.path.join(plots_path, f'als_by_num_known_{note}.pdf'))
 
 def plot_prec_cov(df):
     plt.figure(figsize=(6, 4))
@@ -1025,6 +1028,7 @@ def plot_prec_cov(df):
     plt.ylabel('Precision')
     plt.tight_layout()
     plt.savefig(os.path.join(plots_path, f'pi_cov.png'))
+    plt.savefig(os.path.join(plots_path, f'pi_cov.pdf'))
 
 def do_plots():
     stats_path = os.path.join(attack_path, 'stats.json')

@@ -5,6 +5,8 @@ import json
 import sys
 import random
 import numpy as np
+import seaborn as sns
+import alscore
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import OneHotEncoder
@@ -17,6 +19,7 @@ import itertools
 import pprint
 
 pp = pprint.PrettyPrinter(indent=4)
+als = alscore.ALScore()
 
 remove_bad_files = False
 #sample_for_model = 200000
@@ -287,6 +290,7 @@ def plot_move_avg(df):
     plt.ylabel(f'Precision Improvement\n(rolling window={win})', fontsize=13, labelpad=10)
     plt.tight_layout()
     plt.savefig(os.path.join(attack_path, 'pi_fl_mv_avg.png'))
+    plt.savefig(os.path.join(attack_path, 'pi_fl_mv_avg.pdf'))
     plt.close()
     print("done with pi_fl_mv_avg.png")
 
@@ -298,17 +302,59 @@ def plot_move_avg(df):
     plt.ylabel(f'Moving Average Fraction Target Rows\n(floored at 0, window={win})')
     plt.tight_layout()
     plt.savefig(os.path.join(attack_path, 'frac_tar_mv_avg.png'))
+    plt.savefig(os.path.join(attack_path, 'frac_tar_mv_avg.pdf'))
     plt.close()
+
+
+def alc_box(df):
+    # Sort the DataFrame by 'capt' ascending
+    df = df.sort_values(by='capt', ascending=True)
+
+    # Initialize the list to store alc values
+    alc_list = []
+
+    # Loop through the DataFrame in groups of 10000 rows
+    group_size = 10000
+    for i in range(0, len(df), group_size):
+        group = df.iloc[i:i+group_size]
+
+        # Compute the required values
+        cov_avg = group['capt'].mean()
+        p_base = len(group[group['pred_baseline'] == 'tp']) / group_size
+        cov_base = len(group[(group['pred_baseline'] == 'tp') | (group['pred_baseline'] == 'fp')]) / group_size
+        c_base = cov_base * cov_avg
+        p_atk = len(group[group['pred_full_attack'] == 'tp']) / group_size
+        cov_atk = len(group[(group['pred_full_attack'] == 'tp') | (group['pred_full_attack'] == 'fp')]) / group_size
+        c_atk = cov_atk * cov_avg
+
+        # Compute alc
+        alc = als.alscore(p_base=p_base, c_base=c_base, p_attack=p_atk, c_attack=c_atk)
+
+        # Add alc to the list
+        alc_list.append(alc)
+
+    # Display alc_list as a boxplot
+    plt.figure(figsize=(6.0, 1.5))
+    sns.boxplot(data=alc_list, orient='h', color='lightblue')
+    plt.xlim(-0.05, 1.05)
+    plt.axvline(x=0.5, color='black', linestyle='--')
+    plt.xlabel('Anonymity Loss Coefficient (ALC)')
+    plt.ylabel('Real\ndatasets')
+    plt.tight_layout()
+    plot_path = os.path.join(attack_path, 'alc_box.png')
+    plt.savefig(plot_path)
+    plot_path = os.path.join(attack_path, 'alc_box.pdf')
+    plt.savefig(plot_path)
+    plt.close()
+    print("done with alc_box.png")
 
 def do_plots():
     # Read in the parquet files
     X_test_all = pd.read_parquet(os.path.join(attack_path, 'X_test.parquet'))
 
     X_test_all['pi'] = (X_test_all['prob_full_attack'] - X_test_all['prob_baseline']) / (1.000001 - X_test_all['prob_baseline'])
-    
     # This makes up for the use of 1.000001 in the above line
     X_test_all.loc[X_test_all['pi'] >= 0.9999, 'pi'] = 1.0
-
     pi_floor = 0
     X_test_all['pi_fl'] = X_test_all['pi'].clip(lower=pi_floor)
     print(X_test_all[['nrtv', 'prob_full_attack', 'prob_baseline', 'pi', 'pi_fl']].head(10))
@@ -316,6 +362,8 @@ def do_plots():
     # print distributions
     print("Distribution of capt:")
     print(X_test_all['capt'].describe())
+    # Number of distinct capt values
+    print(f"Number of distinct capt values: {X_test_all['capt'].nunique()}")
     print("Distribution of cap:")
     print(X_test_all['cap'].describe())
     print("Distribution of pi_fl:")
@@ -334,70 +382,12 @@ def do_plots():
     print(f"Total rows: {X_test_all.shape[0]}")
     print(X_test_all.columns)
 
+    alc_box(X_test_all.copy())
+
     # Count the number of rows where pi_fl == 1
     count_pi_fl_1 = X_test_all[X_test_all['pi_fl'] == 1].shape[0]
     print(f"Count of rows where pi_fl == 1: {count_pi_fl_1}")
-    
-    df_sorted = X_test_all.copy().sort_values(by='prob_full_attack', ascending=False)
-    df_sorted = df_sorted.head(10000)
-    plt.figure(figsize=(6, 3))
-    plt.plot(df_sorted['pi_fl'], label='pi_fl')
-    plt.plot(df_sorted['prob_full_attack'], label='prob_full_attack')
-    plt.plot(df_sorted['prob_baseline'], label='prob_baseline')
-    plt.legend()
-    plt.savefig(os.path.join(attack_path, 'lines3.png'))
-    plt.close()
 
-    plot_move_avg(X_test_all.copy())
-#    df_temp = X_test_all.copy()
-#
-#    # Make a scatterplot of pi_fl vs coverage
-#    df_temp['bin'] = pd.cut(df_temp['pi_fl'], bins=num_bins)
-#    df_bin = df_temp.groupby('bin', observed=True).size().reset_index(name='count')
-#
-#    df_bin['pi_fl_mid'] = df_bin['bin'].apply(lambda x: (x.right + x.left) / 2)
-#    for column in df_temp.columns:
-#        # If the dtype is numeric, compute the mean for each bin
-#        if pd.api.types.is_numeric_dtype(df_temp[column]):
-#            df_bin[f'{column}_avg'] = df_temp.groupby('bin', observed=True)[column].mean().values
-#
-#    df_bin['num_pos_pred'] = df_temp[df_temp['prob_full_attack'] > 0.5].groupby('bin', observed=True)['prob_full_attack'].count().values
-#    # Count the total number of rows per bin
-#    df_bin['num_all_poss_pred'] = df_temp.groupby('bin', observed=True)['prob_full_attack'].count().values
-#    df_bin['model_tp'] = df_temp[df_temp['pred_full_attack'] == 'tp'].groupby('bin', observed=True)['pred_full_attack'].count().reindex(df_bin.index).fillna(0).values
-#    df_bin['model_fp'] = df_temp[df_temp['pred_full_attack'] == 'fp'].groupby('bin', observed=True)['pred_full_attack'].count().reindex(df_bin.index).fillna(0).values
-#    df_bin['naive_tp'] = df_temp[df_temp['pred_narrow_attack'] == 'tp'].groupby('bin', observed=True)['pred_narrow_attack'].count().reindex(df_bin.index).fillna(0).values
-#    df_bin['naive_fp'] = df_temp[df_temp['pred_narrow_attack'] == 'fp'].groupby('bin', observed=True)['pred_narrow_attack'].count().reindex(df_bin.index).fillna(0).values
-#    df_bin['frac_perfect'] = df_bin['num_pos_pred'] / df_bin['count']
-#
-#    df_bin = df_bin.sort_values(by='pi_fl_mid', ascending=False).reset_index(drop=True)
-#    df_bin['frac_capt'] = df_bin['frac_perfect'] * df_bin['capt_avg']
-#    df_bin['frac_cap'] = df_bin['frac_perfect'] * df_bin['cap_avg']
-#    df_bin['model_prec'] = df_bin['model_tp'] / (df_bin['model_tp'] + df_bin['model_fp'])
-#    df_bin['naive_prec'] = df_bin['naive_tp'] / (df_bin['naive_tp'] + df_bin['naive_fp'])
-#    #print(df_bin.to_string())
-#    bin_dict = {}
-#    for index, row in df_bin.iterrows():
-#        key = str(row['bin'])
-#        bin_dict[key] = row.drop('bin').to_dict()
-#        bin_dict[key]['table_counts'] = df_temp[df_temp['bin'] == row['bin']]['table'].value_counts().to_dict()
-#    with open(os.path.join(attack_path, 'bins.json'), 'w') as f:
-#        json.dump(bin_dict, f, indent=4) 
-#
-#    # Save df_bin.to_string() to file bin.txt
-#    with open(os.path.join(attack_path, 'bins.txt'), 'w') as f:
-#        f.write(df_bin.to_string())
-#
-#    # Create a basic scatterplot from the bins
-#    for color_by, label, filename in [
-#        #('bs_avg', 'Fraction best match syn table', 'pi_cov_bins_frac_bs'),
-#        ('frac_tar_avg', 'Fraction of rows with target value', 'pi_cov_bins_frac_tar'),
-#        #('prob_baseline_avg', 'Baseline positive prediction probability', 'pi_cov_bins_baseline'),
-#        ('prob_full_attack_avg', 'Model positive prediction probability', 'pi_cov_bins_prob_full'),
-#        ]:
-#        make_bin_scatterplot(df_bin, color_by, label, filename, pi_floor)
-
-    # Sort the DataFrame by 'pi_fl' in descending order and reset the index
     X_test_all_sorted = X_test_all.sort_values(by='pi_fl', ascending=False).reset_index(drop=True)
 
     X_test_all_sorted['prob_perfect'] = (X_test_all_sorted.index + 1) / len(X_test_all_sorted)
@@ -418,7 +408,10 @@ def do_plots():
     plt.legend(loc="lower left", prop={'size': 8})
     plt.tight_layout()
     plt.savefig(os.path.join(attack_path, 'pi_cov.png'))
+    plt.savefig(os.path.join(attack_path, 'pi_cov.pdf'))
     plt.close()
+
+    plot_move_avg(X_test_all.copy())
 
 def gather(instances_path):
     all_entries = []
@@ -632,16 +625,18 @@ def run_attacks(tm, file_path, job):
                 mask = (tm.df_orig[comb] == known_val_comb).all(axis=1)
                 known_rows = tm.df_orig[mask]
                 target_val = None
-                if known_rows[col].nunique() == 1:
-                    # set target_val to the mode of known_rows[col]
-                    target_val = known_rows[col].mode()[0]
+                victim_val = None
+                correct_pred = None
+                if known_rows[target_col].nunique() == 1:
+                    # set target_val to the mode of known_rows[target_col]
+                    target_val = known_rows[target_col].mode()[0]
                     victim_val = target_val
                     correct_pred = 'positive'
-                elif known_rows[col].nunique() == 2:
-                    # set target_val to the mode value of known_rows[col]
-                    target_val = known_rows[col].mode()[0]
+                elif known_rows[target_col].nunique() == 2:
+                    # set target_val to the mode value of known_rows[target_col]
+                    target_val = known_rows[target_col].mode()[0]
                     # set victim_val to the other value
-                    victim_val = known_rows[col][known_rows[col] != target_val].values[0]
+                    victim_val = known_rows[target_col][known_rows[target_col] != target_val].values[0]
                     correct_pred = 'negative'
                 if target_val is None:
                     continue

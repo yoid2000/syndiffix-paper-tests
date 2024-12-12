@@ -72,9 +72,25 @@ The syntax is:
 
 `python suppress_threshold_attack.py <command>`
 
-`command = slurm`: Generates a slurm file at `SDX_TEST_DIR/suppress_attack/attack.slurm`. Running `sbatch attack.slrum` will run the simulated attacks and place the results in a set of json files at `SDX_TEST_DIR/suppress_attack/instances`
+`command = config`: Generates a set of jobs used for the attacks, placed at `SDX_TEST_DIR/suppress_attack/attack_jobs.json`. Each job is for a pair of columns from one table, and represent the known columns. Attacks are run from each individual column values as well as the column pair values. Generates a slurm file at `SDX_TEST_DIR/suppress_attack/attack.slurm`. Running `sbatch attack.slurm` will run the simulated attacks and place the results in a set of json files at `SDX_TEST_DIR/suppress_attack/instances`
 
 `command = gather`: Reads in the json files at `SDX_TEST_DIR/suppress_attack/instances`, summarizes them, and puts the summary in the file `SDX_TEST_DIR/suppress_attack/results.parquet`.
+
+The columns in `results.parquet` are as follows:
+* `nrtv`,      number rows with target value
+* `ndtv`,      number of distinct target values
+* `c`,         correct prediction (positive/negative)
+* `nkwt`,      number of synthetic rows with known values and target value
+* `nkwot`,     number of synthetic rows with known values and not target value
+* `bs`,        whether the synthetic table is the best one
+* `nkc`,       number of known columns
+* `tp`,        whether simple critieria yielded true positive
+* `table`,     the name of the synthetic table
+* `capt`,      coverage assuming specific victim and target values
+* `cap`,       coverage assuming only victim values (any target). Can be more than 1.0.
+* `frac_tar`,  fraction of rows with target value
+
+`nkwt` and `nkwot` are what is used by the simplest attack.
 
 `command = model`: Reads in `results.parquet`, creates a LogisticRegression model to determine the best attack, and runs the model against the test set. It places the results of the models in these files under `suppress_attack`:
 
@@ -82,11 +98,14 @@ The syntax is:
 * `y_score.parquet`
 * `y_test.parquet`
 
-`command = plots`: Creates visual plots from the models, and puts the resulting `png` files in `suppress_attack`.
+`command = plots`: Reads in `X_test.parquet`, creates visual plots from the models, and puts the resulting `png` and `pdf` files in `suppress_attack`.
+
 
 ### Anonymeter style attack
 
 In this attack, we run an anonymeter style attack for attribute inference, whereby we want to infer an unknown (secret) attribute given some known attributes. The basic approach of the attack is to find the record in the synthetic data that most closely matches the known attributes, and to read the secret value from that record. We modify the scoring of the attack by using a non-member baseline rather than anonymeter's approach.
+
+The file `anonymeter_attack.py` can be edited to modify how many attacks are run. The relevant parameters are `num_attacks` (total number of attacks), and `num_attacks_per_job`.
 
 The syntax is:
 

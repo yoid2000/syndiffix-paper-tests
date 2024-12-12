@@ -16,8 +16,8 @@ class ALScore:
     def __init__(self):
         # _pcc_abs_weight is the weight given to the absolute PCC difference
         self._pcc_abs_weight = 0.5
-        # _cov_adjust_min_intercept is the coverage value below which the
-        # effective anonymity loss becomes zero
+        # _cov_adjust_min_intercept is the coverage value below which precision
+        # has no effect on the PCC
         self._cov_adjust_min_intercept = 1/10000
         # Higher _cov_adjust_strength leads to lower coverage adjustment
         self._cov_adjust_strength = 3.0
@@ -39,18 +39,8 @@ class ALScore:
             return self._cov_adjust_strength
         return None
 
-    def _underlying_prec_cov_curve(self):
-        pi1 = 1.0    # PI intercept at low coverage
-        cov2, pi2 = 1.0, 0.0    # PI and coverage intercept at high coverage
-        m = (pi2 - pi1) / (np.log10(cov2) - np.log10(self._cov_adjust_min_intercept))
-        b = pi1 - m * np.log10(self._cov_adjust_min_intercept)
-        return m, b
-
     def _cov_adjust(self, cov):
-        m, b = self._underlying_prec_cov_curve()
-        adjust = (m * np.log10(cov) + b) ** self._cov_adjust_strength
-        # Note: reverse of this is:
-        # COV = 10 ** ((PI ** (1/self._cov_adjust_strength) - b) / m)
+        adjust = (np.log10(cov)/ np.log10(self._cov_adjust_min_intercept)) ** self._cov_adjust_strength
         return 1 - adjust
 
     def _pcc_improve_absolute(self, pcc_base, pcc_attack):
@@ -66,11 +56,16 @@ class ALScore:
         return pcc_improve
 
     def pcc(self, prec, cov):
-        ''' Generates the precision-coverage-coefficient, PCC. prev is the precision
-            of the attack, and cov is the coverage.
+        ''' Generates the precision-coverage-coefficient, PCC.
+            prev is the precision of the attack, and cov is the coverage.
         '''
-        cov_adj = self._cov_adjust(cov)
-        return cov_adj * prec
+        if cov <= self._cov_adjust_min_intercept:
+            return cov
+        Cmin = self._cov_adjust_min_intercept
+        alpha = self._cov_adjust_strength
+        C = cov
+        P = prec
+        return (1-((np.log10(C)/ np.log10(Cmin)) ** alpha)) * P
 
     def alscore(self,
                 p_base = None,
@@ -91,3 +86,30 @@ class ALScore:
         if pcc_base is not None and pcc_attack is not None:
             return self._pcc_improve(pcc_base, pcc_attack)
         return None
+
+    # The following aren't necessary for the ALScore, but are just
+    # for testing
+    def prec_from_pcc_cov(self, pcc, cov):
+        ''' Given a PCC and coverage, return the precision.
+        '''
+        Cmin = self._cov_adjust_min_intercept
+        alpha = self._cov_adjust_strength
+        C = cov
+        PCC = pcc
+        return PCC / (1 - (np.log10(C) / np.log10(Cmin)) ** alpha)
+
+    def cov_from_pcc_prec(self, pcc, prec):
+        ''' Given a PCC and precision, return the coverage.
+        '''
+        Cmin = self._cov_adjust_min_intercept
+        alpha = self._cov_adjust_strength
+        P = prec
+        PCC = pcc
+        return 10 ** (np.log10(Cmin) * (1 - PCC / P) ** (1 / alpha))
+
+    def pccatk_from_pccbase_alc(self, pcc_base, alc):
+        ''' Given a PCC and anonymity loss coefficient, return the PCC of the attack.
+        '''
+        pcc_atk = ((2*alc) - (2*alc)*pcc_base + (2*pcc_base) - (pcc_base**2)) / (2 - pcc_base)
+
+        return pcc_atk

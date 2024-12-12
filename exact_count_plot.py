@@ -87,6 +87,40 @@ def heatmap_data_3way(df):
         plt.savefig(file_path, bbox_inches='tight', dpi=300)	
         plt.close()
 
+
+def bin_by_dim(df):
+    # Set the order of the categories in 'dim'
+    df['dim'] = pd.Categorical(df['dim'], categories=[1, 2, 3], ordered=True)
+    
+    # Create the boxplot
+    plt.figure(figsize=(5, 2))
+    sns.boxplot(data=df, y='dim', x='precision', orient='h', color='lightblue')
+    plt.xlabel('Precision')
+    plt.ylabel('Number of columns\nper sample')
+    plt.tight_layout()
+    file_path = os.path.join('results', 'exact_count', 'exact_by_dim_box.png')
+    plt.savefig(file_path, bbox_inches='tight', dpi=300)	
+    file_path = os.path.join('results', 'exact_count', 'exact_by_dim_box.pdf')
+    plt.savefig(file_path, bbox_inches='tight', dpi=300)	
+    plt.close()
+
+def print_grouped_stats(df_sort):
+    # List of columns to group by
+    columns = ['rows_per_val', 'num_col', 'agg_size', 'num_val']
+
+    for column in columns:
+        print(f"Statistics for column: {column}")
+        # Group by the specified column and calculate the number of rows and sum of 'count'
+        grouped = df_sort.groupby(column).agg(
+            num_rows=('count', 'size'),
+            count_sum=('count', 'sum')
+        )
+
+        # Print the results
+        for value, stats in grouped.iterrows():
+            print(f'{column}: {value}, num_rows: {stats["num_rows"]}, count_sum: {stats["count_sum"]}')
+        print()
+
 def bin_data(df, num_bins=4):
     # Create bins for each continuous variable
     bins = []
@@ -136,7 +170,32 @@ def bin_data(df, num_bins=4):
 
     # From bins, generate a dataframe df_sort that has three columns: 'precision', 'cum_count', and 'dim'. The order of rows in df_sort is the same as bins. cum_count is the cumulative sum of all prior 'count' values in the table. dim is the 'dim' value of the corresponding row in bins.
     df_sort = pd.DataFrame(bins)
+    print(f"df_sort\n{df_sort.shape}")
+    print(f"df_sort\n{df_sort.head()}")
+    # Display the unique values in columns rows_per_val, num_col, agg_size, and num_val
+    print(f"rows_per_val: {df_sort['rows_per_val'].unique()}")
+    print(f"num_col: {df_sort['num_col'].unique()}")
+    print(f"agg_size: {df_sort['agg_size'].unique()}")
+    print(f"num_val: {df_sort['num_val'].unique()}")
+    print("Rows per dim value:")
+    print(df_sort['dim'].value_counts())
+    print("Sum of column 'count' per dim value:")
+    print(df_sort.groupby('dim')['count'].sum())
+    print("Average of column 'count' per dim value:")
+    print(df_sort.groupby('dim')['count'].mean())
+    bin_by_dim(df_sort)
+
+    # Group by 'num_col' and 'dim' and calculate mean and standard deviation of 'precision'
+    grouped = df_sort.groupby(['num_col', 'dim'])['precision'].agg(['mean', 'std', 'max', 'count'])
+
+    # Print the results
+    for (num_col, dim), stats in grouped.iterrows():
+        print(f'num_col: {num_col}, dim: {dim}, mean: {stats["mean"]:.2f}, std: {stats["std"]:.2f}, max:{stats["max"]:.2f}, count: {stats["count"]}')
+
+    print_grouped_stats(df_sort)
+
     df_sort['cum_count'] = df_sort.groupby('dim')['count'].cumsum()
+    quit()
 
     # Create a scatterplot with 'cum_count' on the x-axis and 'precision' on the y-axis. The color of each point is determined by the 'dim' value.
     plt.figure(figsize=(6, 3))
@@ -175,6 +234,8 @@ def bin_data(df, num_bins=4):
     plt.tick_params(axis='both', which='major', labelsize='small')
     plt.tight_layout()
     file_path = os.path.join('results', 'exact_count', f'exact_count_cum.png')
+    plt.savefig(file_path, bbox_inches='tight', dpi=300)
+    file_path = os.path.join('results', 'exact_count', f'exact_count_cum.pdf')
     plt.savefig(file_path, bbox_inches='tight', dpi=300)
     plt.close()
 
@@ -305,6 +366,9 @@ df = pd.DataFrame.from_records(data)
 # make a new column which is 1 - frac_leaf_over
 df['frac_leaf_under'] = 1 - df['frac_leaf_over']
 df['rows_per_val'] = (df['total_table_rows'] - df['agg_size']) / df['num_val']
+print(f"Columns: {df.columns}")
+for column in df.columns:
+    print(f"{column}:\n{df[column].describe()}")
 
 if True:
     bin_data(df)
