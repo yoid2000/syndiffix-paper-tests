@@ -1,0 +1,413 @@
+{
+    "precision_results": {
+        "num_vals_2_x1": {
+            "prec_attack": 0.5284848484848484,
+            "prec_base": 0.5,
+            "coverage": 0.9998601594182632,
+            "alc": 0.042726703041696415,
+            "num_rows": 21453
+        },
+        "num_vals_2_x2": {
+            "prec_attack": 1.0,
+            "prec_base": 0.5,
+            "coverage": 9.322705449121335e-05,
+            "alc": 0.0,
+            "num_rows": 21453
+        },
+        "num_vals_2_x3": {
+            "prec_attack": null,
+            "prec_base": null,
+            "coverage": 0,
+            "alc": 0,
+            "num_rows": 21453
+        },
+        "num_vals_10_x1": {
+            "prec_attack": 0.13795197608147247,
+            "prec_base": 0.1,
+            "coverage": 0.9980883107194479,
+            "alc": 0.04006018492787526,
+            "num_rows": 21447
+        },
+        "num_vals_10_x2": {
+            "prec_attack": null,
+            "prec_base": null,
+            "coverage": 0,
+            "alc": 0,
+            "num_rows": 21447
+        },
+        "ex_factor_5_x1": {
+            "prec_attack": 0.3254023792862141,
+            "prec_base": 0.16674445740956825,
+            "coverage": 0.9992308230193693,
+            "alc": 0.17453145868185532,
+            "num_rows": 14301
+        },
+        "ex_factor_5_x2": {
+            "prec_attack": null,
+            "prec_base": null,
+            "coverage": 0,
+            "alc": 0,
+            "num_rows": 14301
+        },
+        "ex_factor_10_x1": {
+            "prec_attack": 0.33615680784039204,
+            "prec_base": 0.16681458299273652,
+            "coverage": 0.9988811971190826,
+            "alc": 0.1862932657568921,
+            "num_rows": 14301
+        },
+        "ex_factor_10_x2": {
+            "prec_attack": 1.0,
+            "prec_base": 0.5,
+            "coverage": 6.992518005733865e-05,
+            "alc": 0.0,
+            "num_rows": 14301
+        },
+        "ex_factor_10_x3": {
+            "prec_attack": null,
+            "prec_base": null,
+            "coverage": 0,
+            "alc": 0,
+            "num_rows": 14301
+        },
+        "ex_factor_20_x1": {
+            "prec_attack": 0.33870177158462295,
+            "prec_base": 0.1667834536238993,
+            "coverage": 0.9988110225206323,
+            "alc": 0.18912336966692944,
+            "num_rows": 14298
+        },
+        "ex_factor_20_x2": {
+            "prec_attack": 1.0,
+            "prec_base": 0.5,
+            "coverage": 6.993985172751433e-05,
+            "alc": 0.0,
+            "num_rows": 14298
+        },
+        "ex_factor_20_x3": {
+            "prec_attack": null,
+            "prec_base": null,
+            "coverage": 0,
+            "alc": 0,
+            "num_rows": 14298
+        },
+        "num_ex_1_x1": {
+            "prec_attack": 0.33839798347570366,
+            "prec_base": 0.16682240807363455,
+            "coverage": 0.9987412587412587,
+            "alc": 0.18875114017036668,
+            "num_rows": 14300
+        },
+        "num_ex_1_x2": {
+            "prec_attack": 1.0,
+            "prec_base": 0.5,
+            "coverage": 6.993006993006993e-05,
+            "alc": 0.0,
+            "num_rows": 14300
+        },
+        "num_ex_1_x3": {
+            "prec_attack": null,
+            "prec_base": null,
+            "coverage": 0,
+            "alc": 0,
+            "num_rows": 14300
+        },
+        "num_ex_2_x1": {
+            "prec_attack": 0.328106405320266,
+            "prec_base": 0.16675227044568441,
+            "coverage": 0.9989510489510489,
+            "alc": 0.17749833242597543,
+            "num_rows": 14300
+        },
+        "num_ex_2_x2": {
+            "prec_attack": null,
+            "prec_base": null,
+            "coverage": 0,
+            "alc": 0,
+            "num_rows": 14300
+        },
+        "num_ex_3_x1": {
+            "prec_attack": 0.33375323675554625,
+            "prec_base": 0.1667678158773138,
+            "coverage": 0.9992307692307693,
+            "alc": 0.18369492298903173,
+            "num_rows": 14300
+        },
+        "num_ex_3_x2": {
+            "prec_attack": 1.0,
+            "prec_base": 0.5,
+            "coverage": 6.993006993006993e-05,
+            "alc": 0.0,
+            "num_rows": 14300
+        },
+        "num_ex_3_x3": {
+            "prec_attack": null,
+            "prec_base": null,
+            "coverage": 0,
+            "alc": 0,
+            "num_rows": 14300
+        },
+        "num_aid_150_x1": {
+            "prec_attack": 0.3452314296379246,
+            "prec_base": 0.16678080059764677,
+            "coverage": 0.9988814317673378,
+            "alc": 0.19630907320719837,
+            "num_rows": 21456
+        },
+        "num_aid_150_x2": {
+            "prec_attack": 1.0,
+            "prec_base": 0.5,
+            "coverage": 9.321401938851603e-05,
+            "alc": 0.0,
+            "num_rows": 21456
+        },
+        "num_aid_150_x3": {
+            "prec_attack": null,
+            "prec_base": null,
+            "coverage": 0,
+            "alc": 0,
+            "num_rows": 21456
+        },
+        "num_aid_500_x1": {
+            "prec_attack": 0.32160194174757284,
+            "prec_base": 0.16678084324593637,
+            "coverage": 0.9990673381831748,
+            "alc": 0.17031482249086655,
+            "num_rows": 21444
+        },
+        "num_aid_500_x2": {
+            "prec_attack": null,
+            "prec_base": null,
+            "coverage": 0,
+            "alc": 0,
+            "num_rows": 21444
+        },
+        "dist_uniform_x1": {
+            "prec_attack": 0.33443785877631027,
+            "prec_base": 0.16679640671949683,
+            "coverage": 0.9986483967188665,
+            "alc": 0.1844200521842014,
+            "num_rows": 21456
+        },
+        "dist_uniform_x2": {
+            "prec_attack": null,
+            "prec_base": null,
+            "coverage": 0,
+            "alc": 0,
+            "num_rows": 21456
+        },
+        "dist_normal_x1": {
+            "prec_attack": 0.3324000186662933,
+            "prec_base": 0.16676524148235772,
+            "coverage": 0.9993005036373811,
+            "alc": 0.1822088191954169,
+            "num_rows": 21444
+        },
+        "dist_normal_x2": {
+            "prec_attack": 1.0,
+            "prec_base": 0.5,
+            "coverage": 9.326618168252192e-05,
+            "alc": 0.0,
+            "num_rows": 21444
+        },
+        "dist_normal_x3": {
+            "prec_attack": null,
+            "prec_base": null,
+            "coverage": 0,
+            "alc": 0,
+            "num_rows": 21444
+        },
+        "ex_factor_20_num_ex_3_num_aid_150_x1": {
+            "prec_attack": 0.3604699958036089,
+            "prec_base": 0.16671330628235623,
+            "coverage": 0.9995805369127517,
+            "alc": 0.213137470100963,
+            "num_rows": 2384
+        },
+        "ex_factor_20_num_ex_3_num_aid_150_x2": {
+            "prec_attack": 1.0,
+            "prec_base": 0.5,
+            "coverage": 0.00041946308724832214,
+            "alc": 0.22377592280415104,
+            "num_rows": 2384
+        },
+        "ex_factor_20_num_ex_3_num_aid_150_x3": {
+            "prec_attack": null,
+            "prec_base": null,
+            "coverage": 0,
+            "alc": 0,
+            "num_rows": 2384
+        },
+        "ex_factor_20_num_ex_3_num_aid_150_num_vals_2_x1": {
+            "prec_attack": 0.5436241610738255,
+            "prec_base": 0.5,
+            "coverage": 1.0,
+            "alc": 0.06543536914496607,
+            "num_rows": 1192
+        },
+        "ex_factor_20_num_ex_3_num_aid_150_num_vals_2_x2": {
+            "prec_attack": 1.0,
+            "prec_base": 0.5,
+            "coverage": 0.0008389261744966443,
+            "alc": 0.3236199537092319,
+            "num_rows": 1192
+        },
+        "ex_factor_20_num_ex_3_num_aid_150_num_vals_2_x3": {
+            "prec_attack": null,
+            "prec_base": null,
+            "coverage": 0,
+            "alc": 0,
+            "num_rows": 1192
+        }
+    },
+    "summary": [
+        [
+            "ex_factor_20_num_ex_3_num_aid_150_num_vals_2_x2",
+            0.3236199537092319
+        ],
+        [
+            "ex_factor_20_num_ex_3_num_aid_150_x2",
+            0.22377592280415104
+        ],
+        [
+            "ex_factor_20_num_ex_3_num_aid_150_x1",
+            0.213137470100963
+        ],
+        [
+            "num_aid_150_x1",
+            0.19630907320719837
+        ],
+        [
+            "ex_factor_20_x1",
+            0.18912336966692944
+        ],
+        [
+            "num_ex_1_x1",
+            0.18875114017036668
+        ],
+        [
+            "ex_factor_10_x1",
+            0.1862932657568921
+        ],
+        [
+            "dist_uniform_x1",
+            0.1844200521842014
+        ],
+        [
+            "num_ex_3_x1",
+            0.18369492298903173
+        ],
+        [
+            "dist_normal_x1",
+            0.1822088191954169
+        ],
+        [
+            "num_ex_2_x1",
+            0.17749833242597543
+        ],
+        [
+            "ex_factor_5_x1",
+            0.17453145868185532
+        ],
+        [
+            "num_aid_500_x1",
+            0.17031482249086655
+        ],
+        [
+            "ex_factor_20_num_ex_3_num_aid_150_num_vals_2_x1",
+            0.06543536914496607
+        ],
+        [
+            "num_vals_2_x1",
+            0.042726703041696415
+        ],
+        [
+            "num_vals_10_x1",
+            0.04006018492787526
+        ],
+        [
+            "num_vals_2_x2",
+            0.0
+        ],
+        [
+            "num_vals_2_x3",
+            0
+        ],
+        [
+            "num_vals_10_x2",
+            0
+        ],
+        [
+            "ex_factor_5_x2",
+            0
+        ],
+        [
+            "ex_factor_10_x2",
+            0.0
+        ],
+        [
+            "ex_factor_10_x3",
+            0
+        ],
+        [
+            "ex_factor_20_x2",
+            0.0
+        ],
+        [
+            "ex_factor_20_x3",
+            0
+        ],
+        [
+            "num_ex_1_x2",
+            0.0
+        ],
+        [
+            "num_ex_1_x3",
+            0
+        ],
+        [
+            "num_ex_2_x2",
+            0
+        ],
+        [
+            "num_ex_3_x2",
+            0.0
+        ],
+        [
+            "num_ex_3_x3",
+            0
+        ],
+        [
+            "num_aid_150_x2",
+            0.0
+        ],
+        [
+            "num_aid_150_x3",
+            0
+        ],
+        [
+            "num_aid_500_x2",
+            0
+        ],
+        [
+            "dist_uniform_x2",
+            0
+        ],
+        [
+            "dist_normal_x2",
+            0.0
+        ],
+        [
+            "dist_normal_x3",
+            0
+        ],
+        [
+            "ex_factor_20_num_ex_3_num_aid_150_x3",
+            0
+        ],
+        [
+            "ex_factor_20_num_ex_3_num_aid_150_num_vals_2_x3",
+            0
+        ]
+    ]
+}

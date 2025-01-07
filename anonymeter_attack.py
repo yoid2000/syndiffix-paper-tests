@@ -36,9 +36,9 @@ os.makedirs(attack_path, exist_ok=True)
 plots_path = os.path.join(attack_path, 'plots')
 os.makedirs(plots_path, exist_ok=True)
 # This is the total number of attacks that will be run
-num_attacks = 500000
+num_attacks = 1000000
 # This is the number of attacks per slurm job, and determines how many slurm jobs are created
-num_attacks_per_job = 100
+num_attacks_per_job = 1000
 max_subsets = 200
 debug = False
 
@@ -306,6 +306,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         this_attack = {
             'secret_value': str(secret_value),
             'secret_percentage': secret_percentage,
+            'secret_col': secret_col,
             'secret_col_type': secret_col_type,
             'modal_value': str(modal_value),
             'modal_percentage': modal_percentage,
@@ -624,7 +625,7 @@ def get_base_pred(df, target_coverage):
     return df_copy.head(num_rows)
 
 def add_to_dump(df, label, slice_name):
-    cols = ['secret_value', 'secret_percentage', 'secret_col_type', 'modal_value', 'modal_percentage', 'num_known_cols', 'dataset',]
+    cols = ['secret_value', 'secret_percentage', 'secret_col', 'secret_col_type', 'modal_value', 'modal_percentage', 'num_known_cols', 'dataset',]
     val_col = f"{label}_value"
     ans_col = f"{label}_answer"
     cols += [val_col, ans_col]
@@ -638,6 +639,10 @@ def add_to_dump(df, label, slice_name):
     df_filtered_1[cols].to_csv(file_path)
 
 def get_basic_stats(stats, df, df_all, info, cov_basis, slice_type, dataset, slice_name = None):
+    print(f"get_basic_stats: {slice_type}, {dataset}, {slice_name} ({len(df)})")
+    if len(df) == 0:
+        a = 1/0
+        return
     als = ALScore()
     als_threshold = 0.5
     max_als = -1000
@@ -723,7 +728,7 @@ def get_basic_stats(stats, df, df_all, info, cov_basis, slice_type, dataset, sli
             # df_pred contains only the rows where predictions were made
             df_syn_pred = df[df[syn_answer] != -1]
             # target_coverage is the coverage we'd like to match from the base model
-            target_coverage = len(df_syn_pred) / len(df)
+            target_coverage = 0 if len(df_syn_pred) == 0 else len(df_syn_pred) / len(df)
             df_base_model_pred = get_base_pred(df_all, target_coverage)
             df_base_meter_pred = df_all[df_all[base_meter_answer] != -1]
             stats[base_meter_coverage] = 0
@@ -784,9 +789,9 @@ def get_basic_stats(stats, df, df_all, info, cov_basis, slice_type, dataset, sli
                 stats[syn_problem] = False
             max_als, max_info = update_max_als(max_als, max_info, syn_meter_label, stats)
     stats['max_als_record'] = max_info
-    stats['max_als'] = max_info['als']
-    stats['max_precision'] = max_info['precision']	
-    stats['max_coverage'] = max_info['coverage']	
+    stats['max_als'] = 0 if 'als' not in max_info else max_info['als']
+    stats['max_precision'] = 0 if 'precision' not in max_info else max_info['precision']	
+    stats['max_coverage'] = 0 if 'coverage' not in max_info else max_info['coverage']	
 
 def get_by_metric_from_by_slice(stats):
     problem_cases = {}
@@ -892,7 +897,7 @@ def run_stats_for_subsets(stats, df, df_all):
 
 def do_stats_dict(stats_path):
     df = gather(instances_path=os.path.join(attack_path, 'instances'))
-
+    df['known_cols'] = df['known_cols'].astype(str)
     print(f"df has shape {df.shape} and columns:")
     print(df.columns)
     for col in df.columns:
@@ -911,8 +916,8 @@ def do_stats_dict(stats_path):
     # subset synthetic tables examined
     df_all_copy = df[(df['num_known_cols'] != 3) & (df['num_known_cols'] != 6)].copy()
     for sub_key, num_known in num_known_config.items():
-        if num_known != -1:
-            df_copy = df[df['num_known_cols'] == num_known].copy()
+        if num_known != 'all':
+            df_copy = df[df['num_known_cols'] == int(num_known)].copy()
         else:
             df_copy = df_all_copy
         stats[sub_key] = {'by_slice': {}, 'by_metric': {},
@@ -1008,6 +1013,8 @@ def plot_by_slice(df, slice, note, hue='metric'):
 
 def plot_by_num_known_complete(df, note):
     df['num_known'] = pd.Categorical(df['num_known'], categories=['3', '6', 'all'], ordered=True)
+    print("Number of rows for each distinct value of 'num_known':")
+    print(df['num_known'].value_counts())
     plt.figure(figsize=(6, 2))
     sns.boxplot(data=df, y='num_known', x='als', orient='h', color='lightblue')
     plt.xlim(-1, 1)
@@ -1020,7 +1027,7 @@ def plot_by_num_known_complete(df, note):
     plt.savefig(os.path.join(plots_path, f'als_by_num_known_{note}.pdf'))
 
 def plot_prec_cov(df):
-    plt.figure(figsize=(6, 4))
+    plt.figure(figsize=(5, 3))
 
     plt.scatter(df['coverage'], df['precision'], marker='o', s=4)
     plt.xscale('log')
@@ -1032,7 +1039,8 @@ def plot_prec_cov(df):
 
 def do_plots():
     stats_path = os.path.join(attack_path, 'stats.json')
-    if os.path.exists(stats_path):
+    #if os.path.exists(stats_path):
+    if False:
         print(f"read stats from {stats_path}")
         with open(stats_path, 'r') as f:
             stats = json.load(f)
@@ -1058,6 +1066,7 @@ def do_plots():
 
     df_atk_filtered = df_atk[df_atk['base_precision'] <= 0.95].copy()
     print(f"df_atk has shape {df_atk.shape}")
+    print(df_atk.to_string())
     print(f"df_atk_filtered has shape {df_atk_filtered.shape}")
 
     df_atk_not_filtered = df_atk[df_atk['base_precision'] > 0.95].copy()
