@@ -1110,6 +1110,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("command", help="'config' to run make_config(), or an integer to run run_attacks()")
     args = parser.parse_args()
+    print(f"args: {args}")
 
     if args.command == 'config':
         make_config()
