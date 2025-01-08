@@ -39,7 +39,7 @@ os.makedirs(plots_path, exist_ok=True)
 num_attacks = 1000000
 # This is the number of attacks per slurm job, and determines how many slurm jobs are created
 num_attacks_per_job = 1000
-max_subsets = 100
+max_subsets = 200
 debug = False
 
 # These are the variants of the attack that exploits sub-tables
@@ -512,7 +512,8 @@ def run_attack(job_num):
     os.makedirs(instances_path, exist_ok=True)
 
     # Make a file_name and file_path
-    file_name = f"{job['dir_name']}.{job['secret']}.{max_subsets}.{job_num}.json"
+    #file_name = f"{job['dir_name']}.{job['secret']}.{max_subsets}.{job_num}.json"
+    file_name = f"{job['dir_name']}.{job['secret']}.{job_num}.json"
     file_path = os.path.join(instances_path, file_name)
 
     if os.path.exists(file_path):
