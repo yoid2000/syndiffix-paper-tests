@@ -39,7 +39,7 @@ os.makedirs(plots_path, exist_ok=True)
 num_attacks = 1000000
 # This is the number of attacks per slurm job, and determines how many slurm jobs are created
 num_attacks_per_job = 1000
-max_subsets = 200
+max_subsets = 100
 debug = False
 
 # These are the variants of the attack that exploits sub-tables
@@ -259,7 +259,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
     ''' df_original and df_control have all columns.
         df_syn has only the columns in aux_cols and secret_col.
 
-        df_syn is the synthetic data generated from df_original.
+        df_syn is the (otherwise) full syndiffix synthetic data generated from df_original.
         df_control is disjoint from df_original
     '''
     # Because I'm modeling the control and syn dataframes, and because the models
@@ -273,7 +273,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
     df_control = transform_df(df_control, encoders)
     df_syn = transform_df(df_syn, encoders)
     attack_cols = aux_cols + [secret_col]
-    # model_base is the baseline built from an ML model
+    # model_base is the baseline built from an ML model. This is our basis for ALS.
     print("build baseline model")
     model_base = build_and_train_model(df_control[attack_cols], secret_col, secret_col_type)
     # model_attack is used to generate a groundhog day type attack
@@ -333,7 +333,7 @@ def do_inference_attacks(tm, secret_col, secret_col_type, aux_cols, regression, 
         this_attack['model_base_answer'] = int(model_base_answer)
         this_attack['model_base_probability'] = float(proba[0][int(model_base_pred_value)])
 
-        # Now run the model attack
+        # Now run the model (groundhog) attack
         try:
             model_attack_pred_value = model_attack.predict(targets.drop(secret_col, axis=1))
             model_attack_pred_value = model_attack_pred_value[0]
@@ -512,8 +512,7 @@ def run_attack(job_num):
     os.makedirs(instances_path, exist_ok=True)
 
     # Make a file_name and file_path
-    # make a string that contains the column names in job['columns'] separated by '_'
-    file_name = f"{job['dir_name']}.{job['secret']}.{job_num}.json"
+    file_name = f"{job['dir_name']}.{job['secret']}.{max_subsets}.{job_num}.json"
     file_path = os.path.join(instances_path, file_name)
 
     if os.path.exists(file_path):
@@ -632,17 +631,20 @@ def add_to_dump(df, label, slice_name):
     df_filtered_1 = df[df[ans_col] == 1]
     path = os.path.join(attack_path, 'dumps')
     os.makedirs(path, exist_ok=True)
+    # remove spaces and "'" from slice_name
+    slice_name = slice_name.replace(' ', '')
+    slice_name = slice_name.replace("'", '')
+    # if the slice_name is too long, truncate it
+    if len(slice_name) > 50:
+        slice_name = slice_name[:25] + slice_name[-25:]
     file_path = os.path.join(path, f"{slice_name}.{label}.csv")
     # check if file_path already exists
     if os.path.exists(file_path):
         return
     df_filtered_1[cols].to_csv(file_path)
 
-def get_basic_stats(stats, df, df_all, info, cov_basis, slice_type, dataset, slice_name = None):
-    print(f"get_basic_stats: {slice_type}, {dataset}, {slice_name} ({len(df)})")
-    if len(df) == 0:
-        a = 1/0
-        return
+def get_basic_stats(stats, df, info, cov_basis, slice_type, dataset, attack_setup, slice_name = None):
+    #print(f"get_basic_stats: {slice_type}, {dataset}, {slice_name} ({len(df)})")
     als = ALScore()
     als_threshold = 0.5
     max_als = -1000
@@ -650,17 +652,19 @@ def get_basic_stats(stats, df, df_all, info, cov_basis, slice_type, dataset, sli
     stats['num_attacks'] = len(df)
     stats['slice_type'] = slice_type
     stats['dataset'] = dataset
+    stats['attack_setup'] = attack_setup
     stats['avg_num_subsets'] = round(df['num_subsets'].mean(), 2)
     stats['avg_secret_percentage'] = round(df['secret_percentage'].mean(), 2)
     stats['avg_modal_percentage'] = round(df['modal_percentage'].mean(), 2)
+    stats['avg_num_known_cols'] = round(df['num_known_cols'].mean(), 2)
     # All of these initial measures have coverage of 1.0
-    # The base model prediction needs to be based on a model built from all of the columns,
-    # not just the columns known to the attacker.
-    stats['model_base_precision'] = round(df_all['model_base_answer'].sum() / len(df_all), 6)
+    # The model_base_precision and coverage are used for the ALS calculation of SynDiffix
+    # zzzz
+    stats['model_base_precision'] = round(df['model_base_answer'].sum() / len(df), 6)
     stats['model_base_coverage'] = 1.0
     stats['model_base_pcc'] = als.pcc(stats['model_base_precision'], stats['model_base_coverage'])
     # Same thing applies to the base meter prediction
-    stats['meter_base_precision'] = round(df_all['base_meter_answer'].sum() / len(df_all), 6)
+    stats['meter_base_precision'] = round(df['base_meter_answer'].sum() / len(df), 6)
     stats['meter_base_coverage'] = 1.0
     stats['meter_base_pcc'] = als.pcc(stats['meter_base_precision'], stats['meter_base_coverage'])
     # We want to select the best precision-coverage-coefficient between the two baselines, the model
@@ -729,8 +733,13 @@ def get_basic_stats(stats, df, df_all, info, cov_basis, slice_type, dataset, sli
             df_syn_pred = df[df[syn_answer] != -1]
             # target_coverage is the coverage we'd like to match from the base model
             target_coverage = 0 if len(df_syn_pred) == 0 else len(df_syn_pred) / len(df)
-            df_base_model_pred = get_base_pred(df_all, target_coverage)
-            df_base_meter_pred = df_all[df_all[base_meter_answer] != -1]
+            # zzzz
+            # df_base_model_pred contains the appropriate number of rows for the given
+            # target coverage. We use this to base PCC
+            df_base_model_pred = get_base_pred(df, target_coverage)
+            # df_base_meter_pred contains the predictions (without abstains) for the given
+            # threshold variant of the anonymeter attack on syndiffix
+            df_base_meter_pred = df[df[base_meter_answer] != -1]
             stats[base_meter_coverage] = 0
             stats[base_meter_precision] = 0
             stats[base_meter_pcc] = 0
@@ -746,10 +755,13 @@ def get_basic_stats(stats, df, df_all, info, cov_basis, slice_type, dataset, sli
             stats[syn_als] = 0
             stats[syn_problem] = False
             if len(df_syn_pred) == 0:
+                print(f"Got 0 predictions of variant {v_label} and column combination {cc_label}, length {len(df)}")
+                print(f"get_basic_stats: {slice_type}, {dataset}, {slice_name} ({len(df)})")
                 continue
             # Basing the base precision on the rows where the attack happened to make predictions
             # is not necessarily the right thing to do. What we really want is to find the best base
-            # precision given a similar coverage
+            # precision given a similar coverage. That would give us a more accurate base precision, but
+            # this is close enough.
             if len(df_base_model_pred) > 0:
                 stats[base_model_precision] = df_base_model_pred[base_meter_answer].sum() / len(df_base_model_pred)
                 stats[base_model_coverage] = len(df_base_model_pred) / cov_basis
@@ -869,35 +881,20 @@ def set_model_base_predictions(df, thresh):
                 df_copy.at[index, 'model_base_answer'] = 0
     return df_copy
 
-def run_stats_for_subsets(stats, df, df_all):
-    stats['by_slice']['all_results'] = {}
-    get_basic_stats(stats['by_slice']['all_results'], df, df_all, stats['info'], len(df), 'all', 'all')
-    # make a new df that contains only rows where 'secret_col_type' is 'categorical'
-    df_cat = df[df['secret_col_type'] == 'categorical']
-    df_cat_copy = df_cat.copy()
-    stats['by_slice']['categorical_results'] = {}
-    get_basic_stats(stats['by_slice']['categorical_results'], df_cat_copy, df_all, stats['info'], len(df_cat_copy), 'all', 'all')
-    #df_cat_copy['percentile_bin'] = pd.qcut(df_cat_copy['secret_percentage'], q=10, labels=False)
-    df_cat_copy['percentile_bin'] = pd.cut(df_cat_copy['modal_percentage'], bins=10, labels=False)
-    df_all['percentile_bin'] = pd.cut(df_all['modal_percentage'], bins=10, labels=False)
-    for bin_value, df_bin in df_cat_copy.groupby('percentile_bin'):
-        df_all_bin = df_all[df_all['percentile_bin'] == bin_value]
-        average_modal_percentage = round(df_bin['modal_percentage'].mean(), 2)
-        slice_name = f"cat_modal_percentage_{average_modal_percentage}"
+def run_stats_for_subsets(stats, df):
+    for bin_value, df_bin in df.groupby('attack_setup'):
+        dataset = df_bin['dataset'].iloc[0]
+        slice_name = f"cat_attack_setup_{bin_value}"
         stats['by_slice'][slice_name] = {}
-        get_basic_stats(stats['by_slice'][slice_name], df_bin, df_all_bin, stats['info'], len(df_cat_copy), 'modal_percentage', 'all', slice_name=slice_name)
-    for bin_value, df_bin in df_cat_copy.groupby('dataset'):
-        df_all_bin = df_all[df_all['dataset'] == bin_value]
-        slice_name = f"cat_dataset_{bin_value}"
-        stats['by_slice'][slice_name] = {}
-        get_basic_stats(stats['by_slice'][slice_name], df_bin, df_all_bin, stats['info'], len(df_bin), 'dataset', bin_value, slice_name=slice_name)
-    #digin(df_cat)
-    #pp.pprint(stats)
-    get_by_metric_from_by_slice(stats)
+        get_basic_stats(stats['by_slice'][slice_name], df_bin, stats['info'], len(df_bin), 'attack_setup', dataset, bin_value, slice_name=slice_name)
+    #df_cat_copy['percentile_bin'] = pd.cut(df_cat_copy['modal_percentage'], bins=10, labels=False)
+    #df_all['percentile_bin'] = pd.cut(df_all['modal_percentage'], bins=10, labels=False)
+    #get_by_metric_from_by_slice(stats)
 
 def do_stats_dict(stats_path):
     df = gather(instances_path=os.path.join(attack_path, 'instances'))
     df['known_cols'] = df['known_cols'].astype(str)
+    df['attack_setup'] = df['secret_col'] + df['known_cols'] + df['dataset']
     print(f"df has shape {df.shape} and columns:")
     print(df.columns)
     for col in df.columns:
@@ -925,7 +922,7 @@ def do_stats_dict(stats_path):
                                    'num_meter_base': 0,
                                    'num_subset_model_base': 0,
                                    'num_subset_meter_base': 0,}}
-        run_stats_for_subsets(stats[sub_key], df_copy, df_all_copy)
+        run_stats_for_subsets(stats[sub_key], df_copy)
         print(f"Writing stats {sub_key} to {stats_path}")
         with open(stats_path, 'w') as f:
             json.dump(stats, f, indent=4)
@@ -974,6 +971,7 @@ def make_df_from_stats(stats):
                         'num_attacks': slice_results['num_attacks'],
                         'slice_type': slice_results['slice_type'], 
                         'dataset': slice_results['dataset'], 
+                        'attack_setup': slice_results['attack_setup'], 
                         'avg_num_subsets': slice_results['avg_num_subsets'], 
                         'avg_secret_percentage': slice_results['avg_secret_percentage'], 
                         'avg_modal_percentage': slice_results['avg_modal_percentage'], 
@@ -982,14 +980,17 @@ def make_df_from_stats(stats):
                 col_prec = f"{collect}_precision"
                 col_als = f"{collect}_als"
                 col_coverage = f"{collect}_coverage"
-                col_use_prec = f"{collect}_base_precision"
+                col_use_prec = f"{collect}_used_base_precision"
                 row['precision'] = slice_results[col_prec]
                 row['als'] = 0.0
                 row['coverage'] = 1.0
                 if col_use_prec in slice_results:
                     row['base_precision'] = slice_results[col_use_prec]
+                    #print(f"Found {col_use_prec} in slice_results")
                 else:
                     row['base_precision'] = 0.0
+                    #print(f"Not Found {col_use_prec} in slice_results")
+                    #print(slice_results)
                 if col_als in slice_results:
                     row['als'] = slice_results[col_als]
                 if col_coverage in slice_results:
@@ -1012,16 +1013,29 @@ def plot_by_slice(df, slice, note, hue='metric'):
     plt.savefig(os.path.join(plots_path, f'pi_cov_by_slice_{slice}_{note}.pdf'))
 
 def plot_by_num_known_complete(df, note):
+    from matplotlib.ticker import FixedLocator
     df['num_known'] = pd.Categorical(df['num_known'], categories=['3', '6', 'all'], ordered=True)
+    value_counts = df['num_known'].value_counts().reindex(df['num_known'].cat.categories)
+    tick_labels = [f"{known_value}\n({value_counts[known_value]})" for known_value in value_counts.index]
     print("Number of rows for each distinct value of 'num_known':")
     print(df['num_known'].value_counts())
     plt.figure(figsize=(6, 2))
-    sns.boxplot(data=df, y='num_known', x='als', orient='h', color='lightblue')
+    ax = sns.boxplot(data=df, y='num_known', x='als', orient='h', color='lightblue')
     plt.xlim(-1, 1)
     plt.axvline(x=0.0, color='black', linestyle='--')
     plt.axvline(x=0.5, color='black', linestyle='--')
-    plt.ylabel(f'Num attributes\nknown by attacker {note}')
+    plt.ylabel(f'Known attributes\n(num datapoints) {note}')
     plt.xlabel('Anonymity Loss Coefficient (ALC)')
+    ax.yaxis.set_major_locator(FixedLocator(range(len(tick_labels))))
+    ax.set_yticklabels(tick_labels)
+    
+    # Calculate and display the percentage of 'als' values greater than 0.5 for each 'num_known'
+    for i, known_value in enumerate(df['num_known'].cat.categories):
+        subset = df[df['num_known'] == known_value]
+        if len(subset) > 0:
+            percent_greater_than_0_5 = (subset['als'] > 0.5).mean() * 100
+            ax.text(1, i, f"{percent_greater_than_0_5:.1f}%", va='center', ha='right', color='black', fontsize=10)
+    
     plt.tight_layout()
     plt.savefig(os.path.join(plots_path, f'als_by_num_known_{note}.png'))
     plt.savefig(os.path.join(plots_path, f'als_by_num_known_{note}.pdf'))
@@ -1039,8 +1053,7 @@ def plot_prec_cov(df):
 
 def do_plots():
     stats_path = os.path.join(attack_path, 'stats.json')
-    #if os.path.exists(stats_path):
-    if False:
+    if os.path.exists(stats_path):
         print(f"read stats from {stats_path}")
         with open(stats_path, 'r') as f:
             stats = json.load(f)
@@ -1048,6 +1061,9 @@ def do_plots():
         # make a json file with the collected stats
         stats = do_stats_dict(stats_path)
     df = make_df_from_stats(stats)
+    stats_df_path = os.path.join(attack_path, 'stats.parquet')
+    df.to_parquet(stats_df_path)
+    # df_atk contains the attacks on syndiffix (not groundhog attack etc.)
     df_atk = df[df['info_type'] == 'attack'].copy()
     stats_summary = {}
     stats_summary['precision_by_num_known_all_slices'] = df_atk.groupby('num_known')['precision'].mean().to_dict()
@@ -1066,12 +1082,11 @@ def do_plots():
 
     df_atk_filtered = df_atk[df_atk['base_precision'] <= 0.95].copy()
     print(f"df_atk has shape {df_atk.shape}")
-    print(df_atk.to_string())
     print(f"df_atk_filtered has shape {df_atk_filtered.shape}")
 
     df_atk_not_filtered = df_atk[df_atk['base_precision'] > 0.95].copy()
     print("Rows in df_atk but not in df_atk_filtered:")
-    print(df_atk_not_filtered.to_string())
+    print(df_atk_not_filtered[['num_known', 'info_type', 'precision', 'als', 'coverage', 'base_precision']].to_string())
     for column in df_atk.columns:
         if df_atk[column].nunique() <= 20:
             print(f"Distinct values in {column}: {df_atk[column].unique()}")
@@ -1079,13 +1094,6 @@ def do_plots():
     plot_prec_cov(df_atk)
     for df_loop, loop_note in [[df_atk, '']]:
         plot_by_num_known_complete(df_loop, loop_note)
-        plot_by_slice(df_loop, 'all', f'{loop_note}', hue='metric')
-        plot_by_slice(df_loop, 'dataset', f'{loop_note}', hue='dataset')
-
-        df_atk_num_known_all = df_loop[df_loop['num_known'] == 'all'].copy()
-        plot_by_slice(df_atk_num_known_all, 'all', f'num_known_all, {loop_note}', hue='metric')
-        plot_by_slice(df_atk_num_known_all, 'dataset', f'num_known_all, {loop_note}', hue='dataset')
-
 
     pp.pprint(stats_summary)
     stats_summ_path = os.path.join(attack_path, 'stats_summary.json')
