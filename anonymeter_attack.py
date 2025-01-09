@@ -39,8 +39,9 @@ os.makedirs(plots_path, exist_ok=True)
 num_attacks = 1000000
 # This is the number of attacks per slurm job, and determines how many slurm jobs are created
 num_attacks_per_job = 1000
-max_subsets = 200
+max_subsets = 100
 debug = False
+
 
 # These are the variants of the attack that exploits sub-tables
 variants = {
@@ -512,8 +513,7 @@ def run_attack(job_num):
     os.makedirs(instances_path, exist_ok=True)
 
     # Make a file_name and file_path
-    #file_name = f"{job['dir_name']}.{job['secret']}.{max_subsets}.{job_num}.json"
-    file_name = f"{job['dir_name']}.{job['secret']}.{job_num}.json"
+    file_name = f"{job['dir_name']}.{job['secret']}.{max_subsets}.{job_num}.json"
     file_path = os.path.join(instances_path, file_name)
 
     if os.path.exists(file_path):
@@ -645,6 +645,7 @@ def add_to_dump(df, label, slice_name):
     df_filtered_1[cols].to_csv(file_path)
 
 def get_basic_stats(stats, df, info, cov_basis, slice_type, dataset, attack_setup, slice_name = None):
+    num_zero_coverage_attacks = 0
     #print(f"get_basic_stats: {slice_type}, {dataset}, {slice_name} ({len(df)})")
     als = ALScore()
     als_threshold = 0.5
@@ -660,7 +661,6 @@ def get_basic_stats(stats, df, info, cov_basis, slice_type, dataset, attack_setu
     stats['avg_num_known_cols'] = round(df['num_known_cols'].mean(), 2)
     # All of these initial measures have coverage of 1.0
     # The model_base_precision and coverage are used for the ALS calculation of SynDiffix
-    # zzzz
     stats['model_base_precision'] = round(df['model_base_answer'].sum() / len(df), 6)
     stats['model_base_coverage'] = 1.0
     stats['model_base_pcc'] = als.pcc(stats['model_base_precision'], stats['model_base_coverage'])
@@ -677,8 +677,9 @@ def get_basic_stats(stats, df, info, cov_basis, slice_type, dataset, attack_setu
     stats['model_attack_precision'] = round(df['model_attack_answer'].sum() / len(df), 6)
     stats['model_attack_coverage'] = 1.0
     stats['model_attack_als'] = als.alscore(pcc_base=stats['model_meter_best_pcc'],
-                                            p_attack=stats['model_attack_precision'],
-                                            c_attack=stats['model_attack_coverage'])
+                                        p_attack=stats['model_attack_precision'],
+                                        c_attack=stats['model_attack_coverage'])
+    else:
     if stats['model_attack_als'] > als_threshold:
         stats['model_attack_problem'] = True
     else:
@@ -756,8 +757,9 @@ def get_basic_stats(stats, df, info, cov_basis, slice_type, dataset, attack_setu
             stats[syn_als] = 0
             stats[syn_problem] = False
             if len(df_syn_pred) == 0:
+                num_zero_coverage_attacks += 1
                 print(f"Got 0 predictions of variant {v_label} and column combination {cc_label}, length {len(df)}")
-                print(f"get_basic_stats: {slice_type}, {dataset}, {slice_name} ({len(df)})")
+                #print(f"{slice_type}, {dataset}, {slice_name} ({len(df)})")
                 continue
             # Basing the base precision on the rows where the attack happened to make predictions
             # is not necessarily the right thing to do. What we really want is to find the best base
@@ -805,6 +807,7 @@ def get_basic_stats(stats, df, info, cov_basis, slice_type, dataset, attack_setu
     stats['max_als'] = 0 if 'als' not in max_info else max_info['als']
     stats['max_precision'] = 0 if 'precision' not in max_info else max_info['precision']	
     stats['max_coverage'] = 0 if 'coverage' not in max_info else max_info['coverage']	
+    return num_zero_coverage_attacks
 
 def get_by_metric_from_by_slice(stats):
     problem_cases = {}
@@ -883,11 +886,13 @@ def set_model_base_predictions(df, thresh):
     return df_copy
 
 def run_stats_for_subsets(stats, df):
+    num_zero_coverage_attacks = 0
     for bin_value, df_bin in df.groupby('attack_setup'):
         dataset = df_bin['dataset'].iloc[0]
         slice_name = f"cat_attack_setup_{bin_value}"
         stats['by_slice'][slice_name] = {}
-        get_basic_stats(stats['by_slice'][slice_name], df_bin, stats['info'], len(df_bin), 'attack_setup', dataset, bin_value, slice_name=slice_name)
+        num_zero_coverage_attacks += get_basic_stats(stats['by_slice'][slice_name], df_bin, stats['info'], len(df_bin), 'attack_setup', dataset, bin_value, slice_name=slice_name)
+    print(f"num_zero_coverage_attacks: {num_zero_coverage_attacks}")
     #df_cat_copy['percentile_bin'] = pd.cut(df_cat_copy['modal_percentage'], bins=10, labels=False)
     #df_all['percentile_bin'] = pd.cut(df_all['modal_percentage'], bins=10, labels=False)
     #get_by_metric_from_by_slice(stats)
@@ -898,6 +903,9 @@ def do_stats_dict(stats_path):
     df['attack_setup'] = df['secret_col'] + df['known_cols'] + df['dataset']
     print(f"df has shape {df.shape} and columns:")
     print(df.columns)
+    # count unique combinations of secret_col and dataset
+    num_combinations = df.groupby(['secret_col', 'dataset']).ngroups
+    print(f"Number of unique combinations of secret_col and dataset: {num_combinations}")
     for col in df.columns:
         if df[col].dtype == object:
             try:
@@ -1066,6 +1074,11 @@ def do_plots():
     df.to_parquet(stats_df_path)
     # df_atk contains the attacks on syndiffix (not groundhog attack etc.)
     df_atk = df[df['info_type'] == 'attack'].copy()
+    # count the number of distinct attack_setup values
+    print(f"There are {df_atk['attack_setup'].nunique()} distinct attack setups")
+    # Count the number of distinct attack_setup values for each num_known value
+    print("Distinct attack setups per num_known:")
+    print(df_atk.groupby('num_known')['attack_setup'].nunique())
     stats_summary = {}
     stats_summary['precision_by_num_known_all_slices'] = df_atk.groupby('num_known')['precision'].mean().to_dict()
     stats_summary['als_by_num_known_all_slices'] = df_atk.groupby('num_known')['als'].median().to_dict()
@@ -1087,7 +1100,7 @@ def do_plots():
 
     df_atk_not_filtered = df_atk[df_atk['base_precision'] > 0.95].copy()
     print("Rows in df_atk but not in df_atk_filtered:")
-    print(df_atk_not_filtered[['num_known', 'info_type', 'precision', 'als', 'coverage', 'base_precision']].to_string())
+    #print(df_atk_not_filtered[['num_known', 'info_type', 'precision', 'als', 'coverage', 'base_precision']].to_string())
     for column in df_atk.columns:
         if df_atk[column].nunique() <= 20:
             print(f"Distinct values in {column}: {df_atk[column].unique()}")
