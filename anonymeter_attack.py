@@ -679,7 +679,6 @@ def get_basic_stats(stats, df, info, cov_basis, slice_type, dataset, attack_setu
     stats['model_attack_als'] = als.alscore(pcc_base=stats['model_meter_best_pcc'],
                                         p_attack=stats['model_attack_precision'],
                                         c_attack=stats['model_attack_coverage'])
-    else:
     if stats['model_attack_als'] > als_threshold:
         stats['model_attack_problem'] = True
     else:
