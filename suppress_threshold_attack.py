@@ -27,6 +27,7 @@ sample_for_model = None
 do_comb_3_and_4 = False
 num_bins = 40
 win = 5000
+account_for_unattackable_configurations = False
 
 if 'SDX_TEST_DIR' in os.environ:
     base_path = os.getenv('SDX_TEST_DIR')
@@ -57,6 +58,14 @@ def compute_metrics(df, column_name):
     f1 = f1_score(y_true, y_pred)
 
     return accuracy, precision, recall, f1
+
+def prob_guess(frac_tar):
+    # select a random float between 0 and 1.0
+    rand = random.random()
+    if rand < frac_tar:
+        return 'tp'
+    else:
+        return 'fp'
 
 def naive_decision(c, nkwt, nkwot):
     if c == 1 and nkwt > 0 and nkwot == 0:
@@ -195,8 +204,8 @@ def do_model():
     # 'nkc',       number of known columns
     # 'tp',        whether simple critieria yielded true positive
     # 'table',     the name of the synthetic table
-    # 'capt',      coverage assuming specific victim and target values
-    # 'cap',       coverage assuming only victim values (any target)
+    # 'capt',      coverage assuming specific victim and specific target attribute
+    # 'cap',       coverage assuming only specific victim (any target attribute)
     # 'frac_tar',  fraction of rows with target value
 
     # Let's get basic stats for the naive model though
@@ -305,27 +314,29 @@ def plot_move_avg(df):
     plt.savefig(os.path.join(attack_path, 'frac_tar_mv_avg.pdf'))
     plt.close()
 
-
-def alc_box(df):
-    # Sort the DataFrame by 'capt' ascending
-    df = df.sort_values(by='capt', ascending=True)
+def alc_cap(df):
+    # Sort the DataFrame by 'cap' ascending
+    df = df.sort_values(by='cap', ascending=True)
 
     # Initialize the list to store alc values
     alc_list = []
 
-    # Loop through the DataFrame in groups of 10000 rows
-    group_size = 10000
+    # Loop through the DataFrame in groups of 1000 rows
+    group_size = 1000
     for i in range(0, len(df), group_size):
         group = df.iloc[i:i+group_size]
 
         # Compute the required values
-        cov_avg = group['capt'].mean()
-        p_base = len(group[group['pred_baseline'] == 'tp']) / group_size
+        cov_avg = group['cap'].mean()
+        p_base = len(group[group['pred_baseline'] == 'tp']) / len(group[(group['pred_baseline'] == 'tp') | (group['pred_baseline'] == 'fp')])
         cov_base = len(group[(group['pred_baseline'] == 'tp') | (group['pred_baseline'] == 'fp')]) / group_size
-        c_base = cov_base * cov_avg
-        p_atk = len(group[group['pred_full_attack'] == 'tp']) / group_size
+        c_base = cov_base
+        p_atk = len(group[group['pred_full_attack'] == 'tp']) / len(group[(group['pred_full_attack'] == 'tp') | (group['pred_full_attack'] == 'fp')])
         cov_atk = len(group[(group['pred_full_attack'] == 'tp') | (group['pred_full_attack'] == 'fp')]) / group_size
-        c_atk = cov_atk * cov_avg
+        if account_for_unattackable_configurations:
+            c_atk = cov_atk * cov_avg
+        else:
+            c_atk = cov_atk
 
         # Compute alc
         alc = als.alscore(p_base=p_base, c_base=c_base, p_attack=p_atk, c_attack=c_atk)
@@ -341,12 +352,72 @@ def alc_box(df):
     plt.xlabel('Anonymity Loss Coefficient (ALC)')
     plt.ylabel('Real\ndatasets')
     plt.tight_layout()
-    plot_path = os.path.join(attack_path, 'alc_box.png')
+    plot_path = os.path.join(attack_path, 'alc_cap.png')
     plt.savefig(plot_path)
-    plot_path = os.path.join(attack_path, 'alc_box.pdf')
+    plot_path = os.path.join(attack_path, 'alc_cap.pdf')
     plt.savefig(plot_path)
     plt.close()
-    print("done with alc_box.png")
+    print("done with alc_cap.png")
+
+
+def alc_capt(df):
+    # Sort the DataFrame by 'frac_tar' ascending
+    #df = df.sort_values(by='capt', ascending=True)
+    df = df.sort_values(by='frac_tar', ascending=True)
+
+    # Initialize the list to store alc values
+    alc_list = []
+    alc_list2 = []
+
+    # Loop through the DataFrame in groups of 10000 rows
+    group_size = 1000
+    for i in range(0, len(df), group_size):
+        group = df.iloc[i:i+group_size]
+
+        # Compute the required values
+        cov_avg = group['capt'].mean()
+        num_base_predicts = len(group[(group['pred_baseline'] == 'tp') | (group['pred_baseline'] == 'fp')])
+        if num_base_predicts == 0:
+            continue
+        p_base = len(group[group['pred_baseline'] == 'tp']) / num_base_predicts
+        cov_base = len(group[(group['pred_baseline'] == 'tp') | (group['pred_baseline'] == 'fp')]) / group_size
+        c_base = cov_base
+        num_atk_predicts = len(group[(group['pred_full_attack'] == 'tp') | (group['pred_full_attack'] == 'fp')])
+        if num_atk_predicts == 0:
+            continue
+        p_atk = len(group[group['pred_full_attack'] == 'tp']) / num_atk_predicts
+        cov_atk = len(group[(group['pred_full_attack'] == 'tp') | (group['pred_full_attack'] == 'fp')]) / group_size
+        c_atk2 = cov_atk * cov_avg
+        c_atk = cov_atk
+        alc2 = als.alscore(p_base=p_base, c_base=c_base, p_attack=p_atk, c_attack=c_atk2)
+        alc = als.alscore(p_base=p_base, c_base=c_base, p_attack=p_atk, c_attack=c_atk)
+        alc_list2.append(alc2)
+        alc_list.append(alc)
+        if alc > 0.35:
+            frac_tar_avg = group['frac_tar'].mean()
+            print(f"frac_tar: {frac_tar_avg}, p_base: {p_base}, c_base: {c_base}, p_attack: {p_atk}, c_attack: {c_atk}, alc: {alc}")
+
+    print(f"There are {len(alc_list)} datapoints in the alc_capt boxplot")
+    # Display alc_list as a boxplot
+    data = {
+        'ALC': alc_list + alc_list2,
+        'Dataset': ['Attacks with\ncondition only'] * len(alc_list) + ['All attacks'] * len(alc_list2)
+    }
+    df = pd.DataFrame(data)
+    
+    plt.figure(figsize=(7.0, 2.0))
+    sns.boxplot(data=df, x='ALC', y='Dataset', orient='h', palette='light:#5A9', hue='Dataset')
+    plt.xlim(-0.05, 1.05)
+    plt.axvline(x=0.5, color='black', linestyle='--')
+    plt.xlabel('Anonymity Loss Coefficient (ALC)')
+    plt.ylabel('Real datasets')
+    plt.tight_layout()
+    plot_path = os.path.join(attack_path, 'alc_capt.png')
+    plt.savefig(plot_path)
+    plot_path = os.path.join(attack_path, 'alc_capt.pdf')
+    plt.savefig(plot_path)
+    plt.close()
+    print("done with alc_capt.png")
 
 def do_plots():
     # Read in the parquet files
@@ -381,8 +452,30 @@ def do_plots():
     print(X_test_all.head())
     print(f"Total rows: {X_test_all.shape[0]}")
     print(X_test_all.columns)
+    # make a copy of X_test_all where column sp is True
+    X_test_all_sp = X_test_all[X_test_all['bs'] == True].copy()
+    print(f"There are {X_test_all.shape[0]} rows in X_test, and {X_test_all_sp.shape[0]} rows where bs is True")
 
-    alc_box(X_test_all.copy())
+    # Make a copy of X_test_all_sp where frac_tar < 0.2
+    X_test_all_sp_lt_02 = X_test_all_sp[X_test_all_sp['frac_tar'] < 0.2].copy()
+    base_tp = X_test_all_sp_lt_02[X_test_all_sp_lt_02['pred_baseline'] == 'tp'].shape[0]
+    base_fp = X_test_all_sp_lt_02[X_test_all_sp_lt_02['pred_baseline'] == 'fp'].shape[0]
+    prec_base = base_tp / (base_tp + base_fp)
+    full_tp = X_test_all_sp_lt_02[X_test_all_sp_lt_02['pred_full_attack'] == 'tp'].shape[0]
+    full_fp = X_test_all_sp_lt_02[X_test_all_sp_lt_02['pred_full_attack'] == 'fp'].shape[0]
+    prec_full = full_tp / (full_tp + full_fp)
+    print(f"Precision of full_attack for frac_tar < 0.2: {prec_full}")
+    print(f"Precision of baseline for frac_tar < 0.2: {prec_base}")
+
+    alc_capt(X_test_all_sp.copy())
+    alc_cap(X_test_all_sp.copy())
+
+    # count 'tp' in 'prob_guess'
+    X_test_all_sp_lt_02['prob_guess'] = X_test_all_sp_lt_02.apply(lambda row: prob_guess(row['frac_tar']), axis=1)
+    prob_tp = X_test_all_sp_lt_02[X_test_all_sp_lt_02['prob_guess'] == 'tp'].shape[0]
+    prec_prob = prob_tp / X_test_all_sp_lt_02.shape[0]
+    print(f"Precision of prob_guess: {prec_prob}")
+    print(f"Precision of baseline: {prec_base}")
 
     # Count the number of rows where pi_fl == 1
     count_pi_fl_1 = X_test_all[X_test_all['pi_fl'] == 1].shape[0]

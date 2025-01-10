@@ -188,7 +188,7 @@ def alc_plot(df_orig, alc_col):
     plot_data = pd.DataFrame()
 
     # Iterate over each column and its distinct values
-    cases = ['sd_gap 2, single', 'sd_gap 2, multi', 'sd_gap 3, single', 'sd_gap 4, single']
+    cases = ['Mean 5, Single', 'Mean 5, Multiple', 'Mean 6, Single', 'Mean 7, Single']
     for case in cases:
         filtered_df = df[df['case'] == case].copy()
         filtered_df['label'] = case
@@ -212,14 +212,14 @@ def alc_plot_all(df_orig, alc_col):
     plot_data = pd.DataFrame()
 
     # Iterate over each column and its distinct values
-    cases = ['sd_gap 2, single', 'sd_gap 2, multi', 'sd_gap 3, single', 'sd_gap 4, single']
+    cases = ['Mean 5, Single', 'Mean 5, Multiple', 'Mean 6, Single', 'Mean 7, Single']
     for case in cases:
         filtered_df = df[df['case'] == case].copy()
         filtered_df['label'] = case
         plot_data = pd.concat([plot_data, filtered_df])
 
-    # filter df for case = 'sd_gap 2, single'
-    df = df[df['case'] == 'sd_gap 2, single'].copy()
+    # filter df for case = 'Mean 5, Single'
+    df = df[df['case'] == 'Mean 5, Single'].copy()
 
     for column in ['num_targets', 'target_size']:
         distinct_values = df[column].unique()
@@ -321,17 +321,17 @@ def make_plot():
     # Make column 'marker' in df, where the marker is deterimned by the combined values of sd_gap and dim
     def assign_case(row):
         if row['sd_gap'] == 2 and row['dim'] == 20:
-            return 'sd_gap 2, multi'
+            return 'Mean 5, Multiple'
         elif row['sd_gap'] == 2 and row['dim'] == 0:
-            return 'sd_gap 2, single'
+            return 'Mean 5, Single'
         elif row['sd_gap'] == 3 and row['dim'] == 20:
-            return 'sd_gap 3, multi'
+            return 'Mean 6, Multiple'
         elif row['sd_gap'] == 3 and row['dim'] == 0:
-            return 'sd_gap 3, single'
+            return 'Mean 6, Single'
         elif row['sd_gap'] == 4 and row['dim'] == 20:
-            return 'sd_gap 4, multi'
+            return 'Mean 7, Multiple'
         elif row['sd_gap'] == 4 and row['dim'] == 0:
-            return 'sd_gap 4, single'
+            return 'Mean 7, Single'
         else:
             print(f"Unknown case: {row['sd_gap']}, {row['dim']}")
             sys.exit(1)
@@ -339,7 +339,7 @@ def make_plot():
     df['case'] = df.apply(assign_case, axis=1)
 
     # define marker map for the sd_gap, dim combinations
-    marker_map = {'sd_gap 2, single': 'v', 'sd_gap 2, multi': '+', 'sd_gap 3, single': 'o', 'sd_gap 4, single': 's'}
+    marker_map = {'Mean 5, Single': 'v', 'Mean 5, Multiple': '+', 'Mean 6, Single': 'o', 'Mean 7, Single': 's'}
 
     # Define the color map for target_size
     colors = sns.color_palette()[:3]
