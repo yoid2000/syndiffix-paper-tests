@@ -193,7 +193,6 @@ def run_one_attack(num_vals, ex_factor, num_ex, dist, num_aid):
     aid_col = df.columns[0]
     target_col = df.columns[1]
     # print the number of rows for each distinct value in df[target_col]
-        # print the number of rows for each distinct value in df[target_col]
     #print("Rows per value in target_col of original df")
     #print(df[target_col].value_counts())
     df_aid = df[[aid_col]]
@@ -201,6 +200,7 @@ def run_one_attack(num_vals, ex_factor, num_ex, dist, num_aid):
     #print("Rows per value in target_col of df_syn_target")
     #print(df_syn_target[target_col].value_counts())
     #print(f"num distinct vals in orig target: {df[target_col].nunique()}")
+    #print(f"num distinct vals in syn target: {df_syn_target[target_col].nunique()}")
     #print(f"num distinct vals in syn target: {df_syn_target[target_col].nunique()}")
     # Get the count of rows in syn_target where target_col == known_val
     known_val_count = len(df_syn_target[df_syn_target[target_col] == known_val])
@@ -232,6 +232,9 @@ def run_one_attack(num_vals, ex_factor, num_ex, dist, num_aid):
                 predictions[predict_threshold]['prediction'] = 'fp'
         else:
             predictions[predict_threshold]['prediction'] = 'abstain'
+    if df[target_col].nunique() != df_syn_target[target_col].nunique():
+        print(f"Bad num unique: {df[target_col].nunique()} {df_syn_target[target_col].nunique()}")
+        pp.pprint(predictions)
     return predictions
 
 def get_sorted_value_counts(value_counts):
