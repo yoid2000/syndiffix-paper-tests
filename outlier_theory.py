@@ -96,6 +96,8 @@ def build_basic_table(num_vals, ex_factor, num_ex, dist, num_aid):
             num_rows = random.randint(40, 60)
         elif dist == 'normal':
             num_rows = max(40, int(random.normalvariate(80, 20)))
+        elif dist == 'flat':
+            num_rows = 50
         if num_rows > max_rows:
             max_rows = num_rows
         for _ in range(num_rows):
@@ -128,9 +130,30 @@ def make_slurm():
     pass
 
 def make_plot():
-    a1c = Attack1colResults(results_path)
-    a1c.make_predictions()
-    a1c.analyze()
+    output_path = os.path.join(runs_path, "results.parquet")
+    # Read the Parquet file into a DataFrame
+    df = pd.read_parquet(output_path)
+    print(df.columns)
+    als = alscore.ALScore()
+    df_counts = df.groupby(['threshold', 'prediction']).size().unstack(fill_value=0)
+    print(df_counts)
+    # loop through each row in df_counts
+    for index, row in df_counts.iterrows():
+        prec = row['tp'] / (row['tp'] + row['fp'])
+        recall = (row['tp'] + row['fp']) / (row['tp'] + row['fp'] + row['abstain'])
+        print(f"Threshold: {index}, Precision: {prec}, Recall: {recall}")
+    df_fp = df[(df['threshold'] == 2.0) & (df['prediction'] == 'fp')]
+    df_tp = df[(df['threshold'] == 2.0) & (df['prediction'] == 'tp')]
+    print("num_vals:")
+    print(f"    fp: avg: {df_fp['num_vals'].mean()}, std: {df_fp['num_vals'].std()}")
+    print(f"    tp: avg: {df_tp['num_vals'].mean()}, std: {df_tp['num_vals'].std()}")
+    print("ex_factor:")
+    print(f"    fp: avg: {df_fp['ex_factor'].mean()}, std: {df_fp['ex_factor'].std()}")
+    print(f"    tp: avg: {df_tp['ex_factor'].mean()}, std: {df_tp['ex_factor'].std()}")
+    print("num_aid:")
+    print(f"    fp: avg: {df_fp['num_aid'].mean()}, std: {df_fp['num_aid'].std()}")
+    print(f"    tp: avg: {df_tp['num_aid'].mean()}, std: {df_tp['num_aid'].std()}")
+
 
 def membership_attack():
     pass
@@ -358,7 +381,7 @@ def continuous_attacks(job_num=None):
     else:
         results = []
     for _ in range(100000000):
-        dist = random.choice(['uniform', 'normal'])
+        dist = random.choice(['uniform', 'normal', 'flat'])
         num_vals = random.randint(2,10)
         ex_factor = random.randint(5,20)
         num_aid = random.randint(50,100)
