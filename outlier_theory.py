@@ -387,6 +387,7 @@ def gather_results():
     # List to hold DataFrames
     dataframes = []
     # Iterate over all files in the directory
+    print(f"Searching for Parquet files in {results_path}")
     for filename in os.listdir(results_path):
         if filename.endswith(".parquet"):
             file_path = os.path.join(results_path, filename)
