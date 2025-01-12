@@ -1,10 +1,10 @@
 import argparse
 import os
 import pandas as pd
-import numpy as np
 import json
 import sys
 import random
+import statistics
 from syndiffix import Synthesizer
 import alscore
 import pprint
@@ -22,6 +22,8 @@ Value outlier tests:
     Infer value of another column:
 '''
 
+predict_thresholds = [1.2, 1.5, 1.8, 2]
+col_pre = 'vals'
 num_1col_runs = 500000
 prediction_multipliers = [1, 2, 3]
 if 'SDX_TEST_DIR' in os.environ:
@@ -41,12 +43,14 @@ results_path = os.path.join(runs_path, 'results')
 os.makedirs(results_path, exist_ok=True)
 pp = pprint.PrettyPrinter(indent=4)
 
-
 def build_basic_table(num_vals, ex_factor, num_ex, dist, num_aid):
+    num_other_cols = 5
+    num_vals_per_other_col = 5
     # Generate a random 5-digit number for the column names
     random_suffix = ''.join(random.choices('0123456789', k=5))
     aid_col = f'aid_{random_suffix}'
-    vals_col = f'vals_{random_suffix}'
+    vals_col = f'{col_pre}_{random_suffix}'
+    other_cols = [f'{col_pre}_{i}_{random_suffix}' for i in range(num_other_cols)]
 
     # Generate num_aid distinct aid values
     aid_values = random.sample(range(10000000), num_aid)
@@ -69,21 +73,25 @@ def build_basic_table(num_vals, ex_factor, num_ex, dist, num_aid):
         print(f"Fail: Expected {num_vals} distinct values, but found {len(vals_values)}.")
         print(vals_values)
         sys.exit(1)
+
+    # other_cols_vals is indexed by col_index, then value_index
+    other_cols_vals = [random.sample(range(1000, 100000), num_vals_per_other_col) for _ in range(num_other_cols)]
     
     # Assign a random val to each aid
     aid_to_val = {aid: random.choice(vals_values) for aid in aid_values}
     
-    # Ensure the known_aid has the same val, known_val
+    # Ensure the known_aids have the same val: known_val
     known_val = random.choice(vals_values)
     for aid in known_aid_values:
         aid_to_val[aid] = known_val
-    
+
     # Create the DataFrame
     rows = []
     
     # Add rows for other_aid values
     max_rows = 0
     for aid in other_aid_values:
+        num_rows = 0   # just to please lint
         if dist == 'uniform':
             num_rows = random.randint(40, 60)
         elif dist == 'normal':
@@ -100,15 +108,19 @@ def build_basic_table(num_vals, ex_factor, num_ex, dist, num_aid):
     
     # Add rows for unknown_aid
     unknown_val = aid_to_val[unknown_aid]
-    for _ in range(15 * ex_factor):
+    for _ in range(max_rows * ex_factor):
         rows.append({aid_col: unknown_aid, vals_col: unknown_val})
+
+    # add all of the other columns
+    for row in rows:
+        for i, col in enumerate(other_cols):
+            row[col] = random.choice(other_cols_vals[i])
     
     df = pd.DataFrame(rows)
     
     # Shuffle the DataFrame
     df = df.sample(frac=1).reset_index(drop=True)
     df = df.astype(str)
-
     
     return df, known_val, unknown_aid, unknown_val
 
@@ -122,8 +134,6 @@ def make_plot():
 
 def membership_attack():
     pass
-
-import pandas as pd
 
 def most_frequent_value(df):
     # Get the column name
@@ -151,29 +161,55 @@ def most_frequent_value(df):
     
     return most_frequent, gap_1_2, gap_avg
 
-def run_one_1col_attack(a1c, num_vals, ex_factor, num_ex, dist, num_aid):
+def run_one_attack(num_vals, ex_factor, num_ex, dist, num_aid):
     # Returns 1 if predictions is correct, 0 otherwise
+    print(f"run_one_attack() with params num_vals = {num_vals}, ex_factor = {ex_factor}, num_ex = {num_ex}, dist = {dist}, num_aid = {num_aid}")
     df, known_val, unknown_aid, unknown_val = build_basic_table(num_vals, ex_factor, num_ex, dist, num_aid)
-    # Get the value belonging to the unknown_aid
+    print(f"the known_val is {known_val}, the unknown_val is {unknown_val}")
     # split df into two dataframes, one with the aid column and one with the vals column
-    aid_col = [col for col in df.columns if col.startswith('aid_')][0]
-    vals_col = [col for col in df.columns if col.startswith('vals_')][0]
+    aid_col = df.columns[0]
+    target_col = df.columns[1]
+    # print the number of rows for each distinct value in df[target_col]
+        # print the number of rows for each distinct value in df[target_col]
+    print("Rows per value in target_col of original df")
+    print(df[target_col].value_counts())
     df_aid = df[[aid_col]]
-    df_vals = df[[vals_col]]
-    syn = Synthesizer(df_vals, pids=df_aid)
-    df_syn = syn.sample()
-    print(f"There are {df[vals_col].nunique()} uniques in df, and {df_syn[vals_col].nunique()} uniques in df_syn")
-    # get the counts of all values in vals_col of df_syn
-    value_counts = df_syn[vals_col].value_counts()
-    value_counts_dict = value_counts.to_dict()
-    value_counts_dict = {str(k): v for k, v in value_counts.items()}
-    predict_val, gap_1_2, gap_avg = most_frequent_value(df_syn)
-    print(f"Predict {predict_val} for unknown_val {unknown_val}")
-    a1c.add(num_vals, ex_factor, num_ex, dist, num_aid, predict_val, known_val, unknown_val, gap_1_2, gap_avg, value_counts_dict)
-    if predict_val == unknown_val:
-        return 1, gap_1_2, gap_avg
-    else:
-        return 0, gap_1_2, gap_avg
+    df_syn_target = Synthesizer(df[[target_col]], pids=df_aid).sample()
+    print("Rows per value in target_col of df_syn_target")
+    print(df_syn_target[target_col].value_counts())
+    print(f"num distinct vals in orig target: {df[target_col].nunique()}")
+    print(f"num distinct vals in syn target: {df_syn_target[target_col].nunique()}")
+    # Get the count of rows in syn_target where target_col == known_val
+    known_val_count = len(df_syn_target[df_syn_target[target_col] == known_val])
+    print(f"known_val_count: {known_val_count}")
+    df_others = []
+    target_val_counts = []
+    for col in df.columns:
+        if col == target_col or col == aid_col:
+            continue
+        df_syn = Synthesizer(df[[target_col, col]], pids=df_aid).sample()
+        print(f"num distinct vals in {col}: {df_syn[col].nunique()}")
+        tar_val_count = len(df_syn[df_syn[target_col] == known_val])
+        print(f"tar_val_count: {tar_val_count}")
+        df_others.append(df_syn)
+        target_val_counts.append(tar_val_count)
+    # the median of the target_val_counts is the baseline where all of the known
+    # and unknown AIDs are flattened
+    flattened_count = statistics.median(target_val_counts)
+    print(f"flattened_count: {flattened_count} is median of {target_val_counts}")
+    # To identify the unknown outlier value, we expect the count of known_val_count
+    # to be much higher than the flattened_count
+    predictions = {}
+    for predict_threshold in predict_thresholds:
+        predictions[predict_threshold] = {'known_val_count': known_val_count, 'flattened_count': flattened_count}
+        if known_val_count > flattened_count * predict_threshold:
+            if known_val == unknown_val:
+                predictions[predict_threshold]['prediction'] = 'tp'
+            else:
+                predictions[predict_threshold]['prediction'] = 'fp'
+        else:
+            predictions[predict_threshold]['prediction'] = 'abstain'
+    return predictions
 
 def get_sorted_value_counts(value_counts):
     # Sort the dictionary items by value in descending order
@@ -309,18 +345,43 @@ class Attack1colResults:
             json.dump(all_results, f, indent=4)
         pp.pprint(all_results)
 
-def run_1col_attack(job_num=None):
-    a1c = Attack1colResults(results_path)
-    for _ in range(num_1col_runs):
-        for num_aid in [150, 500]:
-            for dist in ['uniform', 'normal']:
-                for num_vals in [2, 10]:
-                    for ex_factor in [5, 10, 20]:
-                        #for num_ex in [1, 2, 3]:
-                        for num_ex in [3]:
-                            run_one_1col_attack(a1c, num_vals, ex_factor, num_ex, dist, num_aid)
-    a1c.write_to_parquet()
-
+def continuous_attacks(job_num=None):
+    if job_num is None:
+        job_num = ''
+    else:
+        job_num = f'_{job_num}'
+    parquet_path = os.path.join(results_path, f'results{job_num}.parquet')
+    json_path = os.path.join(results_path, f'results{job_num}.json')
+    if os.path.exists(json_path):
+        with open(json_path, 'r') as f:
+            results = json.load(f)
+    else:
+        results = []
+    for _ in range(100000000):
+        dist = random.choice(['uniform', 'normal'])
+        num_vals = random.randint(2,10)
+        ex_factor = random.randint(5,20)
+        num_aid = random.randint(50,100)
+        num_ex = 3
+        predictions = run_one_attack(num_vals, ex_factor, num_ex, dist, num_aid)
+        for threshold, prediction in predictions.items():
+            results.append({
+                'num_vals': num_vals,
+                'ex_factor': ex_factor,
+                'num_ex': num_ex,
+                'dist': dist,
+                'num_aid': num_aid,
+                'prediction': prediction['prediction'],
+                'threshold': threshold,
+                'known_val_count': prediction['known_val_count'],
+                'flattened_count': prediction['flattened_count']
+            })
+        # Write the results to a JSON file
+        with open(json_path, 'w') as f:
+            json.dump(results, f, indent=4)
+        # Write the results to a parquet file
+        df = pd.DataFrame(results)
+        df.to_parquet(parquet_path, index=False)
 
 def gather_results():
     pass
@@ -334,16 +395,16 @@ def main():
         make_slurm()
     elif args.command == 'plot':
         make_plot()
-    elif args.command == 'attacks':
-        run_1col_attack()
     elif args.command == 'gather':
         gather_results()
     elif args.command == 'membership':
         membership_attack()
+    elif args.command == 'continuous':
+        continuous_attacks()
     else:
         try:
             job_num = int(args.command)
-            run_attack(job_num=job_num)
+            continuous_attacks(job_num=job_num)
         except ValueError:
             print(f"Unknown command: {args.command}")
 
