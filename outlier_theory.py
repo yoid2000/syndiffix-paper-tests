@@ -68,7 +68,7 @@ def build_basic_table(num_vals, ex_factor, num_ex, dist, num_aid):
     # Generate num_vals distinct values for the vals column
     vals_values = random.sample(range(1000, 100000), num_vals)
     vals_values = [str(e) for e in vals_values]
-    print(f'vals_values: {vals_values}')
+    #print(f'vals_values: {vals_values}')
     if len(vals_values) != num_vals:
         print(f"Fail: Expected {num_vals} distinct values, but found {len(vals_values)}.")
         print(vals_values)
@@ -163,40 +163,40 @@ def most_frequent_value(df):
 
 def run_one_attack(num_vals, ex_factor, num_ex, dist, num_aid):
     # Returns 1 if predictions is correct, 0 otherwise
-    print(f"run_one_attack() with params num_vals = {num_vals}, ex_factor = {ex_factor}, num_ex = {num_ex}, dist = {dist}, num_aid = {num_aid}")
+    #print(f"run_one_attack() with params num_vals = {num_vals}, ex_factor = {ex_factor}, num_ex = {num_ex}, dist = {dist}, num_aid = {num_aid}")
     df, known_val, unknown_aid, unknown_val = build_basic_table(num_vals, ex_factor, num_ex, dist, num_aid)
-    print(f"the known_val is {known_val}, the unknown_val is {unknown_val}")
+    #print(f"the known_val is {known_val}, the unknown_val is {unknown_val}")
     # split df into two dataframes, one with the aid column and one with the vals column
     aid_col = df.columns[0]
     target_col = df.columns[1]
     # print the number of rows for each distinct value in df[target_col]
         # print the number of rows for each distinct value in df[target_col]
-    print("Rows per value in target_col of original df")
-    print(df[target_col].value_counts())
+    #print("Rows per value in target_col of original df")
+    #print(df[target_col].value_counts())
     df_aid = df[[aid_col]]
     df_syn_target = Synthesizer(df[[target_col]], pids=df_aid).sample()
-    print("Rows per value in target_col of df_syn_target")
-    print(df_syn_target[target_col].value_counts())
-    print(f"num distinct vals in orig target: {df[target_col].nunique()}")
-    print(f"num distinct vals in syn target: {df_syn_target[target_col].nunique()}")
+    #print("Rows per value in target_col of df_syn_target")
+    #print(df_syn_target[target_col].value_counts())
+    #print(f"num distinct vals in orig target: {df[target_col].nunique()}")
+    #print(f"num distinct vals in syn target: {df_syn_target[target_col].nunique()}")
     # Get the count of rows in syn_target where target_col == known_val
     known_val_count = len(df_syn_target[df_syn_target[target_col] == known_val])
-    print(f"known_val_count: {known_val_count}")
+    #print(f"known_val_count: {known_val_count}")
     df_others = []
     target_val_counts = []
     for col in df.columns:
         if col == target_col or col == aid_col:
             continue
         df_syn = Synthesizer(df[[target_col, col]], pids=df_aid).sample()
-        print(f"num distinct vals in {col}: {df_syn[col].nunique()}")
+        #print(f"num distinct vals in {col}: {df_syn[col].nunique()}")
         tar_val_count = len(df_syn[df_syn[target_col] == known_val])
-        print(f"tar_val_count: {tar_val_count}")
+        #print(f"tar_val_count: {tar_val_count}")
         df_others.append(df_syn)
         target_val_counts.append(tar_val_count)
     # the median of the target_val_counts is the baseline where all of the known
     # and unknown AIDs are flattened
     flattened_count = statistics.median(target_val_counts)
-    print(f"flattened_count: {flattened_count} is median of {target_val_counts}")
+    #print(f"flattened_count: {flattened_count} is median of {target_val_counts}")
     # To identify the unknown outlier value, we expect the count of known_val_count
     # to be much higher than the flattened_count
     predictions = {}
