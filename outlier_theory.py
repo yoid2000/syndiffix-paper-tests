@@ -384,7 +384,25 @@ def continuous_attacks(job_num=None):
         df.to_parquet(parquet_path, index=False)
 
 def gather_results():
-    pass
+    # List to hold DataFrames
+    dataframes = []
+    # Iterate over all files in the directory
+    for filename in os.listdir(results_path):
+        if filename.endswith(".parquet"):
+            file_path = os.path.join(results_path, filename)
+            # Read the Parquet file into a DataFrame
+            df = pd.read_parquet(file_path)
+            # Append the DataFrame to the list
+            dataframes.append(df)
+    # Concatenate all DataFrames into one
+    if dataframes:
+        combined_df = pd.concat(dataframes, ignore_index=True)
+        # Write the combined DataFrame to a Parquet file
+        output_path = os.path.join(runs_path, "results.parquet")
+        combined_df.to_parquet(output_path, index=False)
+        print(f"Combined DataFrame written to {output_path}")
+    else:
+        print("No Parquet files found in the directory.")
 
 def main():
     parser = argparse.ArgumentParser()
