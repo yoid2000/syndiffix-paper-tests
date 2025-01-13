@@ -386,7 +386,7 @@ def continuous_attacks(job_num=None):
     for _ in range(100000000):
         dist = random.choice(['uniform', 'normal', 'flat'])
         num_vals = random.randint(2,10)
-        ex_factor = random.randint(5,20)
+        ex_factor = random.randint(100,100)
         num_aid = random.randint(50,100)
         num_ex = 3
         predictions = run_one_attack(num_vals, ex_factor, num_ex, dist, num_aid)
