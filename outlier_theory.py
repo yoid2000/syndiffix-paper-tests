@@ -22,7 +22,8 @@ Value outlier tests:
     Infer value of another column:
 '''
 
-predict_thresholds = [1.2, 1.5, 1.8, 2]
+#predict_thresholds = [1.2, 1.5, 1.8, 2]
+predict_thresholds = [2.5, 3.0]
 col_pre = 'vals'
 num_1col_runs = 500000
 prediction_multipliers = [1, 2, 3]
@@ -135,6 +136,14 @@ def make_plot():
     df = pd.read_parquet(output_path)
     print(df.columns)
     als = alscore.ALScore()
+    print("Get info for ex_factor == 100")
+    make_one_plot(df[(df['ex_factor'] == 100)])
+    print("Get info for ex_factor < 100")
+    make_one_plot(df[(df['ex_factor'] != 100)])
+
+
+def make_one_plot(df):
+    print(f"Total rows = {len(df)}")
     df_counts = df.groupby(['threshold', 'prediction']).size().unstack(fill_value=0)
     print(df_counts)
     # loop through each row in df_counts
