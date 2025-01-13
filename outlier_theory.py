@@ -23,7 +23,7 @@ Value outlier tests:
 '''
 
 #predict_thresholds = [1.2, 1.5, 1.8, 2]
-predict_thresholds = [2.5, 3.0, 3.5, 4.0]
+predict_thresholds = [2.5, 3.0, 3.5, 4.0, 5.0, 6.0]
 col_pre = 'vals'
 num_1col_runs = 500000
 prediction_multipliers = [1, 2, 3]
