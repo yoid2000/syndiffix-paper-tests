@@ -23,7 +23,7 @@ Value outlier tests:
 '''
 
 #predict_thresholds = [1.2, 1.5, 1.8, 2]
-predict_thresholds = [2.5, 3.0]
+predict_thresholds = [2.5, 3.0, 3.5, 4.0]
 col_pre = 'vals'
 num_1col_runs = 500000
 prediction_multipliers = [1, 2, 3]
@@ -140,6 +140,10 @@ def make_plot():
     make_one_plot(df[(df['ex_factor'] == 100)])
     print("Get info for ex_factor < 100")
     make_one_plot(df[(df['ex_factor'] != 100)])
+    print("Get info for dist is flat")
+    make_one_plot(df[(df['dist'] == 'flat')])
+    print("Get info for dist not flat")
+    make_one_plot(df[(df['dist'] != 'flat')])
 
 
 def make_one_plot(df):
@@ -394,6 +398,7 @@ def continuous_attacks(job_num=None):
         results = []
     for _ in range(100000000):
         dist = random.choice(['uniform', 'normal', 'flat'])
+        dist = 'flat'
         num_vals = random.randint(2,10)
         ex_factor = random.randint(100,100)
         num_aid = random.randint(50,100)
