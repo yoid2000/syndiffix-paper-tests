@@ -130,7 +130,7 @@ def make_slurm():
     pass
 
 def make_plot():
-    output_path = os.path.join(runs_path, "results.parquet")
+    output_path = os.path.join(runs_path, "results_1col.parquet")
     # Read the Parquet file into a DataFrame
     df = pd.read_parquet(output_path)
     print(df.columns)
@@ -223,38 +223,31 @@ def run_one_attack(num_vals, ex_factor, num_ex, dist, num_aid):
     #print(f"num distinct vals in syn target: {df_syn_target[target_col].nunique()}")
     #print(f"num distinct vals in syn target: {df_syn_target[target_col].nunique()}")
     # Get the count of rows in syn_target where target_col == known_val
-    known_val_count = len(df_syn_target[df_syn_target[target_col] == known_val])
+    known_count = len(df_syn_target)
     #print(f"known_val_count: {known_val_count}")
-    df_others = []
-    target_val_counts = []
+    other_counts = []
     for col in df.columns:
         if col == target_col or col == aid_col:
             continue
-        df_syn = Synthesizer(df[[target_col, col]], pids=df_aid).sample()
+        df_syn = Synthesizer(df[[col]], pids=df_aid).sample()
         #print(f"num distinct vals in {col}: {df_syn[col].nunique()}")
-        tar_val_count = len(df_syn[df_syn[target_col] == known_val])
-        #print(f"tar_val_count: {tar_val_count}")
-        df_others.append(df_syn)
-        target_val_counts.append(tar_val_count)
+        other_counts.append(len(df_syn))
     # the median of the target_val_counts is the baseline where all of the known
     # and unknown AIDs are flattened
-    flattened_count = statistics.median(target_val_counts)
+    flattened_count = statistics.median(other_counts)
     #print(f"flattened_count: {flattened_count} is median of {target_val_counts}")
     # To identify the unknown outlier value, we expect the count of known_val_count
     # to be much higher than the flattened_count
     predictions = {}
     for predict_threshold in predict_thresholds:
-        predictions[predict_threshold] = {'known_val_count': known_val_count, 'flattened_count': flattened_count}
-        if known_val_count > flattened_count * predict_threshold:
+        predictions[predict_threshold] = {'known_count': known_count, 'flattened_count': flattened_count}
+        if known_count > flattened_count * predict_threshold:
             if known_val == unknown_val:
                 predictions[predict_threshold]['prediction'] = 'tp'
             else:
                 predictions[predict_threshold]['prediction'] = 'fp'
         else:
             predictions[predict_threshold]['prediction'] = 'abstain'
-    if df[target_col].nunique() != df_syn_target[target_col].nunique():
-        print(f"Bad num unique: {df[target_col].nunique()} {df_syn_target[target_col].nunique()}")
-        pp.pprint(predictions)
     return predictions
 
 def get_sorted_value_counts(value_counts):
@@ -298,99 +291,6 @@ def update_attack(als, res_key_prefix, filtered_df, precision_results, all_resul
                                     }
         all_results['summary'].append([res_key, alc])
 
-class Attack1colResults:
-    def __init__(self, path):
-        self.parquet_path = os.path.join(path, f'1col_results.parquet')
-        self.analyze_path = os.path.join(path, f'1col_results.json')
-        if os.path.exists(self.parquet_path):
-            self.df = pd.read_parquet(self.parquet_path)
-            print(f"Loaded {len(self.df)} rows from {self.parquet_path}")
-        else:
-            self.df = pd.DataFrame(columns=[
-                'num_vals', 'ex_factor', 'num_ex', 'dist', 'num_aid', 'predict_val', 'known_val', 'unknown_val', 'gap_1_2', 'gap_avg', 'value_counts'
-            ])
-        self.add_count = 0
-
-    def add(self, num_vals, ex_factor, num_ex, dist, num_aid, predict_val, known_val, unknown_val, gap_1_2, gap_avg, value_counts):
-        value_counts = json.dumps(value_counts)
-        new_row = pd.DataFrame([{
-            'num_vals': num_vals,
-            'ex_factor': ex_factor,
-            'num_ex': num_ex,
-            'dist': dist,
-            'num_aid': num_aid,
-            'predict_val': predict_val,
-            'known_val': known_val,
-            'unknown_val': unknown_val,
-            'gap_1_2': gap_1_2,
-            'gap_avg': gap_avg,
-            'value_counts': value_counts
-        }])
-        self.df = pd.concat([self.df, new_row], ignore_index=True)
-        self.add_count += 1
-
-        if self.add_count >= 100:
-            self.write_to_parquet()
-            self.add_count = 0
-
-    def write_to_parquet(self):
-        self.df.to_parquet(self.parquet_path, index=False)
-
-    def make_predictions(self):
-        def val_prediction(row, mult):
-            # Example logic to assign a value
-            value_counts = json.loads(row['value_counts'])
-            # find the key with the highest corresponding value
-            vals, counts = get_sorted_value_counts(value_counts)
-            if counts[0] > counts[1] * mult:
-                return vals[0]
-            else:
-                return 'abstain'
-        def get_result(row, col_name):
-            if row[col_name] == 'abstain':
-                return 'abstain'
-            elif row[col_name] == row['unknown_val']:
-                return 'true'
-            else:
-                return 'false'
-        for mult in prediction_multipliers:
-            pred_col_name = f"pred_1_2_{mult}"
-            self.df[pred_col_name] = self.df.apply(val_prediction, axis=1, args=(mult,))
-            res_col_name = f"result_1_2_{mult}"
-            self.df[res_col_name] = self.df.apply(get_result, axis=1, args=(pred_col_name,))
-
-    def analyze(self):
-        als = alscore.ALScore()
-        # List of columns to analyze
-        columns_to_analyze = ['num_vals', 'ex_factor', 'num_ex', 'num_aid', 'dist']
-
-        all_results = {'precision_results': {}, 'summary':[]}
-        
-        # Dictionary to store the precision results
-        precision_results = all_results['precision_results']
-        
-        for column in columns_to_analyze:
-            # Get the distinct parameters in the column
-            distinct_params = self.df[column].unique()
-            for param in distinct_params:
-                # Filter the DataFrame for the current column/param
-                filtered_df = self.df[self.df[column] == param]
-                res_key_prefix = f"{column}_{param}_"
-                update_attack(als, res_key_prefix, filtered_df, precision_results, all_results)
-        
-        filtered_df = self.df[(self.df['ex_factor'] == 20) & (self.df['num_ex'] == 3) & (self.df['num_aid'] == 150)]
-        res_key_prefix = f"ex_factor_20_num_ex_3_num_aid_150_"
-        update_attack(als, res_key_prefix, filtered_df, precision_results, all_results)
-        filtered_df = self.df[(self.df['ex_factor'] == 20) & (self.df['num_ex'] == 3) & (self.df['num_aid'] == 150) & (self.df['num_vals'] == 2)]
-        res_key_prefix = f"ex_factor_20_num_ex_3_num_aid_150_num_vals_2_"
-        update_attack(als, res_key_prefix, filtered_df, precision_results, all_results)
-        # sort all_results['summary'] by the second element in each sublist
-        all_results['summary'] = sorted(all_results['summary'], key=lambda x: x[1], reverse=True)
-        # Write the precision results to a JSON file
-        with open(self.analyze_path, 'w') as f:
-            json.dump(all_results, f, indent=4)
-        pp.pprint(all_results)
-
 def continuous_attacks(job_num=None):
     if job_num is None:
         job_num = ''
@@ -419,7 +319,7 @@ def continuous_attacks(job_num=None):
                 'num_aid': num_aid,
                 'prediction': prediction['prediction'],
                 'threshold': threshold,
-                'known_val_count': prediction['known_val_count'],
+                'known_count': prediction['known_count'],
                 'flattened_count': prediction['flattened_count']
             })
         # Write the results to a JSON file
@@ -445,7 +345,7 @@ def gather_results():
     if dataframes:
         combined_df = pd.concat(dataframes, ignore_index=True)
         # Write the combined DataFrame to a Parquet file
-        output_path = os.path.join(runs_path, "results.parquet")
+        output_path = os.path.join(runs_path, "results_1col.parquet")
         combined_df.to_parquet(output_path, index=False)
         print(f"Combined DataFrame written to {output_path}")
     else:
