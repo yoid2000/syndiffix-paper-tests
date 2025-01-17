@@ -175,9 +175,6 @@ def make_one_plot(df):
     print(f"    tp: avg: {df_tp['num_aid'].mean()}, std: {df_tp['num_aid'].std()}")
 
 
-def membership_attack():
-    pass
-
 def most_frequent_value(df):
     # Get the column name
     column_name = df.columns[0]
@@ -462,8 +459,6 @@ def main():
         make_plot()
     elif args.command == 'gather':
         gather_results()
-    elif args.command == 'membership':
-        membership_attack()
     elif args.command == 'continuous':
         continuous_attacks()
     else:

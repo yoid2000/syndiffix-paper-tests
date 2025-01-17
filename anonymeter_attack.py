@@ -898,8 +898,19 @@ def run_stats_for_subsets(stats, df):
 
 def do_stats_dict(stats_path):
     df = gather(instances_path=os.path.join(attack_path, 'instances'))
+    # print distinct values of num_subsets
+    print(f"Distinct values of num_subsets: {df['num_subsets'].unique()}")
     df['known_cols'] = df['known_cols'].astype(str)
-    df['attack_setup'] = df['secret_col'] + df['known_cols'] + df['dataset']
+
+    # Define a function to create the 'attack_setup' column
+    def create_attack_setup(row):
+        if row['num_subsets'] == 100:
+            return row['secret_col'] + row['known_cols'] + row['dataset'] + '_100'
+        else:
+            return row['secret_col'] + row['known_cols'] + row['dataset'] + '_200'
+
+    # Apply the function to each row to create the 'attack_setup' column
+    df['attack_setup'] = df.apply(create_attack_setup, axis=1)
     print(f"df has shape {df.shape} and columns:")
     print(df.columns)
     # count unique combinations of secret_col and dataset
@@ -1022,17 +1033,31 @@ def plot_by_slice(df, slice, note, hue='metric'):
 
 def plot_by_num_known_complete(df, note):
     from matplotlib.ticker import FixedLocator
-    df['num_known'] = pd.Categorical(df['num_known'], categories=['3', '6', 'all'], ordered=True)
+    # Define a function to modify 'num_known' based on 'avg_num_sub_subsets'
+    def modify_num_known(row):
+        if row['num_known'] == 'all':
+            if row['avg_num_subsets'] > 100:
+                return 'all_200'
+            else:
+                return 'all_100'
+        else:
+            return row['num_known']
+
+    # Apply the function to each row to modify the 'num_known' column
+    df['num_known'] = df.apply(modify_num_known, axis=1)
+    df['num_known'] = pd.Categorical(df['num_known'], categories=['3', '6', 'all_100', 'all_200'], ordered=True)
     value_counts = df['num_known'].value_counts().reindex(df['num_known'].cat.categories)
-    tick_labels = [f"{known_value}\n({value_counts[known_value]})" for known_value in value_counts.index]
+    print(value_counts)
+    labels = {'3': '3', '6': '6', 'all_100': 'all\n(0-100)', 'all_200': 'all\n(101-200)'}
+    tick_labels = [f"{labels[known_value]}" for known_value in value_counts.index]
     print("Number of rows for each distinct value of 'num_known':")
     print(df['num_known'].value_counts())
-    plt.figure(figsize=(6, 2))
+    plt.figure(figsize=(6, 2.5))
     ax = sns.boxplot(data=df, y='num_known', x='als', orient='h', color='lightblue')
     plt.xlim(-1, 1)
     plt.axvline(x=0.0, color='black', linestyle='--')
     plt.axvline(x=0.5, color='black', linestyle='--')
-    plt.ylabel(f'Known attributes\n(num datapoints) {note}')
+    plt.ylabel(f'Known Attributes\n(synthetic tables)')
     plt.xlabel('Anonymity Loss Coefficient (ALC)')
     ax.yaxis.set_major_locator(FixedLocator(range(len(tick_labels))))
     ax.set_yticklabels(tick_labels)
