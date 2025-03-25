@@ -1,4 +1,4 @@
-Code for testing syndiffix vulnerabilities, for the syndiffix paper zzzz
+Code for testing syndiffix vulnerabilities, for the syndiffix paper.
 
 ### Basic data prep
 
